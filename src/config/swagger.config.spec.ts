@@ -62,6 +62,7 @@ describe('PUBLIC_PATHS drift guard', () => {
     'src/modules/infra/infra.controller.ts',
     'src/modules/integration/ingress.controller.ts',
     'src/modules/metrics/metrics.controller.ts',
+    'src/modules/teams/teams.controller.ts',
   ];
 
   function listTsFiles(dir: string, out: string[] = []): string[] {
