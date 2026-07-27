@@ -9,5 +9,6 @@ import { TranslateController } from './translate.controller';
   imports: [MessageModule, ContactModule, GroupModule],
   controllers: [TranslateController],
   providers: [TranslateService],
+  exports: [TranslateService],
 })
 export class TranslateModule {}

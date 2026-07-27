@@ -128,6 +128,12 @@ services:
       # this line the .env value never reaches the container. Dashboard-saved translate-config.json
       # still overrides at runtime.
       - TRANSLATE_INCLUDE_FROM_ME=${TRANSLATE_INCLUDE_FROM_ME:-}
+      # Teams bot credentials (Azure Bot registration). Forwarded like the vars above — without these
+      # lines the .env values never reach the container. Empty MicrosoftAppId + TEAMS_ALLOW_ANONYMOUS
+      # unset makes /api/teams/messages refuse every request (see TeamsService.process).
+      - MicrosoftAppId=${MicrosoftAppId:-}
+      - MicrosoftAppPassword=${MicrosoftAppPassword:-}
+      - TEAMS_ALLOW_ANONYMOUS=${TEAMS_ALLOW_ANONYMOUS:-}
       # Engine launch options (session data path, headless, browser args). Forwarded EMPTY by default
       # so the dashboard (Infrastructure > Engine) selections saved to data/.env.generated apply — like
       # ENGINE_TYPE above. main.ts treats a blank value as unset (.env.generated wins), and the app

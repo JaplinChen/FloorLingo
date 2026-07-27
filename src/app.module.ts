@@ -14,6 +14,7 @@ import { MessageModule } from './modules/message/message.module';
 import { TranslateModule } from './modules/translate/translate.module';
 import { KeyProxyModule } from './modules/keyproxy/keyproxy.module';
 import { TemplateModule } from './modules/template/template.module';
+import { TeamsModule } from './modules/teams/teams.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -273,6 +274,7 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
     TranslateModule, // zh<->vi auto-translate in selected groups
     KeyProxyModule, // manage llm-key-proxy rotation keys from the dashboard
     TemplateModule,
+    TeamsModule, // Teams auto-translate, reuses TranslateService.translateInbound
     WebhookModule,
     HealthModule,
     SettingsModule,
