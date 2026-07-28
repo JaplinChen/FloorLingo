@@ -276,6 +276,15 @@ export class TranslateController {
     return this.translateService.categoryStore.remove(name);
   }
 
+  @Post('senders/backfill')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Resolve names for queued empty-name @lid entries via the session contacts' })
+  @ApiResponse({ status: 201, description: 'Count filled + updated overrides' })
+  async backfillSenders(@Body() dto: ImportSendersDto): Promise<{ filled: number; entries: SenderEntry[] }> {
+    const filled = await this.translateService.backfillSenders(dto.sessionId);
+    return { filled, entries: this.translateService.senderStore.entries() };
+  }
+
   @Post('senders/import')
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: "Seed sender overrides from a session's contacts + joined-group members (skips existing)" })

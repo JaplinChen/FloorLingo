@@ -45,6 +45,21 @@ export class SenderDirectory {
     return Object.entries(this.data).map(([jid, name]) => ({ jid, name, count: this.usage[jid] ?? 0 }));
   }
 
+  /** Name for a jid, '' when unknown or still pending. */
+  nameOf(jid: string): string {
+    return this.data[this.normalize(jid)] || '';
+  }
+
+  /** Digits of the given jids that sit in the table with an empty name — the auto-resolve worklist. */
+  pending(jids: string[]): string[] {
+    return jids.map(j => this.normalize(j)).filter(k => k in this.data && !this.data[k]);
+  }
+
+  /** Every queued-but-unnamed entry, for the dashboard's backfill button. */
+  allPending(): string[] {
+    return Object.keys(this.data).filter(k => !this.data[k]);
+  }
+
   add(jid: string, name: string): void {
     this.data[this.normalize(jid)] = name;
     this.save();

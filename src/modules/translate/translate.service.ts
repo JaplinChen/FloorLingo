@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { HookManager, HookContext, HookResult } from '../../core/hooks';
 import { MessageService } from '../message/message.service';
+import { ContactService } from '../contact/contact.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
 import { Glossary } from './translate-glossary';
@@ -62,6 +63,8 @@ export class TranslateService implements OnModuleInit {
   private phrases!: PhraseCandidates;
   // Author WIDs allowed to mutate the glossary via /glossary commands. Empty = anyone in the group.
   private adminIds = new Set<string>();
+  // @lid keys already put through resolvePendingSenders — one attempt each, no per-message retries.
+  private senderLookupTried = new Set<string>();
 
   private nextSendAt = 0;
   // Running count of translations where every model failed — surfaced in logs for observability.
@@ -76,7 +79,47 @@ export class TranslateService implements OnModuleInit {
   constructor(
     private readonly hookManager: HookManager,
     private readonly messageService: MessageService,
+    private readonly contactService: ContactService,
   ) {}
+
+  /**
+   * Best-effort name lookup for `@lid` mentions queued by notePending. Two shots: the lid->phone
+   * mapping (the table is keyed by phone for most people, so this usually hits), then the contact
+   * record. Tried keys are remembered so an unresolvable lid isn't re-queried on every message.
+   */
+  private resolvePendingSenders(sessionId: string, jids: string[]): void {
+    for (const key of this.senders.pending(jids)) {
+      if (this.senderLookupTried.has(key)) continue;
+      this.senderLookupTried.add(key);
+      void this.lookupSenderName(sessionId, key).catch(err =>
+        this.logger.debug(`sender lookup failed for ${key}`, String(err)),
+      );
+    }
+  }
+
+  private async lookupSenderName(sessionId: string, key: string): Promise<boolean> {
+    const lid = `${key}@lid`;
+    const phone = await this.contactService.resolveContactPhone(sessionId, lid).catch(() => null);
+    const viaPhone = phone ? this.senders.nameOf(phone) : '';
+    if (viaPhone) return this.senders.learn(key, viaPhone);
+    const contact = await this.contactService.getContactById(sessionId, lid).catch(() => null);
+    const name = contact?.name || contact?.pushName;
+    return name ? this.senders.learn(key, name) : false;
+  }
+
+  /**
+   * Dashboard-triggered: run every queued empty-name entry through the same lookup. Sequential —
+   * each key is one or two WhatsApp queries and the batch form is rate-limit prone (see adapter).
+   * Per-lookup failures are already swallowed inside lookupSenderName; a "session not started"
+   * throw is left to propagate so the button reports it instead of a silent "filled 0".
+   */
+  async backfillSenders(sessionId: string): Promise<number> {
+    let filled = 0;
+    for (const key of this.senders.allPending()) {
+      if (await this.lookupSenderName(sessionId, key)) filled++;
+    }
+    return filled;
+  }
 
   onModuleInit(): void {
     this.applyConfig(envSeedConfig());
@@ -344,6 +387,7 @@ export class TranslateService implements OnModuleInit {
       if (msg.mentionedIds?.length) {
         this.senders.markUsed(msg.mentionedIds);
         this.senders.notePending(msg.mentionedIds, body);
+        this.resolvePendingSenders(sessionId, msg.mentionedIds);
       }
 
       // Keyword alerts: DM every watcher (other than the author) whose keyword this group message hits.
