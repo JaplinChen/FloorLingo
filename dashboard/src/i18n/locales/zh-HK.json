@@ -976,6 +976,8 @@
     "empty": "尚無對照項目。",
     "import": "從聯絡人匯入",
     "imported": "已匯入 {{added}} 位聯絡人",
+    "backfill": "自動補名 ({{n}})",
+    "backfilled": "已補上 {{filled}} 筆名稱",
     "noSessions": "沒有工作階段",
     "jid": "JID 或 @號碼",
     "name": "顯示名稱"

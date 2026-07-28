@@ -392,6 +392,11 @@ export const translateApi = {
       method: 'POST',
       body: JSON.stringify({ sessionId }),
     }),
+  backfillSenders: (sessionId: string) =>
+    request<{ filled: number; entries: SenderEntry[] }>('/translate/senders/backfill', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    }),
 };
 
 // =============================================================================

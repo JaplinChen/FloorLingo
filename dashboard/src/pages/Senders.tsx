@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, AtSign, Download } from 'lucide-react';
+import { Loader2, AtSign, Download, Wand2 } from 'lucide-react';
 import { translateApi, type SenderEntry } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
@@ -74,6 +74,20 @@ export function Senders() {
     }
   };
 
+  const backfill = async () => {
+    if (!sessionId) return;
+    setBusy(true);
+    try {
+      const { filled, entries: next } = await translateApi.backfillSenders(sessionId);
+      setEntries(next);
+      toast.success(t('senders.backfilled', { filled }));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const remove = async (target: string) => {
     setBusy(true);
     try {
@@ -106,6 +120,8 @@ export function Senders() {
     }
   };
 
+  const pending = entries.filter(e => !e.name).length;
+
   if (loading) {
     return (
       <div className="etable-page etable-loading">
@@ -136,6 +152,10 @@ export function Senders() {
                   </option>
                 ))}
               </select>
+              <button className="btn-secondary" onClick={backfill} disabled={busy || !sessionId || pending === 0}>
+                {busy ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                {t('senders.backfill', { n: pending })}
+              </button>
               <button className="btn-primary" onClick={importFromContacts} disabled={busy || !sessionId}>
                 {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                 {t('senders.import')}
