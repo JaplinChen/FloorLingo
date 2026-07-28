@@ -51,7 +51,7 @@ FROM docker.io/node:22-slim AS production
 # arm64 installs Debian's chromium instead (it ships a native arm64 build). Both
 # resolve to the same /usr/local/bin/puppeteer-chrome symlink below.
 ARG TARGETARCH
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     $([ "$TARGETARCH" = arm64 ] && echo chromium) \
     fonts-liberation \
     libappindicator3-1 \
@@ -76,19 +76,29 @@ RUN apt-get update && apt-get install -y \
     procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Puppeteer to skip automatic download during npm install (we download it explicitly below)
+# Set Puppeteer to skip automatic download during npm install (we download it explicitly below).
+# BOTH names are needed: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD is the pre-v19 name and is IGNORED by
+# current puppeteer, which honours PUPPETEER_SKIP_DOWNLOAD — without it the postinstall pulled a
+# whole second Chrome (626MB) into /root/.cache/puppeteer on top of the explicit install below.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # Create app user for security
 RUN groupadd -r openwa-lab && useradd -r -g openwa-lab openwa-lab
 
 WORKDIR /app
+RUN chown openwa-lab:openwa-lab /app
 
 # Copy package files
-COPY package*.json ./
+COPY --chown=openwa-lab:openwa-lab package*.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev && npm cache clean --force
+# Install production dependencies only, AS the app user: a later `chown -R /app` would duplicate
+# the whole 500MB node_modules into an extra layer, so ownership is set at write time instead.
+# openwa-lab is a system user with no home (`useradd -r`), so npm's default cache path is not
+# writable — point it at /tmp and drop it in the same layer.
+USER openwa-lab
+RUN npm_config_cache=/tmp/.npm npm ci --omit=dev && rm -rf /tmp/.npm
+USER root
 
 # amd64: download Chrome for Testing via Puppeteer and symlink it.
 # arm64: use Debian's chromium installed above (CfT has no linux-arm64 build).
@@ -106,15 +116,15 @@ RUN if [ "$TARGETARCH" = arm64 ]; then \
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/puppeteer-chrome
 
 # Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
+COPY --from=builder --chown=openwa-lab:openwa-lab /app/dist ./dist
 
 # Copy the bundled dashboard SPA; ServeStaticModule serves it from this same process/port
 # (app.module.ts resolves dashboard/dist relative to dist/). Single container, single port.
-COPY --from=builder /app/dashboard/dist ./dashboard/dist
+COPY --from=builder --chown=openwa-lab:openwa-lab /app/dashboard/dist ./dashboard/dist
 
 # Create data directories with correct ownership
 RUN mkdir -p ./data/sessions ./data/media && \
-    chown -R openwa-lab:openwa-lab /app
+    chown openwa-lab:openwa-lab ./data ./data/sessions ./data/media
 
 # The non-root openwa-lab user has no home of its own (`useradd -r`, no -m). Chromium resolves the home
 # dir from the passwd entry via glib's getpwuid() — it IGNORES $HOME — so it tries to read/write
