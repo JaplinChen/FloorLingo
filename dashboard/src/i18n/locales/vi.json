@@ -967,6 +967,8 @@
     "empty": "Chưa có mục ghi đè nào.",
     "import": "Nhập từ danh bạ",
     "imported": "Đã nhập {{added}} liên hệ",
+    "backfill": "Tự động điền tên ({{n}})",
+    "backfilled": "Đã điền {{filled}} tên",
     "noSessions": "Không có phiên",
     "jid": "JID hoặc @số",
     "name": "Tên hiển thị"

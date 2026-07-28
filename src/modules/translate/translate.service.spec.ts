@@ -6,11 +6,13 @@ import { HookManager } from '../../core/hooks';
 import { MessageService } from '../message/message.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { parseCommand, type CommandDeps } from './translate-commands';
+import { ContactService } from '../contact/contact.service';
 
 describe('TranslateService glossary', () => {
   let glossaryPath: string;
   let sendersPath: string;
   let sent: { chatId: string; text: string }[];
+  let contactLookups: { phone: string | null; contact: { name?: string; pushName?: string } | null };
   let service: TranslateService;
 
   const makeMsg = (body: string): IncomingMessage =>
@@ -31,7 +33,13 @@ describe('TranslateService glossary', () => {
         return Promise.resolve({} as never);
       },
     } as unknown as MessageService;
-    service = new TranslateService(new HookManager(), messageService);
+    contactLookups = { phone: null, contact: null };
+    const contactService = {
+      resolveContactPhone: () => Promise.resolve(contactLookups.phone),
+      getContactById: () =>
+        contactLookups.contact ? Promise.resolve(contactLookups.contact) : Promise.reject(new Error('not found')),
+    } as unknown as ContactService;
+    service = new TranslateService(new HookManager(), messageService, contactService);
     service.onModuleInit(); // loads (absent) glossary from the temp path
   });
 
@@ -161,6 +169,48 @@ describe('TranslateService glossary', () => {
     expect(fetchMock).toHaveBeenCalled();
     expect(promptSent).toContain('@總經理');
     expect(promptSent).not.toContain('@200859128434777');
+  });
+
+  it('auto-names a pending @lid mention via the lid->phone mapping, then falls back to the contact record', async () => {
+    const resolve = (service as unknown as {
+      resolvePendingSenders: (s: string, j: string[]) => void;
+    }).resolvePendingSenders.bind(service);
+    const flush = () => new Promise(r => setImmediate(r));
+
+    // lid known to the phone-keyed table
+    service.senderStore.add('84912830550', '陳嘉元');
+    service.senderStore.notePending(['216659658829884@lid'], '@216659658829884 xin chào');
+    contactLookups.phone = '84912830550';
+    resolve('sess', ['216659658829884@lid']);
+    await flush();
+    expect(service.senderStore.nameOf('216659658829884')).toBe('陳嘉元');
+
+    // no phone mapping → contact record's pushName wins
+    service.senderStore.notePending(['133518235533349@lid'], '@133518235533349 ok');
+    contactLookups.phone = null;
+    contactLookups.contact = { pushName: 'Hoàng Linh' };
+    resolve('sess', ['133518235533349@lid']);
+    await flush();
+    expect(service.senderStore.nameOf('133518235533349')).toBe('Hoàng Linh');
+
+    // both fail → stays pending, and the key isn't re-queried
+    service.senderStore.notePending(['212150496804930@lid'], '@212150496804930 ?');
+    contactLookups.contact = null;
+    resolve('sess', ['212150496804930@lid']);
+    await flush();
+    expect(service.senderStore.nameOf('212150496804930')).toBe('');
+  });
+
+  it('backfill fills every pending entry it can name and counts only the ones it filled', async () => {
+    service.senderStore.notePending(['216659658829884@lid'], '@216659658829884 a');
+    service.senderStore.notePending(['133518235533349@lid'], '@133518235533349 b');
+    service.senderStore.add('84912830550', '陳嘉元');
+    contactLookups.contact = { name: 'Cuong' }; // no phone mapping for either → contact record for both
+
+    expect(await service.backfillSenders('sess')).toBe(2);
+    expect(service.senderStore.nameOf('216659658829884')).toBe('Cuong');
+    expect(service.senderStore.nameOf('84912830550')).toBe('陳嘉元'); // named rows untouched
+    expect(await service.backfillSenders('sess')).toBe(0); // nothing pending left
   });
 
   it('strips a reasoning model <think> block so the group gets only the translation', async () => {

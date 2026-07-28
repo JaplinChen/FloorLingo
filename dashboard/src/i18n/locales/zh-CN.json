@@ -976,6 +976,8 @@
     "empty": "尚无对照项目。",
     "import": "从联系人导入",
     "imported": "已导入 {{added}} 位联系人",
+    "backfill": "自动补名 ({{n}})",
+    "backfilled": "已补上 {{filled}} 条名称",
     "noSessions": "没有工作阶段",
     "jid": "JID 或 @号码",
     "name": "显示名称"
