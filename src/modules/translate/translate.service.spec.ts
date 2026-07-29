@@ -167,7 +167,8 @@ describe('TranslateService glossary', () => {
     await translate('報告給@200859128434777以及其他同事', { key: 'zh-tw:vi' } as never);
 
     expect(fetchMock).toHaveBeenCalled();
-    expect(promptSent).toContain('@總經理');
+    // Since #96 apply() substitutes the bare name — the @ is dropped for resolved mentions.
+    expect(promptSent).toContain('報告給總經理以及其他同事');
     expect(promptSent).not.toContain('@200859128434777');
   });
 
@@ -400,5 +401,146 @@ describe('TranslateService glossary', () => {
 
     expect(out).toBe('Xin chào');
     expect(authHeader).toBe('Bearer sk-x');
+  });
+});
+
+describe('TranslateService voice notes', () => {
+  let sent: { chatId: string; text: string }[];
+  let service: TranslateService;
+
+  const voiceMsg = (over: Partial<IncomingMessage> = {}): IncomingMessage =>
+    ({
+      chatId: 'g@g.us',
+      from: 'u@c.us',
+      author: 'u@c.us',
+      body: '',
+      type: 'voice',
+      isGroup: true,
+      fromMe: false,
+      media: { mimetype: 'audio/ogg; codecs=opus', data: Buffer.from('opus').toString('base64') },
+      ...over,
+    }) as IncomingMessage;
+
+  beforeEach(() => {
+    const tmp = (p: string, f: string) => path.join(fs.mkdtempSync(path.join(os.tmpdir(), p)), f);
+    process.env.TRANSLATE_GLOSSARY_PATH = tmp('gloss-', 'glossary.json');
+    process.env.TRANSLATE_SENDERS_PATH = tmp('send-', 'senders.json');
+    process.env.TRANSLATE_WATCHWORDS_PATH = tmp('watch-', 'watchwords.json');
+    process.env.TRANSLATE_FEEDBACK_PATH = tmp('fb-', 'bad-feedback.json');
+    process.env.TRANSLATE_CONFIG_PATH = tmp('tcfg-', 'translate-config.json');
+    sent = [];
+    const messageService = {
+      sendText: (_s: string, dto: { chatId: string; text: string }) => {
+        sent.push(dto);
+        return Promise.resolve({} as never);
+      },
+    } as unknown as MessageService;
+    const contactService = {
+      resolveContactPhone: () => Promise.resolve(null),
+      getContactById: () => Promise.reject(new Error('not found')),
+    } as unknown as ContactService;
+    service = new TranslateService(new HookManager(), messageService, contactService);
+    service.onModuleInit();
+    Object.assign((service as unknown as { cfg: Record<string, unknown> }).cfg, {
+      enabled: true, llmProvider: 'ollama', llmEndpoint: 'http://x/api/chat', llmModel: 'qwen3:8b',
+      groupIds: new Set(['g@g.us']), minSendIntervalMs: 0,
+    });
+    Object.assign((service as unknown as { voice: Record<string, unknown> }).voice, {
+      baseUrl: 'http://stt', model: 'whisper-large-v3-turbo', apiKey: '', language: '',
+      timeoutMs: 5000, maxBytes: 1024, maxPerHour: 60, includeAudioFiles: false,
+    });
+  });
+
+  // STT then LLM off the same mock: the transcriptions URL is the discriminator.
+  const mockBackends = (transcript: string, translation: string) => {
+    const fetchMock = jest.fn(async (url: string) =>
+      String(url).includes('/audio/transcriptions')
+        ? ({ ok: true, json: async () => ({ text: transcript }) } as never)
+        : ({ ok: true, json: async () => ({ message: { content: translation } }) } as never),
+    );
+    (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
+    return fetchMock;
+  };
+
+  const run = async (msg: IncomingMessage) => {
+    await (service as unknown as {
+      transcribeAndTranslate: (s: string, m: IncomingMessage) => Promise<void>;
+    }).transcribeAndTranslate('sess', msg);
+    await (service as unknown as { queue: Promise<unknown> }).queue;
+  };
+
+  it('transcribes then translates, echoing the transcript above the translation', async () => {
+    mockBackends('Báo cáo Sếp', '報告主管');
+    await run(voiceMsg());
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].text).toContain('🎙 Báo cáo Sếp');
+    expect(sent[0].text).toContain('報告主管');
+    // BOT_MARKER must stay first or the sent-path hook re-translates the bot's own message.
+    expect(sent[0].text.indexOf('🎙')).toBeGreaterThan(0);
+  });
+
+  it('routes a voice message from the hook into the voice path, not the caption path', async () => {
+    const spy = jest.fn(async () => undefined);
+    (service as unknown as { transcribeAndTranslate: unknown }).transcribeAndTranslate = spy;
+    await (service as unknown as {
+      onMessage: (c: unknown, s: boolean) => Promise<unknown>;
+    }).onMessage({ data: voiceMsg(), sessionId: 'sess' }, false);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing when no STT endpoint is configured', async () => {
+    (service as unknown as { voice: { baseUrl: string } }).voice.baseUrl = '';
+    const fetchMock = mockBackends('x', 'y');
+    await run(voiceMsg());
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('skips an audio file unless includeAudioFiles is on', async () => {
+    const fetchMock = mockBackends('Báo cáo Sếp', '報告主管');
+    await run(voiceMsg({ type: 'audio' }));
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    (service as unknown as { voice: { includeAudioFiles: boolean } }).voice.includeAudioFiles = true;
+    await run(voiceMsg({ type: 'audio' }));
+    expect(sent).toHaveLength(1);
+  });
+
+  it('skips a note whose blob was dropped by the inbound media cap', async () => {
+    const fetchMock = mockBackends('x', 'y');
+    await run(voiceMsg({ media: { mimetype: 'audio/ogg', omitted: true, sizeBytes: 99 } } as Partial<IncomingMessage>));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('skips a note over maxBytes', async () => {
+    (service as unknown as { voice: { maxBytes: number } }).voice.maxBytes = 2;
+    const fetchMock = mockBackends('x', 'y');
+    await run(voiceMsg());
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('enforces the hourly cap', async () => {
+    (service as unknown as { voiceCap: { max: number } }).voiceCap = new (
+      require('./translate-voice') as { HourlyCap: new (n: number) => unknown }
+    ).HourlyCap(1) as never;
+    mockBackends('Báo cáo Sếp', '報告主管');
+    await run(voiceMsg());
+    await run(voiceMsg());
+    expect(sent).toHaveLength(1);
+  });
+
+  it('sends nothing when the transcript comes back empty', async () => {
+    mockBackends('', '報告主管');
+    await run(voiceMsg());
+    expect(sent).toHaveLength(0);
+  });
+
+  it('swallows an STT failure without throwing into the receive pipeline', async () => {
+    (global as unknown as { fetch: unknown }).fetch = jest.fn(async () => ({
+      ok: false, status: 401, text: async () => 'bad key',
+    }));
+    await expect(run(voiceMsg())).resolves.toBeUndefined();
+    expect(sent).toHaveLength(0);
   });
 });
