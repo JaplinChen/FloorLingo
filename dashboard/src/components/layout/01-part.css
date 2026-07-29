@@ -5,7 +5,7 @@
 
 /* ==================== Sidebar ==================== */
 .sidebar {
-  width: 260px;
+  width: var(--sidebar-w, 260px);
   background: var(--bg-white);
   border-right: 1px solid var(--border);
   display: flex;
@@ -20,6 +20,31 @@
 
 .sidebar.collapsed {
   width: 72px;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 101;
+}
+
+.sidebar-resizer:hover {
+  background: var(--primary);
+  opacity: 0.4;
+}
+
+body.sidebar-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.sidebar-resizing .sidebar,
+body.sidebar-resizing .main-content {
+  transition: none;
 }
 
 .sidebar-header {

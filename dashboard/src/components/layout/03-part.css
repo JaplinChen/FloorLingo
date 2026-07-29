@@ -120,9 +120,14 @@
   left: auto;
 }
 
+[dir='rtl'] .sidebar-resizer {
+  right: auto;
+  left: -3px;
+}
+
 [dir='rtl'] .main-content {
   margin-left: 0;
-  margin-right: 260px;
+  margin-right: var(--sidebar-w, 260px);
   transition:
     margin-right 0.3s ease,
     width 0.3s ease;
