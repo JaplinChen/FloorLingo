@@ -47,6 +47,7 @@
   | `TRANSLATE_VOICE_MODEL` | `whisper-large-v3-turbo` | 自架 faster-whisper 請改成 `small` 等本地模型名 |
   | `TRANSLATE_VOICE_LANGUAGE` | （空＝自動偵測） | BCP-47 語言提示，例 `vi` |
   | `TRANSLATE_VOICE_PROMPT` | （空，**建議維持**） | 詞彙偏置清單（逗號分隔）。詳見下方警告 |
+  | `TRANSLATE_VOICE_CONFUSIONS` | （空） | 已知誤聽對照，格式 `bot=boss,Bob,bioti; file=phai`。詳見下方說明 |
   | `TRANSLATE_VOICE_MAX_PER_HOUR` | `60` | 每個聊天每小時轉錄上限（成本護欄） |
   | `TRANSLATE_VOICE_CONCURRENCY` | `2` | 同時進行的轉錄數。自架 CPU whisper 建議 `1`；雲端服務可調高 |
   | `TRANSLATE_VOICE_MAX_BYTES` | `16777216` | 單則語音大小上限 |
@@ -64,6 +65,18 @@
   ```
 
   `no_speech` 偏高代表模型認為該段其實沒人說話，`logprob` 偏低代表輸出信心不足——幻覺片段通常至少命中其一。目前這兩個數值**只記錄不過濾**，門檻需由實際流量累積後再訂。
+
+  **`TRANSLATE_VOICE_CONFUSIONS`：已知誤聽的事後校正。** 越南語者唸英文借詞被辨識成別的英文字時，產生的往往是**通順的句子**（`Con Boss, tôi nói về tốc độ...` 讀起來完全合理），所以既測不出低信心、也看不出語意矛盾。實測顯示泛用指令（「若某字不合語意請重新解讀」）修正率 0/2，而明確列出對照後為 2/3。
+
+  格式 `intended=heard1,heard2; intended2=heard3`，例：
+
+  ```bash
+  TRANSLATE_VOICE_CONFUSIONS=bot=boss,Bob,bioti,bót
+  ```
+
+  此區塊只在**語音來源**的翻譯提示中注入，打字訊息不受影響（避免給模型改寫已正確文字的許可）。留空則完全不注入。
+
+  兩個限制：只對清單內的誤聽有效，未知的辨識錯誤（如 `bioti`）仍會原樣通過；且允許模型重新解讀有代價——實測曾出現修好 `bot` 的同時把 `tốc độ`（速度）誤譯為「大小」。若附帶損傷頻繁，應退回不做校正，改在轉錄層處理。
 
 ### 更名
 - 專案 **OpenWA → OpenWA-Lab** 全面更名：docker/infra、swagger、套件名、i18n、儀表板、文件。
