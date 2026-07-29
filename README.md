@@ -47,9 +47,12 @@
   | `TRANSLATE_VOICE_MODEL` | `whisper-large-v3-turbo` | 自架 faster-whisper 請改成 `small` 等本地模型名 |
   | `TRANSLATE_VOICE_LANGUAGE` | （空＝自動偵測） | BCP-47 語言提示，例 `vi` |
   | `TRANSLATE_VOICE_MAX_PER_HOUR` | `60` | 每個聊天每小時轉錄上限（成本護欄） |
+  | `TRANSLATE_VOICE_CONCURRENCY` | `2` | 同時進行的轉錄數。自架 CPU whisper 建議 `1`；雲端服務可調高 |
   | `TRANSLATE_VOICE_MAX_BYTES` | `16777216` | 單則語音大小上限 |
   | `TRANSLATE_VOICE_TIMEOUT_MS` | `30000` | 單次轉錄逾時 |
   | `TRANSLATE_VOICE_INCLUDE_AUDIO` | `false` | 設 `true` 連音訊檔（非語音留言）也轉錄，成本較高 |
+
+  注意：`llm-key-proxy` **不能**用於此處——它只代理 `/v1/chat/completions`、`/v1/messages`、`/v1/embeddings`，沒有 `/v1/audio/transcriptions`。語音需直連 Groq／OpenAI 或自架服務。
 
 ### 更名
 - 專案 **OpenWA → OpenWA-Lab** 全面更名：docker/infra、swagger、套件名、i18n、儀表板、文件。

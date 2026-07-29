@@ -28,6 +28,7 @@ import {
 } from './translate-config.store';
 import { parseCommand, type CommandContext } from './translate-commands';
 import { HourlyCap, VoiceConfig, transcribe, voiceConfigFromEnv, voiceEnabled } from './translate-voice';
+import { ConcurrencyLimiter } from '../../common/utils/concurrency-limiter';
 
 export { LLM_PROVIDERS } from './translate-llm-client';
 export type { LlmProvider, LlmParams } from './translate-llm-client';
@@ -75,6 +76,9 @@ export class TranslateService implements OnModuleInit {
   // Voice-note transcription (env-only config); disabled unless TRANSLATE_VOICE_STT_URL is set.
   private voice: VoiceConfig = voiceConfigFromEnv();
   private voiceCap = new HourlyCap(this.voice.maxPerHour);
+  // Bounded queue, not the default Infinity: every parked task holds its decoded audio buffer alive, so
+  // an unbounded park turns a burst into heap. Overflow throws, which the caller logs as a dropped note.
+  private voiceLimiter = new ConcurrencyLimiter(this.voice.concurrency, this.voice.concurrency * 4);
 
   private nextSendAt = 0;
   // Running count of translations where every model failed — surfaced in logs for observability.
@@ -488,16 +492,20 @@ export class TranslateService implements OnModuleInit {
       const media = msg.media;
       // omitted = the note blew the inbound media cap, so there are no bytes to send to the backend.
       if (!media?.data || media.omitted) return;
-      if (!this.voiceCap.take(msg.chatId)) {
-        this.logger.warn(`Voice hourly cap (${this.voice.maxPerHour}) hit for chat=${msg.chatId}; skipped`);
-        return;
-      }
       const audio = Buffer.from(media.data, 'base64');
+      // Size before cap: an oversized note costs nothing to reject, so it must not spend hourly budget
+      // that a real note could have used.
       if (audio.byteLength > this.voice.maxBytes) {
         this.logger.warn(`Voice note too large (${audio.byteLength} > ${this.voice.maxBytes}); skipped`);
         return;
       }
-      const text = await transcribe(audio, media.mimetype, this.voice);
+      if (!this.voiceCap.take(msg.chatId)) {
+        this.logger.warn(`Voice hourly cap (${this.voice.maxPerHour}) hit for chat=${msg.chatId}; skipped`);
+        return;
+      }
+      // The hourly cap bounds VOLUME, not concurrency: a burst of notes would otherwise fire that many
+      // parallel STT requests — fine for Groq, but a self-hosted CPU whisper thrashes and cloud tiers 429.
+      const text = await this.voiceLimiter.run(() => transcribe(audio, media.mimetype, this.voice));
       if (!text) {
         this.logger.warn(`Voice transcript empty chat=${msg.chatId}`);
         return;

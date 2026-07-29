@@ -13,6 +13,7 @@ export interface VoiceConfig {
   timeoutMs: number;
   maxBytes: number;
   maxPerHour: number;
+  concurrency: number;
   includeAudioFiles: boolean;
 }
 
@@ -21,6 +22,8 @@ const DEFAULTS = {
   timeoutMs: 30_000,
   maxBytes: 16 * 1024 * 1024,
   maxPerHour: 60,
+  // 2 keeps a burst from thrashing a self-hosted CPU whisper; raise it for a hosted backend.
+  concurrency: 2,
 };
 
 function envInt(key: string, fallback: number): number {
@@ -37,6 +40,7 @@ export function voiceConfigFromEnv(): VoiceConfig {
     timeoutMs: envInt('TRANSLATE_VOICE_TIMEOUT_MS', DEFAULTS.timeoutMs),
     maxBytes: envInt('TRANSLATE_VOICE_MAX_BYTES', DEFAULTS.maxBytes),
     maxPerHour: envInt('TRANSLATE_VOICE_MAX_PER_HOUR', DEFAULTS.maxPerHour),
+    concurrency: envInt('TRANSLATE_VOICE_CONCURRENCY', DEFAULTS.concurrency),
     includeAudioFiles: (process.env.TRANSLATE_VOICE_INCLUDE_AUDIO || '').trim().toLowerCase() === 'true',
   };
 }
