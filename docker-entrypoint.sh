@@ -6,6 +6,10 @@ set -e
 mkdir -p /app/data/sessions /app/data/media /app/data/plugins
 chown -R openwa-lab:openwa-lab /app/data
 
+# keyproxy/.env is mode 0600 and the dashboard's key page reads+writes it. Its uid is baked in from
+# whenever it was last written, so an image rebuild that shifts the openwa-lab uid makes it EACCES.
+chown -R openwa-lab:openwa-lab /app/keyproxy 2>/dev/null || true
+
 # Chromium leaves SingletonLock/SingletonSocket/SingletonCookie in each session profile and does
 # not remove them on an unclean shutdown; stale locks block the next launch ("profile appears to be
 # in use by another Chromium process", exit Code 21). No Chromium is running yet at entrypoint time,
