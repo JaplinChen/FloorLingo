@@ -27,6 +27,7 @@ import {
   splitList,
 } from './translate-config.store';
 import { parseCommand, type CommandContext } from './translate-commands';
+import { HourlyCap, VoiceConfig, transcribe, voiceConfigFromEnv, voiceEnabled } from './translate-voice';
 
 export { LLM_PROVIDERS } from './translate-llm-client';
 export type { LlmProvider, LlmParams } from './translate-llm-client';
@@ -34,6 +35,11 @@ export type { TranslateConfig } from './translate-config.store';
 
 // Media captions land in `body` (see baileys-inbound-mapper), so image/video/document carry translatable text.
 const TRANSLATABLE_TYPES = new Set<IncomingMessage['type']>(['text', 'image', 'video', 'document']);
+// Audio carries no body — routed through STT first (see transcribeAndTranslate), not the caption path.
+const VOICE_TYPES = new Set<IncomingMessage['type']>(['voice', 'audio']);
+// Prefix on the transcript line. Unlike a text message, the source isn't already visible in the chat,
+// so the bot echoes what it heard alongside the translation.
+const TRANSCRIPT_MARKER = '🎙 ';
 
 @Injectable()
 export class TranslateService implements OnModuleInit {
@@ -65,6 +71,10 @@ export class TranslateService implements OnModuleInit {
   private adminIds = new Set<string>();
   // @lid keys already put through resolvePendingSenders — one attempt each, no per-message retries.
   private senderLookupTried = new Set<string>();
+
+  // Voice-note transcription (env-only config); disabled unless TRANSLATE_VOICE_STT_URL is set.
+  private voice: VoiceConfig = voiceConfigFromEnv();
+  private voiceCap = new HourlyCap(this.voice.maxPerHour);
 
   private nextSendAt = 0;
   // Running count of translations where every model failed — surfaced in logs for observability.
@@ -165,6 +175,10 @@ export class TranslateService implements OnModuleInit {
       50,
     );
     if (this.cfg.includeFromMe) this.registerSentHook();
+
+    if (voiceEnabled(this.voice)) {
+      this.logger.log(`Voice transcription enabled: model=${this.voice.model}, stt=${this.voice.baseUrl}`);
+    }
 
     this.logger.log(
       `Translate loaded: enabled=${this.cfg.enabled}, ${this.cfg.groupIds.size} group(s), ` +
@@ -335,7 +349,8 @@ export class TranslateService implements OnModuleInit {
     const pass: HookResult<IncomingMessage> = { continue: true };
     try {
       if (!this.cfg.enabled) return pass;
-      if (!TRANSLATABLE_TYPES.has(msg.type)) return pass;
+      const isVoice = VOICE_TYPES.has(msg.type);
+      if (!TRANSLATABLE_TYPES.has(msg.type) && !isVoice) return pass;
       // received-path fromMe shouldn't occur (adapter routes fromMe to message:sent); guard anyway.
       if (msg.fromMe && !isSentPath) return pass;
       if (!msg.isGroup || !this.cfg.groupIds.has(msg.chatId)) return pass;
@@ -349,6 +364,13 @@ export class TranslateService implements OnModuleInit {
           this.senders.learn(msg.author, nm);
           if (msg.senderPhone) this.senders.learn(msg.senderPhone, nm);
         }
+      }
+
+      // Audio has no body, so it exits before the text path's command/mention/watchword handling —
+      // a spoken message is content to translate, never a command.
+      if (isVoice) {
+        if (ctx.sessionId) void this.transcribeAndTranslate(ctx.sessionId, msg);
+        return pass;
       }
 
       const body = msg.body || '';
@@ -454,13 +476,53 @@ export class TranslateService implements OnModuleInit {
     });
   }
 
+  /**
+   * Voice path: STT the note, then hand the transcript to the normal translate path so glossary,
+   * senders, memory and /bad feedback all apply to it unchanged. Fully off the receive pipeline —
+   * every exit here is a silent drop of ONE voice note, never a delivery failure.
+   */
+  private async transcribeAndTranslate(sessionId: string, msg: IncomingMessage): Promise<void> {
+    try {
+      if (!voiceEnabled(this.voice)) return;
+      if (msg.type === 'audio' && !this.voice.includeAudioFiles) return; // PTT only unless opted in
+      const media = msg.media;
+      // omitted = the note blew the inbound media cap, so there are no bytes to send to the backend.
+      if (!media?.data || media.omitted) return;
+      if (!this.voiceCap.take(msg.chatId)) {
+        this.logger.warn(`Voice hourly cap (${this.voice.maxPerHour}) hit for chat=${msg.chatId}; skipped`);
+        return;
+      }
+      const audio = Buffer.from(media.data, 'base64');
+      if (audio.byteLength > this.voice.maxBytes) {
+        this.logger.warn(`Voice note too large (${audio.byteLength} > ${this.voice.maxBytes}); skipped`);
+        return;
+      }
+      const text = await transcribe(audio, media.mimetype, this.voice);
+      if (!text) {
+        this.logger.warn(`Voice transcript empty chat=${msg.chatId}`);
+        return;
+      }
+      await this.translateAndSend(sessionId, msg.chatId, text, TRANSCRIPT_MARKER + text);
+    } catch (err) {
+      this.logger.error('Voice transcription failed', String(err));
+    }
+  }
+
   // WhatsApp send path: translate off the receive pipeline, then pace + send back (in-queue). Typing
-  // simulation runs inside MessageService.sendText (SIMULATE_TYPING).
-  private translateAndSend(sessionId: string, chatId: string, body: string): Promise<string | null> {
+  // simulation runs inside MessageService.sendText (SIMULATE_TYPING). `prefixLine` (voice) prepends the
+  // transcript so the group sees what was heard — the source text isn't in the chat like a text message.
+  private translateAndSend(
+    sessionId: string,
+    chatId: string,
+    body: string,
+    prefixLine?: string,
+  ): Promise<string | null> {
     return this.translateInbound(body, chatId, async reply => {
       const wait = this.nextSendAt - Date.now();
       if (wait > 0) await sleep(wait);
-      const res = await this.messageService.sendText(sessionId, { chatId, text: reply });
+      // Keep BOT_MARKER first: it's what stops the sent-path hook re-translating the bot's own message.
+      const text = prefixLine ? BOT_MARKER + prefixLine + '\n' + reply.slice(BOT_MARKER.length) : reply;
+      const res = await this.messageService.sendText(sessionId, { chatId, text });
       this.nextSendAt = Date.now() + this.cfg.minSendIntervalMs;
       // Remember source↔translation keyed by the sent id so a later /bad quoting it recovers the source.
       this.feedback.record(res?.messageId, body, reply.replace(BOT_MARKER, '').trim());

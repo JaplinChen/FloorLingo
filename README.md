@@ -38,6 +38,18 @@
     - `/sender del <JID或@號碼>`：移除
   - 儀表板「發送者」頁，或 REST `GET/POST/DELETE /translate/senders`（ADMIN）。
   - 儲存於 `data/senders.json`（可用 `TRANSLATE_SENDERS_PATH` 覆寫）。
+- **語音訊息翻譯**：語音訊息沒有文字內容，原本會被翻譯直接略過。設定 STT 端點後，語音會先轉成文字再走一般翻譯流程（詞彙表／發送者對照／`/bad` 回饋皆適用），機器人回覆會同時附上轉錄原文與譯文。設定 `TRANSLATE_VOICE_STT_URL` 即啟用：
+
+  | 環境變數 | 預設 | 說明 |
+  | --- | --- | --- |
+  | `TRANSLATE_VOICE_STT_URL` | （空＝停用） | OpenAI 相容的語音轉文字服務，例 `https://api.groq.com/openai` 或自架 `http://speaches:8000` |
+  | `TRANSLATE_VOICE_STT_KEY` | （空） | Bearer 金鑰；自架服務可留空 |
+  | `TRANSLATE_VOICE_MODEL` | `whisper-large-v3-turbo` | 自架 faster-whisper 請改成 `small` 等本地模型名 |
+  | `TRANSLATE_VOICE_LANGUAGE` | （空＝自動偵測） | BCP-47 語言提示，例 `vi` |
+  | `TRANSLATE_VOICE_MAX_PER_HOUR` | `60` | 每個聊天每小時轉錄上限（成本護欄） |
+  | `TRANSLATE_VOICE_MAX_BYTES` | `16777216` | 單則語音大小上限 |
+  | `TRANSLATE_VOICE_TIMEOUT_MS` | `30000` | 單次轉錄逾時 |
+  | `TRANSLATE_VOICE_INCLUDE_AUDIO` | `false` | 設 `true` 連音訊檔（非語音留言）也轉錄，成本較高 |
 
 ### 更名
 - 專案 **OpenWA → OpenWA-Lab** 全面更名：docker/infra、swagger、套件名、i18n、儀表板、文件。
