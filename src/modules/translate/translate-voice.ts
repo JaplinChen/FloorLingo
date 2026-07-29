@@ -30,6 +30,8 @@ export interface VoiceConfig {
   maxBytes: number;
   maxPerHour: number;
   concurrency: number;
+  /** Known STT mishearings, `intended -> [heard variants]`. Empty = no correction block in the prompt. */
+  confusions: Map<string, string[]>;
   includeAudioFiles: boolean;
 }
 
@@ -58,12 +60,32 @@ export function voiceConfigFromEnv(): VoiceConfig {
     maxBytes: envInt('TRANSLATE_VOICE_MAX_BYTES', DEFAULTS.maxBytes),
     maxPerHour: envInt('TRANSLATE_VOICE_MAX_PER_HOUR', DEFAULTS.maxPerHour),
     concurrency: envInt('TRANSLATE_VOICE_CONCURRENCY', DEFAULTS.concurrency),
+    confusions: parseConfusions(process.env.TRANSLATE_VOICE_CONFUSIONS || ''),
     includeAudioFiles: (process.env.TRANSLATE_VOICE_INCLUDE_AUDIO || '').trim().toLowerCase() === 'true',
   };
 }
 
 export function voiceEnabled(cfg: VoiceConfig): boolean {
   return cfg.baseUrl !== '';
+}
+
+/**
+ * Parse `TRANSLATE_VOICE_CONFUSIONS` — `intended=heard1,heard2; intended2=heard3` — into the map the
+ * translation prompt is built from. Entries with no intended word or no variants are dropped rather
+ * than emitted as a half-formed rule.
+ */
+export function parseConfusions(raw: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const group of (raw || '').split(';')) {
+    const [intended, variants] = group.split('=');
+    const key = (intended || '').trim();
+    const heard = (variants || '')
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+    if (key && heard.length) out.set(key, heard);
+  }
+  return out;
 }
 
 /**

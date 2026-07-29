@@ -12,7 +12,7 @@ import { CategoryStore } from './translate-categories';
 import { TranslationMemory, type Candidate } from './translate-memory';
 import { PhraseCandidates, type PhraseCandidate } from './translate-phrase-candidates';
 import { minePhrases } from './translate-phrase-miner';
-import { BOT_MARKER, DEFAULT_PROMPT_TEMPLATE, Pair, ZH_TO_VI, detectPair, buildPrompt, fixViCasing, sleep } from './translate-lang';
+import { BOT_MARKER, DEFAULT_PROMPT_TEMPLATE, Pair, speechSourceRule, ZH_TO_VI, detectPair, buildPrompt, fixViCasing, sleep } from './translate-lang';
 import * as llm from './translate-llm-client';
 import { LlmProvider, LlmParams, LLM_PROVIDERS } from './translate-llm-client';
 import {
@@ -449,6 +449,7 @@ export class TranslateService implements OnModuleInit {
     text: string,
     chatKey: string,
     send?: (reply: string) => Promise<void>,
+    fromSpeech = false,
   ): Promise<string | null> {
     const body = text || '';
     if (!body.trim() || body.startsWith(BOT_MARKER)) return null;
@@ -467,7 +468,7 @@ export class TranslateService implements OnModuleInit {
     }
 
     return this.enqueue(async () => {
-      const translated = await this.translate(body, pair);
+      const translated = await this.translate(body, pair, fromSpeech);
       // The model can echo the source when it's not translatable natural language — don't spam a
       // verbatim copy. Only path that discards a successful LLM response, so log it or the bot looks
       // like it randomly stopped translating.
@@ -531,7 +532,9 @@ export class TranslateService implements OnModuleInit {
         `Voice transcribed in ${Date.now() - startedAt}ms (${audio.byteLength}B -> ${text.length} chars)` +
           `${conf} chat=${msg.chatId}: ${text}`,
       );
-      await this.translateAndSend(sessionId, msg.chatId, text, TRANSCRIPT_MARKER + text);
+      // fromSpeech=true: the transcript echoed to the group stays exactly as heard, but the translation
+      // is told it came from STT so it can reinterpret a loanword the sentence contradicts.
+      await this.translateAndSend(sessionId, msg.chatId, text, TRANSCRIPT_MARKER + text, true);
     } catch (err) {
       this.logger.error('Voice transcription failed', String(err));
     }
@@ -545,17 +548,23 @@ export class TranslateService implements OnModuleInit {
     chatId: string,
     body: string,
     prefixLine?: string,
+    fromSpeech = false,
   ): Promise<string | null> {
-    return this.translateInbound(body, chatId, async reply => {
-      const wait = this.nextSendAt - Date.now();
-      if (wait > 0) await sleep(wait);
-      // Keep BOT_MARKER first: it's what stops the sent-path hook re-translating the bot's own message.
-      const text = prefixLine ? BOT_MARKER + prefixLine + '\n' + reply.slice(BOT_MARKER.length) : reply;
-      const res = await this.messageService.sendText(sessionId, { chatId, text });
-      this.nextSendAt = Date.now() + this.cfg.minSendIntervalMs;
-      // Remember source↔translation keyed by the sent id so a later /bad quoting it recovers the source.
-      this.feedback.record(res?.messageId, body, reply.replace(BOT_MARKER, '').trim());
-    });
+    return this.translateInbound(
+      body,
+      chatId,
+      async reply => {
+        const wait = this.nextSendAt - Date.now();
+        if (wait > 0) await sleep(wait);
+        // Keep BOT_MARKER first: it stops the sent-path hook re-translating the bot's own message.
+        const text = prefixLine ? BOT_MARKER + prefixLine + '\n' + reply.slice(BOT_MARKER.length) : reply;
+        const res = await this.messageService.sendText(sessionId, { chatId, text });
+        this.nextSendAt = Date.now() + this.cfg.minSendIntervalMs;
+        // Remember source↔translation keyed by the sent id so a later /bad quoting it recovers the source.
+        this.feedback.record(res?.messageId, body, reply.replace(BOT_MARKER, '').trim());
+      },
+      fromSpeech,
+    );
   }
 
   // Rolling 60s window per chat. Records a hit when allowed; returns false once the group hits the cap.
@@ -594,7 +603,7 @@ export class TranslateService implements OnModuleInit {
     return run;
   }
 
-  private async translate(text: string, pair: Pair): Promise<string> {
+  private async translate(text: string, pair: Pair, fromSpeech = false): Promise<string> {
     // Resolve unknown @mention JIDs to names.
     const applied = this.senders.apply(text);
 
@@ -605,7 +614,11 @@ export class TranslateService implements OnModuleInit {
     if (exact) return pair.key === ZH_TO_VI.key ? fixViCasing(exact) : exact;
 
     // Inject only the glossary terms that actually appear in this message (see Glossary.section).
-    const prompt = buildPrompt(applied, pair, this.glossary.section(pair.key, applied), this.cfg.llmPromptTemplate);
+    // A speech-sourced message rides in on the same slot, so buildPrompt and any custom template that
+    // already honours {glossary} pick it up with no extra placeholder to keep in sync.
+    const extras =
+      this.glossary.section(pair.key, applied) + (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
+    const prompt = buildPrompt(applied, pair, extras, this.cfg.llmPromptTemplate);
 
     // Try the primary model, then each fallback in order — covers "model not loaded"/timeout on a
     // local Ollama or a rate-limited cloud model without dropping the translation. A fallback entry

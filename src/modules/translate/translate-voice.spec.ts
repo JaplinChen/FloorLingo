@@ -1,5 +1,6 @@
 import {
   HourlyCap,
+  parseConfusions,
   summarizeConfidence,
   audioExtension,
   transcribe,
@@ -17,6 +18,8 @@ const baseCfg = {
   timeoutMs: 5000,
   maxBytes: 1024,
   maxPerHour: 60,
+  concurrency: 2,
+  confusions: new Map<string, string[]>(),
   includeAudioFiles: false,
 };
 
@@ -201,5 +204,26 @@ describe('transcribe', () => {
   it('returns empty string when the backend omits text', async () => {
     global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({}) })) as unknown as typeof fetch;
     expect((await transcribe(Buffer.from('abc'), 'audio/ogg', baseCfg)).text).toBe('');
+  });
+});
+
+describe('parseConfusions', () => {
+  it('parses intended=variants groups separated by semicolons', () => {
+    expect(parseConfusions('bot=boss,Bob,bioti; file=phai')).toEqual(
+      new Map([
+        ['bot', ['boss', 'Bob', 'bioti']],
+        ['file', ['phai']],
+      ]),
+    );
+  });
+
+  it('tolerates whitespace and empty groups', () => {
+    expect(parseConfusions(' bot = boss , Bob ;; ')).toEqual(new Map([['bot', ['boss', 'Bob']]]));
+  });
+
+  it('drops half-formed entries instead of emitting a broken rule', () => {
+    expect(parseConfusions('bot=')).toEqual(new Map());
+    expect(parseConfusions('=boss')).toEqual(new Map());
+    expect(parseConfusions('')).toEqual(new Map());
   });
 });
