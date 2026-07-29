@@ -956,7 +956,9 @@
     "removed": "Đã xóa khóa, proxy đã khởi động lại",
     "empty": "Chưa có khóa nào.",
     "keyPlaceholder": "Dán khóa API",
-    "accountPlaceholder": "Tài khoản (tùy chọn)"
+    "accountPlaceholder": "Tài khoản (tùy chọn)",
+    "voiceCount": "{{count}} giọng nói",
+    "voiceHint": "Phiên âm giọng nói gọi thẳng tới nhà cung cấp — các yêu cầu này không đi qua proxy xoay vòng."
   },
   "senders": {
     "title": "Người gửi",

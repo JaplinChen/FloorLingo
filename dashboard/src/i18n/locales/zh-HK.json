@@ -965,7 +965,9 @@
     "removed": "已刪除金鑰，代理已重啟",
     "empty": "尚無金鑰。",
     "keyPlaceholder": "貼上 API 金鑰",
-    "accountPlaceholder": "帳號（選填）"
+    "accountPlaceholder": "帳號（選填）",
+    "voiceCount": "語音 {{count}}",
+    "voiceHint": "語音轉錄直連供應商，這些請求不經過輪替代理。"
   },
   "senders": {
     "title": "發送者",
