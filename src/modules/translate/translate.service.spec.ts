@@ -7,6 +7,7 @@ import { MessageService } from '../message/message.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { parseCommand, type CommandDeps } from './translate-commands';
 import { ContactService } from '../contact/contact.service';
+import { ConcurrencyLimiter } from '../../common/utils/concurrency-limiter';
 
 describe('TranslateService glossary', () => {
   let glossaryPath: string;
@@ -518,6 +519,45 @@ describe('TranslateService voice notes', () => {
     const fetchMock = mockBackends('x', 'y');
     await run(voiceMsg());
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not spend hourly budget on a note rejected for size', async () => {
+    const svc = service as unknown as { voice: { maxBytes: number }; voiceCap: { take: (k: string) => boolean } };
+    const take = jest.spyOn(svc.voiceCap, 'take');
+    svc.voice.maxBytes = 2;
+    mockBackends('Báo cáo Sếp', '報告主管');
+    await run(voiceMsg());
+    expect(take).not.toHaveBeenCalled();
+
+    // ...and a note within the limit still does.
+    svc.voice.maxBytes = 1024;
+    await run(voiceMsg());
+    expect(take).toHaveBeenCalledTimes(1);
+  });
+
+  it('bounds concurrent STT calls so a burst cannot fan out', async () => {
+    (service as unknown as { voiceLimiter: unknown }).voiceLimiter = new ConcurrencyLimiter(2);
+    let inFlight = 0;
+    let peak = 0;
+    (global as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string) => {
+      if (!String(url).includes('/audio/transcriptions')) {
+        return { ok: true, json: () => Promise.resolve({ message: { content: '報告主管' } }) } as never;
+      }
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise(r => setTimeout(r, 5));
+      inFlight--;
+      return { ok: true, json: () => Promise.resolve({ text: 'Báo cáo Sếp' }) } as never;
+    });
+
+    const svc = service as unknown as {
+      transcribeAndTranslate: (s: string, m: IncomingMessage) => Promise<void>;
+    };
+    await Promise.all([1, 2, 3, 4, 5].map(() => svc.transcribeAndTranslate('sess', voiceMsg())));
+    await (service as unknown as { queue: Promise<unknown> }).queue;
+
+    expect(peak).toBe(2);
+    expect(sent).toHaveLength(5);
   });
 
   it('enforces the hourly cap', async () => {

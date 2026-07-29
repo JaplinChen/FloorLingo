@@ -94,9 +94,11 @@ describe('voiceEnabled / voiceConfigFromEnv', () => {
     process.env.TRANSLATE_VOICE_STT_URL = 'http://x';
     process.env.TRANSLATE_VOICE_MAX_PER_HOUR = 'nope';
     process.env.TRANSLATE_VOICE_TIMEOUT_MS = '-5';
+    process.env.TRANSLATE_VOICE_CONCURRENCY = '';
     const cfg = voiceConfigFromEnv();
     expect(cfg.maxPerHour).toBe(60);
     expect(cfg.timeoutMs).toBe(30_000);
+    expect(cfg.concurrency).toBe(2);
   });
 });
 
