@@ -447,7 +447,7 @@ describe('TranslateService voice notes', () => {
       groupIds: new Set(['g@g.us']), minSendIntervalMs: 0,
     });
     Object.assign((service as unknown as { voice: Record<string, unknown> }).voice, {
-      baseUrl: 'http://stt', model: 'whisper-large-v3-turbo', apiKey: '', language: '',
+      baseUrl: 'http://stt', model: 'whisper-large-v3-turbo', apiKey: '', language: '', prompt: '',
       timeoutMs: 5000, maxBytes: 1024, maxPerHour: 60, includeAudioFiles: false,
     });
   });
@@ -456,7 +456,7 @@ describe('TranslateService voice notes', () => {
   const mockBackends = (transcript: string, translation: string) => {
     const fetchMock = jest.fn(async (url: string) =>
       String(url).includes('/audio/transcriptions')
-        ? ({ ok: true, json: async () => ({ text: transcript }) } as never)
+        ? ({ ok: true, json: async () => ({ text: transcript, segments: [{ no_speech_prob: 0.02, avg_logprob: -0.3 }] }) } as never)
         : ({ ok: true, json: async () => ({ message: { content: translation } }) } as never),
     );
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
@@ -519,6 +519,45 @@ describe('TranslateService voice notes', () => {
     const fetchMock = mockBackends('x', 'y');
     await run(voiceMsg());
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('logs the transcript on success so STT accuracy is observable', async () => {
+    const log = jest.spyOn(
+      (service as unknown as { logger: { log: (m: string) => void } }).logger,
+      'log',
+    ).mockImplementation(() => undefined);
+    mockBackends('Con bot này xịn đấy sếp', '這個機器人真厲害');
+    await run(voiceMsg());
+
+    const line = log.mock.calls.map(c => String(c[0])).find(m => m.includes('Voice transcribed'));
+    expect(line).toBeDefined();
+    expect(line).toContain('Con bot này xịn đấy sếp'); // the transcript itself, not just a count
+    expect(line).toMatch(/\d+ms/);
+    expect(line).toContain('g@g.us');
+    // Decoder confidence is recorded so a hallucination threshold can be derived from real traffic.
+    expect(line).toContain('no_speech=0.020');
+    expect(line).toContain('logprob=-0.300');
+    log.mockRestore();
+  });
+
+  it('still logs and sends when the backend returns no segment data', async () => {
+    const log = jest.spyOn(
+      (service as unknown as { logger: { log: (m: string) => void } }).logger,
+      'log',
+    ).mockImplementation(() => undefined);
+    // A backend that ignores verbose_json returns plain {text} — must degrade, not crash.
+    (global as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string) =>
+      String(url).includes('/audio/transcriptions')
+        ? { ok: true, json: () => Promise.resolve({ text: 'Báo cáo Sếp' }) }
+        : { ok: true, json: () => Promise.resolve({ message: { content: '報告主管' } }) },
+    );
+    await run(voiceMsg());
+
+    const line = log.mock.calls.map(c => String(c[0])).find(m => m.includes('Voice transcribed'));
+    expect(line).toBeDefined();
+    expect(line).not.toContain('no_speech');
+    expect(sent).toHaveLength(1);
+    log.mockRestore();
   });
 
   it('does not spend hourly budget on a note rejected for size', async () => {

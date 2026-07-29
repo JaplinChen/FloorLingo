@@ -10,6 +10,22 @@ export interface VoiceConfig {
   apiKey: string;
   model: string;
   language: string;
+  /**
+   * Whisper vocabulary bias — DOUBLE-EDGED, default empty on purpose.
+   *
+   * The problem it targets is real: Vietnamese speakers pronounce English loanwords with Vietnamese
+   * phonology (unreleased final stops, no English stress), so the model snaps them to a commoner
+   * English word — observed "bot" -> "boss" and "bot" -> "Bob", which flips the sentence's meaning
+   * before translation ever sees it.
+   *
+   * But whisper does not treat this as a whitelist: the string is fed to the decoder as PRECEDING
+   * CONTEXT. A comma-separated word list is unnatural context and measurably raises the odds of the
+   * decoder wandering into training-set boilerplate — with a list set, short clips came back as
+   * "Hãy đăng ký kênh để ủng hộ kênh..." (the YouTube "subscribe to the channel" filler), unrelated
+   * to the audio. Listed words do get favoured; the sentence around them may not survive. Leave empty
+   * unless a measured comparison shows otherwise.
+   */
+  prompt: string;
   timeoutMs: number;
   maxBytes: number;
   maxPerHour: number;
@@ -37,6 +53,7 @@ export function voiceConfigFromEnv(): VoiceConfig {
     apiKey: (process.env.TRANSLATE_VOICE_STT_KEY || '').trim(),
     model: (process.env.TRANSLATE_VOICE_MODEL || DEFAULTS.model).trim(),
     language: (process.env.TRANSLATE_VOICE_LANGUAGE || '').trim(),
+    prompt: (process.env.TRANSLATE_VOICE_PROMPT || '').trim(),
     timeoutMs: envInt('TRANSLATE_VOICE_TIMEOUT_MS', DEFAULTS.timeoutMs),
     maxBytes: envInt('TRANSLATE_VOICE_MAX_BYTES', DEFAULTS.maxBytes),
     maxPerHour: envInt('TRANSLATE_VOICE_MAX_PER_HOUR', DEFAULTS.maxPerHour),
@@ -111,18 +128,52 @@ export class HourlyCap {
   }
 }
 
+/** Per-segment decoder confidence, the numbers a hallucinated span shows up in. */
+export interface TranscriptionConfidence {
+  /** Highest `no_speech_prob` across segments — the model's own "nobody was talking here". */
+  maxNoSpeech: number;
+  /** Lowest `avg_logprob` across segments — the least-confident span it emitted. */
+  minLogprob: number;
+  segments: number;
+}
+
+export interface Transcription {
+  text: string;
+  /** Null when the backend returned plain `json` (no segment data) rather than `verbose_json`. */
+  confidence: TranscriptionConfidence | null;
+}
+
 /**
- * One call to an OpenAI-compatible `/v1/audio/transcriptions`. Returns the transcript, or '' when the
- * backend produced nothing usable. Throws on transport/HTTP failure so the caller can log and drop —
- * this runs off the receive pipeline, so a throw never blocks message delivery.
+ * Reduce the segment array to the worst value of each metric. Whisper invents filler ("Cảm ơn.",
+ * "Thank you") over trailing silence, and such a segment betrays itself with a high no_speech_prob or
+ * a poor avg_logprob — so the worst segment, not the average, is the signal worth keeping.
  */
-export async function transcribe(audio: Buffer, mimetype: string, cfg: VoiceConfig): Promise<string> {
+export function summarizeConfidence(segments: unknown): TranscriptionConfidence | null {
+  if (!Array.isArray(segments) || segments.length === 0) return null;
+  const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+  const noSpeech = segments.map(s => num((s as { no_speech_prob?: unknown })?.no_speech_prob, 0));
+  const logprob = segments.map(s => num((s as { avg_logprob?: unknown })?.avg_logprob, 0));
+  return { maxNoSpeech: Math.max(...noSpeech), minLogprob: Math.min(...logprob), segments: segments.length };
+}
+
+/**
+ * One call to an OpenAI-compatible `/v1/audio/transcriptions`. Returns the transcript plus the decoder
+ * confidence when the backend supplies segments. Throws on transport/HTTP failure so the caller can log
+ * and drop — this runs off the receive pipeline, so a throw never blocks message delivery.
+ */
+export async function transcribe(audio: Buffer, mimetype: string, cfg: VoiceConfig): Promise<Transcription> {
   const form = new FormData();
   const bytes = new Uint8Array(audio);
   form.append('file', new Blob([bytes], { type: mimetype }), `audio.${audioExtension(mimetype)}`);
   form.append('model', cfg.model);
-  form.append('response_format', 'json');
+  // verbose_json for the per-segment confidence; `text` is present in both shapes, so a backend that
+  // ignores the richer format still parses — only `confidence` comes back null.
+  form.append('response_format', 'verbose_json');
+  // Explicit 0 rather than relying on the backend default: greedy decoding leaves the model the least
+  // room to invent. OpenAI/Groq already default to 0, so this mainly pins a self-hosted backend.
+  form.append('temperature', '0');
   if (cfg.language) form.append('language', cfg.language);
+  if (cfg.prompt) form.append('prompt', cfg.prompt);
 
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), cfg.timeoutMs);
@@ -139,8 +190,11 @@ export async function transcribe(audio: Buffer, mimetype: string, cfg: VoiceConf
       const detail = (await res.text().catch(() => '')).slice(0, 200);
       throw new Error(`STT ${res.status}: ${detail}`);
     }
-    const json = (await res.json()) as { text?: unknown };
-    return typeof json.text === 'string' ? json.text.trim() : '';
+    const json = (await res.json()) as { text?: unknown; segments?: unknown };
+    return {
+      text: typeof json.text === 'string' ? json.text.trim() : '',
+      confidence: summarizeConfidence(json.segments),
+    };
   } finally {
     clearTimeout(timer);
   }
