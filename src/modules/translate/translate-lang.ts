@@ -76,6 +76,33 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   '===',
 ].join('\n');
 
+/**
+ * Extra prompt block for text that came from speech-to-text rather than typing.
+ *
+ * Whisper mishears English loanwords spoken with Vietnamese phonology and does it CONFIDENTLY — the
+ * wrong transcripts scored BETTER decoder logprobs than the correct one, so no confidence threshold
+ * catches them. Nor does asking the model to spot "words that don't fit": the mishearing produces a
+ * perfectly coherent sentence ("Boss, can you translate at this speed?" reads fine), so there is
+ * nothing to notice. Measured: a generic "reinterpret what seems wrong" instruction fixed 0 of 2 real
+ * cases, while naming the actual confusion fixed 2 of 3.
+ *
+ * Hence pairs, not advice — `bot=boss,Bob,bioti` says "these spellings mean bot here". Returns '' for
+ * an empty map so the prompt carries nothing when nothing is configured.
+ */
+export function speechSourceRule(confusions: Map<string, string[]>): string {
+  if (confusions.size === 0) return '';
+  const lines = [...confusions].map(([intended, heard]) => `- ${heard.join('、')} → ${intended}`);
+  return [
+    '',
+    '注意：上方內容為語音辨識結果，並非使用者輸入的文字。',
+    '越南語使用者以越南語發音唸英文借詞時，辨識器常誤判為另一個英文字。已知的誤判對照：',
+    ...lines,
+    '若句中出現左側的字，且依上下文指的是右側的事物，請理解為右側後再翻譯。',
+    '其餘內容一律照字面翻譯：不要改寫、不要補充、不要修正沒有問題的地方。',
+    '',
+  ].join('\n');
+}
+
 /** Build the translation prompt for the local model, injecting the glossary section for this pair. */
 export function buildPrompt(text: string, pair: Pair, glossarySection: string, template?: string): string {
   return (template || DEFAULT_PROMPT_TEMPLATE)

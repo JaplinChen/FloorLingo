@@ -449,6 +449,7 @@ describe('TranslateService voice notes', () => {
     Object.assign((service as unknown as { voice: Record<string, unknown> }).voice, {
       baseUrl: 'http://stt', model: 'whisper-large-v3-turbo', apiKey: '', language: '', prompt: '',
       timeoutMs: 5000, maxBytes: 1024, maxPerHour: 60, includeAudioFiles: false,
+      confusions: new Map([['bot', ['boss', 'Bob', 'bioti']]]),
     });
   });
 
@@ -519,6 +520,32 @@ describe('TranslateService voice notes', () => {
     const fetchMock = mockBackends('x', 'y');
     await run(voiceMsg());
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('tells the translating model the text came from speech — and only for the voice path', async () => {
+    const prompts: string[] = [];
+    (global as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string, init: { body: string }) => {
+      if (String(url).includes('/audio/transcriptions')) {
+        return { ok: true, json: () => Promise.resolve({ text: 'Con Boss này xịn đấy sếp' }) };
+      }
+      prompts.push(JSON.parse(init.body).messages[0].content as string);
+      return { ok: true, json: () => Promise.resolve({ message: { content: '這個機器人真厲害' } }) };
+    });
+
+    await run(voiceMsg());
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('語音辨識結果');
+    expect(prompts[0]).toContain('boss、Bob、bioti → bot'); // the named confusion, not generic advice
+    expect(prompts[0]).toContain('Con Boss này xịn đấy sếp'); // the raw transcript, not a rewrite
+
+    // A typed message must NOT carry the hint, or the model gets licence to rewrite what was typed.
+    await (service as unknown as {
+      onMessage: (c: unknown, s: boolean) => Promise<unknown>;
+    }).onMessage({ data: { ...voiceMsg(), type: 'text', body: 'Báo cáo Sếp', media: undefined }, sessionId: 'sess' }, false);
+    await (service as unknown as { queue: Promise<unknown> }).queue;
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).not.toContain('語音辨識結果');
   });
 
   it('logs the transcript on success so STT accuracy is observable', async () => {
