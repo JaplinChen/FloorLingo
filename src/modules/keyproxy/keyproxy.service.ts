@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { DockerService } from '../docker/docker.service';
 import { createLogger } from '../../common/services/logger.service';
 import { KeyProxyEnvStore } from './keyproxy-env.store';
+import { keySuffix, sttUsageFor } from './stt-usage.store';
 
 // Compose service name / label of the key-rotation proxy (see docker-compose.yml).
 const PROXY_SERVICE = 'llm-key-proxy';
@@ -15,6 +16,8 @@ export interface KeyStatus {
   status: string; // 'active' | 'cooldown' | 'unknown' (as reported by the proxy)
   requestCount: number;
   failureCount: number;
+  /** Subset of requestCount that went straight to the provider (voice transcription), not via the proxy. */
+  voiceRequestCount: number;
 }
 
 // quota-stats shape (only the fields we read). NOTE: each credential also carries `full_path` — the
@@ -26,6 +29,14 @@ interface QuotaCred {
 }
 interface QuotaStats {
   providers?: Record<string, { credentials?: Record<string, QuotaCred> }>;
+}
+
+/** What the proxy itself knows about a key. Deliberately NOT Omit<KeyStatus,...>: KeyStatus also
+ *  carries counts the proxy cannot see (direct STT calls), which this map must never claim to hold. */
+interface ProxyKeyStatus {
+  status: string;
+  requestCount: number;
+  failureCount: number;
 }
 
 const mask = (key: string): string => '…' + key.slice(-4);
@@ -42,14 +53,21 @@ export class KeyProxyService {
     const statusByKey = await this.fetchStatus(proxyApiKey);
     return keys.map(k => {
       const s = statusByKey.get(k.key);
+      // Voice transcription calls the provider directly (the proxy has no audio route), so those
+      // requests are invisible to quota-stats. Fold them in, or a key busy doing STT reads as unused.
+      const stt = sttUsageFor(keySuffix(k.key));
+      const proxyRequests = s?.requestCount ?? 0;
       return {
         provider: k.provider,
         index: k.index,
         account: k.account,
         masked: mask(k.key),
-        status: s?.status ?? 'unknown',
-        requestCount: s?.requestCount ?? 0,
-        failureCount: s?.failureCount ?? 0,
+        // A key the proxy has never routed through reports no status; STT traffic still proves it works.
+        status: s?.status ?? (stt.requests > 0 ? 'active' : 'unknown'),
+        requestCount: proxyRequests + stt.requests,
+        failureCount: (s?.failureCount ?? 0) + stt.failures,
+        // Broken out so the UI can say how much of the total never went through the proxy.
+        voiceRequestCount: stt.requests,
       };
     });
   }
@@ -84,8 +102,8 @@ export class KeyProxyService {
     }
   }
 
-  private async fetchStatus(proxyApiKey: string): Promise<Map<string, Omit<KeyStatus, 'provider' | 'index' | 'account' | 'masked'>>> {
-    const out = new Map<string, Omit<KeyStatus, 'provider' | 'index' | 'account' | 'masked'>>();
+  private async fetchStatus(proxyApiKey: string): Promise<Map<string, ProxyKeyStatus>> {
+    const out = new Map<string, ProxyKeyStatus>();
     try {
       const res = await fetch(`${proxyUrl()}/v1/quota-stats`, {
         headers: proxyApiKey ? { authorization: `Bearer ${proxyApiKey}` } : {},

@@ -956,7 +956,9 @@
     "removed": "Key removed, proxy restarted",
     "empty": "No keys yet.",
     "keyPlaceholder": "Paste API key",
-    "accountPlaceholder": "Account (optional)"
+    "accountPlaceholder": "Account (optional)",
+    "voiceCount": "{{count}} voice",
+    "voiceHint": "Voice transcription calls the provider directly — these requests never pass through the rotation proxy."
   },
   "senders": {
     "title": "Senders",

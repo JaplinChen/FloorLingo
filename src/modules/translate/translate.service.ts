@@ -29,6 +29,7 @@ import {
 import { parseCommand, type CommandContext } from './translate-commands';
 import { HourlyCap, VoiceConfig, transcribe, voiceConfigFromEnv, voiceEnabled } from './translate-voice';
 import { ConcurrencyLimiter } from '../../common/utils/concurrency-limiter';
+import { recordSttCall } from '../keyproxy/stt-usage.store';
 
 export { LLM_PROVIDERS } from './translate-llm-client';
 export type { LlmProvider, LlmParams } from './translate-llm-client';
@@ -510,9 +511,18 @@ export class TranslateService implements OnModuleInit {
       // The hourly cap bounds VOLUME, not concurrency: a burst of notes would otherwise fire that many
       // parallel STT requests — fine for Groq, but a self-hosted CPU whisper thrashes and cloud tiers 429.
       const startedAt = Date.now();
-      const { text, confidence } = await this.voiceLimiter.run(() =>
-        transcribe(audio, media.mimetype, this.voice),
-      );
+      // Count the call whichever way it goes: these requests bypass the key-rotation proxy entirely,
+      // so this store is the ONLY place the STT key's usage is visible on the LLM Keys page.
+      const { text, confidence } = await this.voiceLimiter
+        .run(() => transcribe(audio, media.mimetype, this.voice))
+        .then(r => {
+          recordSttCall(this.voice.apiKey, true);
+          return r;
+        })
+        .catch(err => {
+          recordSttCall(this.voice.apiKey, false);
+          throw err;
+        });
       if (!text) {
         this.logger.warn(`Voice transcript empty chat=${msg.chatId}`);
         return;

@@ -183,7 +183,15 @@ export function KeyProxy() {
                   <td>
                     <span className={`keyproxy-badge keyproxy-badge-${k.status}`}>{k.status}</span>
                   </td>
-                  <td className="keyproxy-num">{k.requestCount}</td>
+                  <td className="keyproxy-num">
+                    {k.requestCount}
+                    {k.voiceRequestCount > 0 && (
+                      <span className="keyproxy-muted" title={t('keyproxy.voiceHint')}>
+                        {' '}
+                        ({t('keyproxy.voiceCount', { count: k.voiceRequestCount })})
+                      </span>
+                    )}
+                  </td>
                   <td className="keyproxy-num">{k.failureCount}</td>
                   {canWrite && (
                     <td>

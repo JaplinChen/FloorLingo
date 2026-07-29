@@ -411,6 +411,8 @@ export interface KeyStatus {
   status: string;
   requestCount: number;
   failureCount: number;
+  /** Part of requestCount that bypassed the proxy (voice transcription calls the provider directly). */
+  voiceRequestCount: number;
 }
 
 export const keyProxyApi = {

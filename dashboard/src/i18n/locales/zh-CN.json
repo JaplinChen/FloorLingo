@@ -965,7 +965,9 @@
     "removed": "已删除密钥，代理已重启",
     "empty": "暂无密钥。",
     "keyPlaceholder": "粘贴 API 密钥",
-    "accountPlaceholder": "账号（选填）"
+    "accountPlaceholder": "账号（选填）",
+    "voiceCount": "语音 {{count}}",
+    "voiceHint": "语音转录直连供应商，这些请求不经过轮替代理。"
   },
   "senders": {
     "title": "发送者",
