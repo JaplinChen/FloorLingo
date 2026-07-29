@@ -46,6 +46,7 @@
   | `TRANSLATE_VOICE_STT_KEY` | （空） | Bearer 金鑰；自架服務可留空 |
   | `TRANSLATE_VOICE_MODEL` | `whisper-large-v3-turbo` | 自架 faster-whisper 請改成 `small` 等本地模型名 |
   | `TRANSLATE_VOICE_LANGUAGE` | （空＝自動偵測） | BCP-47 語言提示，例 `vi` |
+  | `TRANSLATE_VOICE_PROMPT` | （空，**建議維持**） | 詞彙偏置清單（逗號分隔）。詳見下方警告 |
   | `TRANSLATE_VOICE_MAX_PER_HOUR` | `60` | 每個聊天每小時轉錄上限（成本護欄） |
   | `TRANSLATE_VOICE_CONCURRENCY` | `2` | 同時進行的轉錄數。自架 CPU whisper 建議 `1`；雲端服務可調高 |
   | `TRANSLATE_VOICE_MAX_BYTES` | `16777216` | 單則語音大小上限 |
@@ -53,6 +54,16 @@
   | `TRANSLATE_VOICE_INCLUDE_AUDIO` | `false` | 設 `true` 連音訊檔（非語音留言）也轉錄，成本較高 |
 
   注意：`llm-key-proxy` **不能**用於此處——它只代理 `/v1/chat/completions`、`/v1/messages`、`/v1/embeddings`，沒有 `/v1/audio/transcriptions`。語音需直連 Groq／OpenAI 或自架服務。
+
+  **`TRANSLATE_VOICE_PROMPT` 請謹慎使用。** whisper 的 prompt 不是詞彙白名單，而是被當成「前文脈絡」餵給解碼器。填一串逗號分隔的詞是不自然的前文，會提高模型飄進訓練資料罐頭句的機率。實測觀察到的失敗樣態：填入詞表後，數則短音檔被轉成 `Hãy đăng ký kênh để ủng hộ kênh...`（YouTube 字幕的「請訂閱頻道」罐頭句），與實際內容完全無關。清單裡的詞確實會被優先採用，但代價是整句可能飄掉。預設留空。
+
+  **短音檔（3–6 秒）是 whisper 最脆弱的場景**，上下文不足時它傾向用高頻訓練句填補。每次轉錄的日誌都會附上模型自身的信心值，可用來判斷該則是否可疑：
+
+  ```
+  Voice transcribed in 402ms (15124B -> 63 chars) no_speech=0.021 logprob=-0.284 seg=2 chat=...: <文字>
+  ```
+
+  `no_speech` 偏高代表模型認為該段其實沒人說話，`logprob` 偏低代表輸出信心不足——幻覺片段通常至少命中其一。目前這兩個數值**只記錄不過濾**，門檻需由實際流量累積後再訂。
 
 ### 更名
 - 專案 **OpenWA → OpenWA-Lab** 全面更名：docker/infra、swagger、套件名、i18n、儀表板、文件。
