@@ -181,7 +181,10 @@ export class TranslateService implements OnModuleInit {
     if (this.cfg.includeFromMe) this.registerSentHook();
 
     if (voiceEnabled(this.voice)) {
-      this.logger.log(`Voice transcription enabled: model=${this.voice.model}, stt=${this.voice.baseUrl}`);
+      this.logger.log(
+        `Voice transcription enabled: model=${this.voice.model}, stt=${this.voice.baseUrl}` +
+          `, prompt=${this.voice.prompt ? `${this.voice.prompt.length} chars` : 'none'}`,
+      );
     }
 
     this.logger.log(
@@ -505,11 +508,29 @@ export class TranslateService implements OnModuleInit {
       }
       // The hourly cap bounds VOLUME, not concurrency: a burst of notes would otherwise fire that many
       // parallel STT requests — fine for Groq, but a self-hosted CPU whisper thrashes and cloud tiers 429.
-      const text = await this.voiceLimiter.run(() => transcribe(audio, media.mimetype, this.voice));
+      const startedAt = Date.now();
+      const { text, confidence } = await this.voiceLimiter.run(() =>
+        transcribe(audio, media.mimetype, this.voice),
+      );
       if (!text) {
         this.logger.warn(`Voice transcript empty chat=${msg.chatId}`);
         return;
       }
+      // Log the SUCCESS too, not just failures: without it a working voice path is indistinguishable
+      // from a silent one in the logs, and there's no way to tell whether a prompt/model change helped.
+      // The transcript itself is included — it's the only place STT accuracy is observable.
+      //
+      // The confidence numbers are RECORDED, NOT ACTED ON. Whisper invents filler over trailing silence
+      // and such a span shows a high no_speech / poor logprob, so these are the levers a future filter
+      // would use — but the threshold has to come from real traffic, not a number picked up front.
+      const conf = confidence
+        ? ` no_speech=${confidence.maxNoSpeech.toFixed(3)} logprob=${confidence.minLogprob.toFixed(3)}` +
+          ` seg=${confidence.segments}`
+        : '';
+      this.logger.log(
+        `Voice transcribed in ${Date.now() - startedAt}ms (${audio.byteLength}B -> ${text.length} chars)` +
+          `${conf} chat=${msg.chatId}: ${text}`,
+      );
       await this.translateAndSend(sessionId, msg.chatId, text, TRANSCRIPT_MARKER + text);
     } catch (err) {
       this.logger.error('Voice transcription failed', String(err));

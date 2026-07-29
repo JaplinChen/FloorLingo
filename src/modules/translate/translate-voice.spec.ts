@@ -1,5 +1,6 @@
 import {
   HourlyCap,
+  summarizeConfidence,
   audioExtension,
   transcribe,
   transcriptionsUrl,
@@ -12,6 +13,7 @@ const baseCfg = {
   apiKey: 'k',
   model: 'whisper-large-v3-turbo',
   language: '',
+  prompt: '',
   timeoutMs: 5000,
   maxBytes: 1024,
   maxPerHour: 60,
@@ -102,6 +104,28 @@ describe('voiceEnabled / voiceConfigFromEnv', () => {
   });
 });
 
+describe('summarizeConfidence', () => {
+  it('keeps the WORST value of each metric, not the average', () => {
+    // A clean opening segment must not average away a hallucinated one — that is the whole point.
+    const out = summarizeConfidence([
+      { no_speech_prob: 0.01, avg_logprob: -0.2 },
+      { no_speech_prob: 0.87, avg_logprob: -1.4 },
+    ]);
+    expect(out).toEqual({ maxNoSpeech: 0.87, minLogprob: -1.4, segments: 2 });
+  });
+
+  it('is null when the backend returned no segments (plain json format)', () => {
+    expect(summarizeConfidence(undefined)).toBeNull();
+    expect(summarizeConfidence([])).toBeNull();
+    expect(summarizeConfidence('nonsense')).toBeNull();
+  });
+
+  it('treats missing/garbage per-segment numbers as neutral instead of NaN', () => {
+    const out = summarizeConfidence([{ avg_logprob: -0.5 }, { no_speech_prob: 'x', avg_logprob: null }]);
+    expect(out).toEqual({ maxNoSpeech: 0, minLogprob: -0.5, segments: 2 });
+  });
+});
+
 describe('transcribe', () => {
   const realFetch = global.fetch;
   afterEach(() => {
@@ -117,13 +141,29 @@ describe('transcribe', () => {
 
     const out = await transcribe(Buffer.from('abc'), 'audio/ogg; codecs=opus', baseCfg);
 
-    expect(out).toBe('xin chào');
+    expect(out.text).toBe('xin chào');
     expect(captured!.url).toBe('https://api.groq.com/openai/v1/audio/transcriptions');
     const form = captured!.init.body as FormData;
     expect(form.get('model')).toBe('whisper-large-v3-turbo');
     expect(form.get('language')).toBeNull(); // blank language must not be sent (auto-detect)
+    expect(form.get('response_format')).toBe('verbose_json');
+    expect(form.get('temperature')).toBe('0');
     expect((form.get('file') as File).name).toBe('audio.ogg');
     expect((captured!.init.headers as Record<string, string>).Authorization).toBe('Bearer k');
+  });
+
+  it('sends the vocabulary-bias prompt when configured, and omits it when blank', async () => {
+    let form: FormData | null = null;
+    global.fetch = jest.fn(async (_url: string, init: RequestInit) => {
+      form = init.body as FormData;
+      return { ok: true, json: async () => ({ text: 'Con bot này xịn' }) };
+    }) as unknown as typeof fetch;
+
+    await transcribe(Buffer.from('abc'), 'audio/ogg', baseCfg);
+    expect(form!.get('prompt')).toBeNull();
+
+    await transcribe(Buffer.from('abc'), 'audio/ogg', { ...baseCfg, prompt: 'WABOT, bot, file' });
+    expect(form!.get('prompt')).toBe('WABOT, bot, file');
   });
 
   it('sends a language hint when configured', async () => {
@@ -160,6 +200,6 @@ describe('transcribe', () => {
 
   it('returns empty string when the backend omits text', async () => {
     global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({}) })) as unknown as typeof fetch;
-    expect(await transcribe(Buffer.from('abc'), 'audio/ogg', baseCfg)).toBe('');
+    expect((await transcribe(Buffer.from('abc'), 'audio/ogg', baseCfg)).text).toBe('');
   });
 });
