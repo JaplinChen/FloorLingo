@@ -19,10 +19,12 @@ describe('SenderDirectory', () => {
     expect(reloaded.entries()).toEqual([{ jid: '200859128434777', name: '總經理', count: 0 }]);
   });
 
-  it('replaces @<jid> tokens in text with @<name>', () => {
+  it('replaces @<jid> tokens with the bare name and drops @ from resolved mentions', () => {
     const s = new SenderDirectory(file);
     s.add('200859128434777', '總經理');
-    expect(s.apply('報告給@200859128434777以及其他同事')).toBe('報告給@總經理以及其他同事');
+    expect(s.apply('報告給@200859128434777以及其他同事')).toBe('報告給總經理以及其他同事');
+    expect(s.apply('@阿娥 等等記得帶顧問')).toBe('阿娥 等等記得帶顧問'); // adapter already resolved
+    expect(s.apply('hi @999888777')).toBe('hi @999888777'); // unknown jid keeps @
   });
 
   it('markUsed counts mentioned jids in the table (any dialect) and persists, ignoring unknown jids', () => {
@@ -45,7 +47,7 @@ describe('SenderDirectory', () => {
     ]);
     expect(s.apply('hi @225821461577953')).toBe('hi @225821461577953'); // pending entry never replaces
     expect(s.learn('225821461577953@lid', 'Minh Kien')).toBe(true); // pending filled when they speak
-    expect(s.apply('hi @225821461577953')).toBe('hi @Minh Kien');
+    expect(s.apply('hi @225821461577953')).toBe('hi Minh Kien');
   });
 
   it('removes by any JID form', () => {
@@ -83,7 +85,7 @@ describe('SenderDirectory', () => {
     const s = new SenderDirectory(file);
     s.add('111', '總經理');
     s.add('222', '阿明');
-    expect(s.apply('報告給@111')).toBe('報告給@總經理');
+    expect(s.apply('報告給@111')).toBe('報告給總經理');
     expect(s.entries()).toEqual([
       { jid: '111', name: '總經理', count: 0 },
       { jid: '222', name: '阿明', count: 0 },

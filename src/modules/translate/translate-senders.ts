@@ -137,15 +137,20 @@ export class SenderDirectory {
     }
   }
 
-  /** Replace every known `@<jid>` token in the text with `@<name>` (counting lives in markUsed). */
+  /**
+   * Replace every known `@<jid>` token with the bare name, and drop the `@` from mentions the adapter
+   * already resolved (`@Alice` -> `Alice`) — the translated message reads as a name, not a mention.
+   * Raw `@<digits>` of unknown senders keeps its `@` so it stays visible as unresolved.
+   * (Usage counting lives in markUsed.)
+   */
   apply(text: string): string {
     if (!text) return text;
     let out = text;
     for (const [jid, name] of Object.entries(this.data)) {
       if (!name || !out.includes(`@${jid}`)) continue; // empty name = pending entry, don't replace
-      out = out.split(`@${jid}`).join(`@${name}`);
+      out = out.split(`@${jid}`).join(name);
     }
-    return out;
+    return out.replace(/(^|\s)@(?=\D)/g, '$1');
   }
 
 }
