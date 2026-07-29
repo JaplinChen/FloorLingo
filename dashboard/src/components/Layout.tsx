@@ -85,6 +85,31 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
     };
   }, [isMobileOpen]);
 
+  useEffect(() => {
+    const saved = parseInt(localStorage.getItem('sidebarWidth') || '', 10);
+    if (saved >= 180 && saved <= 480) document.documentElement.style.setProperty('--sidebar-w', `${saved}px`);
+  }, []);
+
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    document.body.classList.add('sidebar-resizing');
+    const onMove = (ev: MouseEvent) => {
+      const w = Math.min(480, Math.max(180, isRtl ? window.innerWidth - ev.clientX : ev.clientX));
+      document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
+    };
+    const onUp = () => {
+      document.body.classList.remove('sidebar-resizing');
+      localStorage.setItem(
+        'sidebarWidth',
+        String(parseInt(document.documentElement.style.getPropertyValue('--sidebar-w'), 10) || 260)
+      );
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
@@ -120,6 +145,8 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
             </div>
           )}
         </div>
+
+        {!isMobile && !isCollapsed && <div className="sidebar-resizer" onMouseDown={startResize} />}
 
         {!isMobile && (
           <button
