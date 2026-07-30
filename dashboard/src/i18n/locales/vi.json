@@ -958,7 +958,10 @@
     "keyPlaceholder": "Dán khóa API",
     "accountPlaceholder": "Tài khoản (tùy chọn)",
     "voiceCount": "{{count}} giọng nói",
-    "voiceHint": "Phiên âm giọng nói gọi thẳng tới nhà cung cấp — các yêu cầu này không đi qua proxy xoay vòng."
+    "voiceHint": "Phiên âm giọng nói gọi thẳng tới nhà cung cấp — các yêu cầu này không đi qua proxy xoay vòng.",
+    "quota": "Hạn mức",
+    "quotaHint": "Nhà cung cấp báo ở lần gọi gần nhất: {{usedRequests}}/{{limitRequests}} yêu cầu, {{usedAudio}}/{{limitAudio}} giây âm thanh. Giây âm thanh thường hết trước.",
+    "quotaNoneHint": "Nhà cung cấp này không gửi header giới hạn nên không biết trần. Không hiển thị còn hơn đoán."
   },
   "senders": {
     "title": "Người gửi",

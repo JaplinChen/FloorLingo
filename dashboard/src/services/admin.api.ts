@@ -413,6 +413,13 @@ export interface KeyStatus {
   failureCount: number;
   /** Part of requestCount that bypassed the proxy (voice transcription calls the provider directly). */
   voiceRequestCount: number;
+  /** Provider-reported ceiling, or null when the provider reports none (then show a bare count). */
+  quota: {
+    limitRequests: number;
+    remainingRequests: number;
+    limitAudioSeconds: number;
+    remainingAudioSeconds: number;
+  } | null;
 }
 
 export const keyProxyApi = {

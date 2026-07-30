@@ -958,7 +958,10 @@
     "keyPlaceholder": "Paste API key",
     "accountPlaceholder": "Account (optional)",
     "voiceCount": "{{count}} voice",
-    "voiceHint": "Voice transcription calls the provider directly — these requests never pass through the rotation proxy."
+    "voiceHint": "Voice transcription calls the provider directly — these requests never pass through the rotation proxy.",
+    "quota": "Quota",
+    "quotaHint": "Reported by the provider on the last call: {{usedRequests}}/{{limitRequests}} requests, {{usedAudio}}/{{limitAudio}} audio seconds. Audio seconds usually run out first.",
+    "quotaNoneHint": "This provider sends no rate-limit headers, so no ceiling is known. No number is shown rather than a guessed one."
   },
   "senders": {
     "title": "Senders",

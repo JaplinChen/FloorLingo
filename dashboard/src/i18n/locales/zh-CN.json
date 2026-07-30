@@ -967,7 +967,10 @@
     "keyPlaceholder": "粘贴 API 密钥",
     "accountPlaceholder": "账号（选填）",
     "voiceCount": "语音 {{count}}",
-    "voiceHint": "语音转录直连供应商，这些请求不经过轮替代理。"
+    "voiceHint": "语音转录直连供应商，这些请求不经过轮替代理。",
+    "quota": "配额",
+    "quotaHint": "供应商于上次调用回报：请求 {{usedRequests}}/{{limitRequests}}，音频秒数 {{usedAudio}}/{{limitAudio}}。音频秒数通常先用完。",
+    "quotaNoneHint": "此供应商不回传配额标头，无从得知上限。宁可不显示，也不猜测数字。"
   },
   "senders": {
     "title": "发送者",
