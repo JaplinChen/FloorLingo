@@ -39,8 +39,11 @@ jobs:
       - name: Type-check full program (including specs)
         run: npx tsc --noEmit -p tsconfig.json
 
+      # format:check, NOT `format -- --check`: the `format` script is `prettier --write`, so the extra
+      # flag landed after --write and prettier wrote anyway — the step mutated the checkout and could
+      # never fail. It reported "pass" on 14 files that were not formatted.
       - name: Check formatting
-        run: npm run format -- --check
+        run: npm run format:check
 
       - name: Check version consistency (docs track package.json)
         run: npm run check:versions

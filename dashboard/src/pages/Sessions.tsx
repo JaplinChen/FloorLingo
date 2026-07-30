@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Plus, QrCode, Search, Filter, AlertCircle } from 'lucide-react';
 import type { Session } from '../services/api';
@@ -38,8 +38,13 @@ export function Sessions() {
   });
   const { sessions, loading, error, sessionsRef, fetchSessions } = controller;
   const qr = useQrPairing({ sessions, sessionsRef, fetchSessions });
-  showQrRef.current = qr.handleShowQR;
-  closeQrRef.current = qr.closeForSession;
+  // In an effect, not during render: both refs are only ever dereferenced from an event handler or a
+  // poll callback, so committing them after paint is soon enough, and writing a ref during render is
+  // not safe under concurrent rendering (the render may be discarded).
+  useEffect(() => {
+    showQrRef.current = qr.handleShowQR;
+    closeQrRef.current = qr.closeForSession;
+  }, [qr.handleShowQR, qr.closeForSession]);
 
   const filteredSessions = sessions.filter(s => {
     const matchesSearch =

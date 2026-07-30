@@ -39,6 +39,20 @@ interface Props<T> {
   hideTitle?: boolean;
 }
 
+// Right-edge drag handle for a resizable column; stops click/mousedown from reaching the sort button.
+// Module level, not nested in the table component: a component created during render is a NEW type on
+// every render, so React unmounts and remounts the subtree instead of updating it (react-hooks/static-components).
+function ResizeHandle({ col, onStart }: { col: string; onStart: (col: string) => (e: React.MouseEvent) => void }) {
+  return (
+    <span
+      className="etable-resize-handle"
+      aria-hidden="true"
+      onMouseDown={onStart(col)}
+      onClick={e => e.stopPropagation()}
+    />
+  );
+}
+
 export function EditableKeyValueTable<T>({
   rows,
   titleLabel,
@@ -70,16 +84,6 @@ export function EditableKeyValueTable<T>({
   const { ref: panelRef, startResize } = useResizableCol(resizeStorageKey);
   const hasCat = !!categoryOptions && !!rowCategory;
   const catLabelOf = (v: string) => categoryOptions?.find(o => o.value === v)?.label ?? v;
-
-  // Right-edge drag handle for a resizable column; stops click/mousedown from reaching the sort button.
-  const ResizeHandle = ({ col }: { col: string }) => (
-    <span
-      className="etable-resize-handle"
-      aria-hidden="true"
-      onMouseDown={startResize(col)}
-      onClick={e => e.stopPropagation()}
-    />
-  );
 
   // Category filter sits before search/sort: narrow the row set, then the hook searches+sorts+pages it.
   // '__all__' is the no-filter sentinel so an empty-string option can still mean the "未設" bucket.
@@ -221,21 +225,21 @@ export function EditableKeyValueTable<T>({
         <div className={`etable-cols${hasCat ? ' etable-cols--cat' : ''}`}>
           <button className="etable-col-sort" data-col="key" onClick={() => toggleSort('key')}>
             {keyLabel}{sortMark('key')}
-            <ResizeHandle col="key" />
+            <ResizeHandle col="key" onStart={startResize} />
           </button>
           <span className="etable-col-resize" aria-hidden="true">→</span>
           <button className="etable-col-sort" data-col="val" onClick={() => toggleSort('val')}>
             {valLabel}{sortMark('val')}
-            <ResizeHandle col="val" />
+            <ResizeHandle col="val" onStart={startResize} />
           </button>
           <button className="etable-col-sort etable-col-sort--num" data-col="count" onClick={() => toggleSort('count')}>
             {t('common.usageCount')}{sortMark('count')}
-            <ResizeHandle col="count" />
+            <ResizeHandle col="count" onStart={startResize} />
           </button>
           {hasCat && (
             <span className="etable-col-label" data-col="cat">
               {categoryLabel}
-              <ResizeHandle col="cat" />
+              <ResizeHandle col="cat" onStart={startResize} />
             </span>
           )}
           {canWrite && <span className="etable-col-label">{t('common.actions')}</span>}
