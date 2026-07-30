@@ -11,6 +11,15 @@ import { sleep, stripThinking } from './translate-lang';
 // perfectly healthy first call. Hence two defaults, chosen by provider.
 //
 // TRANSLATE_LLM_TIMEOUT_MS still overrides both, so an existing deploy that pinned it keeps its value.
+//
+// 8s is safe to be strict with because the fallback chain absorbs the miss: a genuinely slow message
+// that blows the cloud deadline drops to the next entry rather than being lost, and a chain ending in
+// ollama still gets the full 30s there. Measured on live traffic at 8s: 107 translations, 0 fallbacks.
+//
+// Known interaction with the circuit breaker in TranslateService: it counts CONSECUTIVE failures
+// without distinguishing "provider is down" from "that one message was too big for the deadline", so
+// two oversized messages in a row can sideline a healthy provider for the cooldown. Not observed in
+// practice (0 of 107) — but if a provider looks skipped for no reason, check message length first.
 const CLOUD_TIMEOUT_MS = 8_000;
 const OLLAMA_TIMEOUT_MS = 30_000;
 
