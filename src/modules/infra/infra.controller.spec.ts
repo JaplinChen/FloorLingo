@@ -207,14 +207,7 @@ describe('InfraController.saveConfig SSL reject-unauthorized', () => {
 
 describe('InfraController PostgreSQL schema (POSTGRES_SCHEMA)', () => {
   const newController = () =>
-    new InfraController(
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    new InfraController({} as never, {} as never, {} as never, {} as never, {} as never, {} as never);
 
   function written(config: unknown, existing?: string): string {
     (fs.existsSync as jest.Mock).mockReturnValue(existing !== undefined);
@@ -281,14 +274,7 @@ describe('InfraController.saveConfig writes the generated env owner-only', () =>
 
 describe('InfraController.saveConfig env-name correctness and merge (#226)', () => {
   const newController = () =>
-    new InfraController(
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    new InfraController({} as never, {} as never, {} as never, {} as never, {} as never, {} as never);
 
   function written(config: unknown, existing?: string): string {
     (fs.existsSync as jest.Mock).mockReturnValue(existing !== undefined);
@@ -373,14 +359,7 @@ describe('InfraController.saveConfig env-name correctness and merge (#226)', () 
 
 describe('InfraController.saveConfig rejects values that would inject extra env vars', () => {
   const newController = () =>
-    new InfraController(
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    new InfraController({} as never, {} as never, {} as never, {} as never, {} as never, {} as never);
 
   // .env.generated is one KEY=value per line and is loaded on the next boot. A value carrying a
   // newline would write a second `KEY=value` line — injecting an arbitrary env var (e.g. an admin
@@ -414,14 +393,7 @@ describe('InfraController.saveConfig engine selection (persist ENGINE_TYPE — I
     getAvailableEngines: () => [{ id: 'whatsapp-web.js' }, { id: 'baileys' }],
   };
   const newController = () =>
-    new InfraController(
-      {} as never,
-      {} as never,
-      engineFactory as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    new InfraController({} as never, {} as never, engineFactory as never, {} as never, {} as never, {} as never);
 
   function written(config: unknown, existing?: string): string {
     (fs.existsSync as jest.Mock).mockReturnValue(existing !== undefined);
@@ -459,8 +431,7 @@ describe('InfraController.importData round-trips export-data (no silent message/
   // exportData only reads dataDatabase.type off the config; everything else is unused here.
   const cfg = { get: (key: string, def?: unknown) => (key === 'dataDatabase.type' ? 'sqlite' : def) };
 
-  const newController = () =>
-    new InfraController(cfg as never, ds, {} as never, {} as never, {} as never, {} as never);
+  const newController = () => new InfraController(cfg as never, ds, {} as never, {} as never, {} as never, {} as never);
 
   beforeEach(async () => {
     ds = new DataSource({
@@ -739,8 +710,7 @@ describe('InfraController.import/export preserves every data-DB table', () => {
   let ds: DataSource;
   let controller: InfraController;
   const cfg = { get: (key: string, def?: unknown) => (key === 'dataDatabase.type' ? 'sqlite' : def) };
-  const newController = () =>
-    new InfraController(cfg as never, ds, {} as never, {} as never, {} as never, {} as never);
+  const newController = () => new InfraController(cfg as never, ds, {} as never, {} as never, {} as never, {} as never);
 
   beforeEach(async () => {
     ds = new DataSource({
@@ -913,7 +883,14 @@ describe('InfraController.getStatus engine (reads the real engine.puppeteer.* ke
       cache as never,
       { isS3Available: () => false, refreshS3Availability: () => Promise.resolve(false) } as never, // storageService
     );
-    const controller = new InfraController(config as never, ds as never, {} as never, {} as never, statusService, {} as never);
+    const controller = new InfraController(
+      config as never,
+      ds as never,
+      {} as never,
+      {} as never,
+      statusService,
+      {} as never,
+    );
 
     const status = await controller.getStatus();
     expect(status.engine.headless).toBe(false);

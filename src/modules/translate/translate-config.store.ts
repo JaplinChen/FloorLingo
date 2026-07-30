@@ -61,9 +61,7 @@ export function defaultRuntimeConfig(): RuntimeConfig {
 }
 
 export type ConfigRead =
-  | { status: 'ok'; raw: Partial<TranslateConfig> }
-  | { status: 'missing' }
-  | { status: 'unreadable'; error: unknown };
+  { status: 'ok'; raw: Partial<TranslateConfig> } | { status: 'missing' } | { status: 'unreadable'; error: unknown };
 
 export class TranslateConfigStore {
   read(): ConfigRead {
@@ -124,7 +122,8 @@ export function sanitizeConfig(raw: Partial<TranslateConfig>): Partial<Translate
     out.minSendIntervalMs = raw.minSendIntervalMs;
   }
   if (typeof raw.notifyOnFailure === 'boolean') out.notifyOnFailure = raw.notifyOnFailure;
-  if (typeof raw.maxMessageLength === 'number' && raw.maxMessageLength >= 0) out.maxMessageLength = raw.maxMessageLength;
+  if (typeof raw.maxMessageLength === 'number' && raw.maxMessageLength >= 0)
+    out.maxMessageLength = raw.maxMessageLength;
   if (typeof raw.maxTranslationsPerMinute === 'number' && raw.maxTranslationsPerMinute >= 0) {
     out.maxTranslationsPerMinute = raw.maxTranslationsPerMinute;
   }
@@ -201,8 +200,7 @@ export function maskProviderConfigs(
 ): Record<string, Record<string, unknown>> {
   const masked: Record<string, Record<string, unknown>> = {};
   for (const [prov, cfg] of Object.entries(configs)) {
-    masked[prov] =
-      typeof cfg.apiKey === 'string' && cfg.apiKey ? { ...cfg, apiKey: '', apiKeySet: true } : { ...cfg };
+    masked[prov] = typeof cfg.apiKey === 'string' && cfg.apiKey ? { ...cfg, apiKey: '', apiKeySet: true } : { ...cfg };
   }
   return masked;
 }

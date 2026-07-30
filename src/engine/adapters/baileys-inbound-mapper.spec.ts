@@ -1,6 +1,9 @@
 import { resolveMentionNames, InboundMapperCtx } from './baileys-inbound-mapper';
 
-function ctxWith(store: { displayName(id: string): string; resolvePhone(id: string): string | null }): InboundMapperCtx {
+function ctxWith(store: {
+  displayName(id: string): string;
+  resolvePhone(id: string): string | null;
+}): InboundMapperCtx {
   return { sessionStore: store } as unknown as InboundMapperCtx;
 }
 

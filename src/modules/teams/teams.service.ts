@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import {
-  ActivityHandler,
-  CloudAdapter,
-  ConfigurationBotFrameworkAuthentication,
-  TurnContext,
-} from 'botbuilder';
+import { ActivityHandler, CloudAdapter, ConfigurationBotFrameworkAuthentication, TurnContext } from 'botbuilder';
 import { TranslateService } from '../translate/translate.service';
 import { createLogger } from '../../common/services/logger.service';
 

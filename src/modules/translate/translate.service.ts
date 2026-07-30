@@ -12,7 +12,17 @@ import { CategoryStore } from './translate-categories';
 import { TranslationMemory, type Candidate } from './translate-memory';
 import { PhraseCandidates, type PhraseCandidate } from './translate-phrase-candidates';
 import { minePhrases } from './translate-phrase-miner';
-import { BOT_MARKER, DEFAULT_PROMPT_TEMPLATE, Pair, speechSourceRule, ZH_TO_VI, detectPair, buildPrompt, fixViCasing, sleep } from './translate-lang';
+import {
+  BOT_MARKER,
+  DEFAULT_PROMPT_TEMPLATE,
+  Pair,
+  speechSourceRule,
+  ZH_TO_VI,
+  detectPair,
+  buildPrompt,
+  fixViCasing,
+  sleep,
+} from './translate-lang';
 import * as llm from './translate-llm-client';
 import { LlmProvider, LlmParams, LLM_PROVIDERS } from './translate-llm-client';
 import {
@@ -237,16 +247,19 @@ export class TranslateService implements OnModuleInit {
   }
 
   // REST CRUD on the glossary/sender stores lives in the controller (boundary validation there).
-  get glossaryStore(): Glossary { return this.glossary; }
-  get senderStore(): SenderDirectory { return this.senders; }
-  get categoryStore(): CategoryStore { return this.categories; }
+  get glossaryStore(): Glossary {
+    return this.glossary;
+  }
+  get senderStore(): SenderDirectory {
+    return this.senders;
+  }
+  get categoryStore(): CategoryStore {
+    return this.categories;
+  }
 
   /** Top translation-memory candidates to promote into the glossary. */
   async memoryCandidates(limit?: number, offset?: number): Promise<{ items: Candidate[]; total: number }> {
-    const [items, total] = await Promise.all([
-      this.memory.candidates(limit, offset),
-      this.memory.candidatesCount(),
-    ]);
+    const [items, total] = await Promise.all([this.memory.candidates(limit, offset), this.memory.candidatesCount()]);
     return { items, total };
   }
 
@@ -375,8 +388,7 @@ export class TranslateService implements OnModuleInit {
       // Passive learn: the sender's JID + name only coexist here (live message). Remember it so a
       // later @mention of this person resolves to a name without any manual entry. Skips known JIDs.
       if (!isSentPath && msg.author) {
-        const nm =
-          msg.contact?.pushName || msg.contact?.name || msg.contact?.verifiedName || msg.contact?.shortName;
+        const nm = msg.contact?.pushName || msg.contact?.name || msg.contact?.verifiedName || msg.contact?.shortName;
         if (nm) {
           this.senders.learn(msg.author, nm);
           if (msg.senderPhone) this.senders.learn(msg.senderPhone, nm);
@@ -614,7 +626,9 @@ export class TranslateService implements OnModuleInit {
   }
 
   // Thin instance wrapper over the pure detector (kept a method so the spec's private-method poke works).
-  private detectPair(text: string): Pair | null { return detectPair(text); }
+  private detectPair(text: string): Pair | null {
+    return detectPair(text);
+  }
 
   private enqueue<T>(task: () => Promise<T>): Promise<T> {
     const run = this.queue.then(task, task);
@@ -743,7 +757,13 @@ export class TranslateService implements OnModuleInit {
 
   private llmParams(): LlmParams {
     const c = this.cfg;
-    return { provider: c.llmProvider, endpoint: c.llmEndpoint, model: c.llmModel, apiKey: c.llmApiKey, temperature: c.llmTemperature };
+    return {
+      provider: c.llmProvider,
+      endpoint: c.llmEndpoint,
+      model: c.llmModel,
+      apiKey: c.llmApiKey,
+      temperature: c.llmTemperature,
+    };
   }
 
   // Dashboard probes send apiKey:'' (getConfig masks it) — fall back to the stored key so

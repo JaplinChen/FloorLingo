@@ -17,16 +17,30 @@ describe('TranslateService glossary', () => {
   let service: TranslateService;
 
   const makeMsg = (body: string): IncomingMessage =>
-    ({ chatId: 'g@g.us', from: 'u@c.us', author: 'u@c.us', body, type: 'text', isGroup: true, fromMe: false } as IncomingMessage);
+    ({
+      chatId: 'g@g.us',
+      from: 'u@c.us',
+      author: 'u@c.us',
+      body,
+      type: 'text',
+      isGroup: true,
+      fromMe: false,
+    }) as IncomingMessage;
 
   beforeEach(() => {
     glossaryPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gloss-')), 'glossary.json');
     process.env.TRANSLATE_GLOSSARY_PATH = glossaryPath;
     sendersPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'send-')), 'senders.json');
     process.env.TRANSLATE_SENDERS_PATH = sendersPath;
-    process.env.TRANSLATE_WATCHWORDS_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'watch-')), 'watchwords.json');
+    process.env.TRANSLATE_WATCHWORDS_PATH = path.join(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'watch-')),
+      'watchwords.json',
+    );
     process.env.TRANSLATE_FEEDBACK_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'fb-')), 'bad-feedback.json');
-    process.env.TRANSLATE_CONFIG_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tcfg-')), 'translate-config.json');
+    process.env.TRANSLATE_CONFIG_PATH = path.join(
+      fs.mkdtempSync(path.join(os.tmpdir(), 'tcfg-')),
+      'translate-config.json',
+    );
     sent = [];
     const messageService = {
       sendText: (_s: string, dto: { chatId: string; text: string }) => {
@@ -101,14 +115,18 @@ describe('TranslateService glossary', () => {
   });
 
   it('detects zh and vi source directions', () => {
-    const detect = (service as unknown as { detectPair: (t: string) => { key: string } | null }).detectPair.bind(service);
+    const detect = (service as unknown as { detectPair: (t: string) => { key: string } | null }).detectPair.bind(
+      service,
+    );
     expect(detect('今天出貨')?.key).toBe('zh-tw:vi');
     expect(detect('giao hàng hôm nay')?.key).toBe('vi:zh-tw');
     expect(detect('12345')).toBeNull();
   });
 
   it('mixed script decides by dominant text, not first CJK char', () => {
-    const detect = (service as unknown as { detectPair: (t: string) => { key: string } | null }).detectPair.bind(service);
+    const detect = (service as unknown as { detectPair: (t: string) => { key: string } | null }).detectPair.bind(
+      service,
+    );
     // A Vietnamese message @-mentioning a Chinese name must still translate TO Chinese.
     expect(detect('Báo cáo Giám đốc @VPIC1 陳嘉元, phòng 201 đã hoạt động.')?.key).toBe('vi:zh-tw');
     // A Chinese message quoting a Vietnamese place name stays Chinese→Vietnamese.
@@ -116,16 +134,24 @@ describe('TranslateService glossary', () => {
   });
 
   it('translates an image caption (media with text is not skipped)', async () => {
-    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ message: { content: '報告主管' } }) }) as never);
+    const fetchMock = jest.fn(
+      async () => ({ ok: true, json: async () => ({ message: { content: '報告主管' } }) }) as never,
+    );
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
     poke({
-      enabled: true, llmProvider: 'ollama', llmEndpoint: 'http://x/api/chat', llmModel: 'qwen3:8b',
-      groupIds: new Set(['g@g.us']), minSendIntervalMs: 0,
+      enabled: true,
+      llmProvider: 'ollama',
+      llmEndpoint: 'http://x/api/chat',
+      llmModel: 'qwen3:8b',
+      groupIds: new Set(['g@g.us']),
+      minSendIntervalMs: 0,
     });
     const msg = { ...makeMsg('Báo cáo Sếp'), type: 'image' } as IncomingMessage;
-    await (service as unknown as {
-      onMessage: (c: unknown, s: boolean) => Promise<unknown>;
-    }).onMessage({ data: msg, sessionId: 'sess' }, false);
+    await (
+      service as unknown as {
+        onMessage: (c: unknown, s: boolean) => Promise<unknown>;
+      }
+    ).onMessage({ data: msg, sessionId: 'sess' }, false);
     await (service as unknown as { queue: Promise<unknown> }).queue;
 
     expect(sent).toHaveLength(1);
@@ -133,16 +159,25 @@ describe('TranslateService glossary', () => {
   });
 
   it('cost guards: skips over-long messages and throttles per group per minute', async () => {
-    const fetchMock = jest.fn(async () => ({ ok: true, json: async () => ({ message: { content: '報告主管' } }) }) as never);
+    const fetchMock = jest.fn(
+      async () => ({ ok: true, json: async () => ({ message: { content: '報告主管' } }) }) as never,
+    );
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
     poke({
-      enabled: true, llmProvider: 'ollama', llmEndpoint: 'http://x/api/chat', llmModel: 'qwen3:8b',
-      groupIds: new Set(['g@g.us']), minSendIntervalMs: 0,
-      maxMessageLength: 10, maxTranslationsPerMinute: 2,
+      enabled: true,
+      llmProvider: 'ollama',
+      llmEndpoint: 'http://x/api/chat',
+      llmModel: 'qwen3:8b',
+      groupIds: new Set(['g@g.us']),
+      minSendIntervalMs: 0,
+      maxMessageLength: 10,
+      maxTranslationsPerMinute: 2,
     });
     const fire = async (body: string) => {
-      await (service as unknown as { onMessage: (c: unknown, s: boolean) => Promise<unknown> })
-        .onMessage({ data: makeMsg(body), sessionId: 'sess' }, false);
+      await (service as unknown as { onMessage: (c: unknown, s: boolean) => Promise<unknown> }).onMessage(
+        { data: makeMsg(body), sessionId: 'sess' },
+        false,
+      );
       await (service as unknown as { queue: Promise<unknown> }).queue;
     };
     await fire('今天出貨了嗎現在幾點鐘'); // 11 chars > cap → skipped
@@ -162,9 +197,11 @@ describe('TranslateService glossary', () => {
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
 
-    const translate = (service as unknown as {
-      translate: (t: string, p: { key: string }) => Promise<string>;
-    }).translate.bind(service);
+    const translate = (
+      service as unknown as {
+        translate: (t: string, p: { key: string }) => Promise<string>;
+      }
+    ).translate.bind(service);
     await translate('報告給@200859128434777以及其他同事', { key: 'zh-tw:vi' } as never);
 
     expect(fetchMock).toHaveBeenCalled();
@@ -174,9 +211,11 @@ describe('TranslateService glossary', () => {
   });
 
   it('auto-names a pending @lid mention via the lid->phone mapping, then falls back to the contact record', async () => {
-    const resolve = (service as unknown as {
-      resolvePendingSenders: (s: string, j: string[]) => void;
-    }).resolvePendingSenders.bind(service);
+    const resolve = (
+      service as unknown as {
+        resolvePendingSenders: (s: string, j: string[]) => void;
+      }
+    ).resolvePendingSenders.bind(service);
     const flush = () => new Promise(r => setImmediate(r));
 
     // lid known to the phone-keyed table
@@ -217,11 +256,19 @@ describe('TranslateService glossary', () => {
 
   it('strips a reasoning model <think> block so the group gets only the translation', async () => {
     poke({ llmProvider: 'ollama', llmEndpoint: 'http://x/api/chat', llmModel: 'qwen3:8b' });
-    const fetchMock = jest.fn(async () =>
-      ({ ok: true, json: async () => ({ message: { content: '<think>越文翻成中文\n判斷語氣</think>\n\n報告總經理，會議已開始' } }) }) as never,
+    const fetchMock = jest.fn(
+      async () =>
+        ({
+          ok: true,
+          json: async () => ({
+            message: { content: '<think>越文翻成中文\n判斷語氣</think>\n\n報告總經理，會議已開始' },
+          }),
+        }) as never,
     );
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
-    const translate = (service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }).translate.bind(service);
+    const translate = (
+      service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
+    ).translate.bind(service);
     expect(await translate('Báo cáo Giám đốc', { key: 'vi:zh-tw' } as never)).toBe('報告總經理，會議已開始');
   });
 
@@ -236,7 +283,11 @@ describe('TranslateService glossary', () => {
       listModels: (p: { provider: string; endpoint: string; apiKey: string }) => Promise<string[]>;
     };
     await svc.listModels({ provider: 'ollama', endpoint: 'http://192.168.40.168:11434/api/chat', apiKey: '' });
-    await svc.listModels({ provider: 'groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', apiKey: 'k' });
+    await svc.listModels({
+      provider: 'groq',
+      endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+      apiKey: 'k',
+    });
     await svc.listModels({ provider: 'openai', endpoint: 'https://api.openai.com/v1/chat/completions', apiKey: 'k' });
 
     expect(urls[0]).toBe('http://192.168.40.168:11434/api/tags');
@@ -279,9 +330,11 @@ describe('TranslateService glossary', () => {
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
 
-    const translate = (service as unknown as {
-      translate: (t: string, p: { key: string }) => Promise<string>;
-    }).translate.bind(service);
+    const translate = (
+      service as unknown as {
+        translate: (t: string, p: { key: string }) => Promise<string>;
+      }
+    ).translate.bind(service);
     const out = await translate('你好', { key: 'zh-tw:vi' } as never);
 
     expect(tried).toEqual(['primary', 'backup']);
@@ -304,9 +357,11 @@ describe('TranslateService glossary', () => {
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
 
-    const translate = (service as unknown as {
-      translate: (t: string, p: { key: string }) => Promise<string>;
-    }).translate.bind(service);
+    const translate = (
+      service as unknown as {
+        translate: (t: string, p: { key: string }) => Promise<string>;
+      }
+    ).translate.bind(service);
     for (let i = 0; i < 4; i++) await translate(`你好${i}`, { key: 'zh-tw:vi' } as never);
 
     // Messages 1-2 probe the dead primary; after it trips, 3-4 go straight to the backup.
@@ -314,17 +369,28 @@ describe('TranslateService glossary', () => {
   });
 
   it('retries once on Groq 429 honoring Retry-After, then succeeds', async () => {
-    poke({ llmProvider: 'groq', llmEndpoint: 'https://api.groq.com/openai/v1/chat/completions', llmModel: 'qwen', llmApiKey: 'k' });
+    poke({
+      llmProvider: 'groq',
+      llmEndpoint: 'https://api.groq.com/openai/v1/chat/completions',
+      llmModel: 'qwen',
+      llmApiKey: 'k',
+    });
     let calls = 0;
     const fetchMock = jest.fn(async () => {
       calls++;
       if (calls === 1) {
         return { ok: false, status: 429, headers: { get: (h: string) => (h === 'retry-after' ? '0' : null) } } as never;
       }
-      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'dịch xong' } }] }) } as never;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ choices: [{ message: { content: 'dịch xong' } }] }),
+      } as never;
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
-    const translate = (service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }).translate.bind(service);
+    const translate = (
+      service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
+    ).translate.bind(service);
     const out = await translate('你好', { key: 'vi:zh-tw' } as never);
     expect(calls).toBe(2);
     expect(out).toBe('dịch xong');
@@ -338,13 +404,16 @@ describe('TranslateService glossary', () => {
         ollama: { endpoint: 'o', model: 'qwen3:8b' },
       },
     });
-    const keys = () => Object.keys((service as unknown as { cfg: { llmProviderConfigs: object } }).cfg.llmProviderConfigs).sort();
+    const keys = () =>
+      Object.keys((service as unknown as { cfg: { llmProviderConfigs: object } }).cfg.llmProviderConfigs).sort();
     // Empty payload (e.g. a stale Translate-page snapshot) must not drop anything.
     service.updateConfig({ llmProviderConfigs: {} });
     expect(keys()).toEqual(['gemini', 'groq', 'ollama']);
     // Subset payload updates only that provider, preserves the rest and their stored keys.
     service.updateConfig({ llmProviderConfigs: { gemini: { endpoint: 'g2', model: 'm2', apiKey: '' } } });
-    const pc = (service as unknown as { cfg: { llmProviderConfigs: Record<string, { endpoint?: string; apiKey?: string }> } }).cfg.llmProviderConfigs;
+    const pc = (
+      service as unknown as { cfg: { llmProviderConfigs: Record<string, { endpoint?: string; apiKey?: string }> } }
+    ).cfg.llmProviderConfigs;
     expect(keys()).toEqual(['gemini', 'groq', 'ollama']);
     expect(pc.gemini.endpoint).toBe('g2'); // updated
     expect(pc.gemini.apiKey).toBe('gk'); // blank kept the stored key
@@ -358,7 +427,11 @@ describe('TranslateService glossary', () => {
       llmModel: 'gemini-2.5-flash',
       llmApiKey: 'gkey',
       llmProviderConfigs: {
-        groq: { endpoint: 'https://api.groq.com/openai/v1/chat/completions', apiKey: 'qkey', model: 'qwen/qwen3.6-27b' },
+        groq: {
+          endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+          apiKey: 'qkey',
+          model: 'qwen/qwen3.6-27b',
+        },
       },
     });
     let calledUrl = '';
@@ -366,7 +439,11 @@ describe('TranslateService glossary', () => {
     const fetchMock = jest.fn(async (url: string, init?: { body?: string }) => {
       calledUrl = String(url);
       calledModel = JSON.parse(init?.body ?? '{}').model;
-      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'xin chào' } }] }) } as never;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ choices: [{ message: { content: 'xin chào' } }] }),
+      } as never;
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
     const res = await service.preview('你好', 'groq');
@@ -376,7 +453,12 @@ describe('TranslateService glossary', () => {
   });
 
   it('preview throws when the requested provider is not configured', async () => {
-    poke({ llmProvider: 'gemini', llmEndpoint: 'https://gen.example/v1beta', llmModel: 'gemini-2.5-flash', llmProviderConfigs: {} });
+    poke({
+      llmProvider: 'gemini',
+      llmEndpoint: 'https://gen.example/v1beta',
+      llmModel: 'gemini-2.5-flash',
+      llmProviderConfigs: {},
+    });
     await expect(service.preview('你好', 'groq')).rejects.toThrow(/not configured/);
   });
 
@@ -397,10 +479,16 @@ describe('TranslateService glossary', () => {
       if (String(url).includes('gen.example')) return { ok: false, status: 500 } as never;
       groqAuth = init?.headers?.authorization ?? '';
       groqModel = JSON.parse(init?.body ?? '{}').model;
-      return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'xin chào' } }] }) } as never;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ choices: [{ message: { content: 'xin chào' } }] }),
+      } as never;
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
-    const translate = (service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }).translate.bind(service);
+    const translate = (
+      service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
+    ).translate.bind(service);
     const out = await translate('你好', { key: 'zh-tw:vi' } as never);
     expect(groqAuth).toBe('Bearer qkey'); // used the saved groq key, not the active gemini key
     expect(groqModel).toBe('llama-3.3-70b-versatile');
@@ -420,9 +508,11 @@ describe('TranslateService glossary', () => {
     });
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
 
-    const translate = (service as unknown as {
-      translate: (t: string, p: { key: string }) => Promise<string>;
-    }).translate.bind(service);
+    const translate = (
+      service as unknown as {
+        translate: (t: string, p: { key: string }) => Promise<string>;
+      }
+    ).translate.bind(service);
     const out = await translate('你好', { key: 'zh-tw:vi' } as never);
 
     expect(out).toBe('Xin chào');
@@ -468,12 +558,23 @@ describe('TranslateService voice notes', () => {
     service = new TranslateService(new HookManager(), messageService, contactService);
     service.onModuleInit();
     Object.assign((service as unknown as { cfg: Record<string, unknown> }).cfg, {
-      enabled: true, llmProvider: 'ollama', llmEndpoint: 'http://x/api/chat', llmModel: 'qwen3:8b',
-      groupIds: new Set(['g@g.us']), minSendIntervalMs: 0,
+      enabled: true,
+      llmProvider: 'ollama',
+      llmEndpoint: 'http://x/api/chat',
+      llmModel: 'qwen3:8b',
+      groupIds: new Set(['g@g.us']),
+      minSendIntervalMs: 0,
     });
     Object.assign((service as unknown as { voice: Record<string, unknown> }).voice, {
-      baseUrl: 'http://stt', model: 'whisper-large-v3-turbo', apiKey: '', language: '', prompt: '',
-      timeoutMs: 5000, maxBytes: 1024, maxPerHour: 60, includeAudioFiles: false,
+      baseUrl: 'http://stt',
+      model: 'whisper-large-v3-turbo',
+      apiKey: '',
+      language: '',
+      prompt: '',
+      timeoutMs: 5000,
+      maxBytes: 1024,
+      maxPerHour: 60,
+      includeAudioFiles: false,
       confusions: new Map([['bot', ['boss', 'Bob', 'bioti']]]),
     });
   });
@@ -482,7 +583,10 @@ describe('TranslateService voice notes', () => {
   const mockBackends = (transcript: string, translation: string) => {
     const fetchMock = jest.fn(async (url: string) =>
       String(url).includes('/audio/transcriptions')
-        ? ({ ok: true, json: async () => ({ text: transcript, segments: [{ no_speech_prob: 0.02, avg_logprob: -0.3 }] }) } as never)
+        ? ({
+            ok: true,
+            json: async () => ({ text: transcript, segments: [{ no_speech_prob: 0.02, avg_logprob: -0.3 }] }),
+          } as never)
         : ({ ok: true, json: async () => ({ message: { content: translation } }) } as never),
     );
     (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
@@ -490,9 +594,11 @@ describe('TranslateService voice notes', () => {
   };
 
   const run = async (msg: IncomingMessage) => {
-    await (service as unknown as {
-      transcribeAndTranslate: (s: string, m: IncomingMessage) => Promise<void>;
-    }).transcribeAndTranslate('sess', msg);
+    await (
+      service as unknown as {
+        transcribeAndTranslate: (s: string, m: IncomingMessage) => Promise<void>;
+      }
+    ).transcribeAndTranslate('sess', msg);
     await (service as unknown as { queue: Promise<unknown> }).queue;
   };
 
@@ -510,9 +616,11 @@ describe('TranslateService voice notes', () => {
   it('routes a voice message from the hook into the voice path, not the caption path', async () => {
     const spy = jest.fn(async () => undefined);
     (service as unknown as { transcribeAndTranslate: unknown }).transcribeAndTranslate = spy;
-    await (service as unknown as {
-      onMessage: (c: unknown, s: boolean) => Promise<unknown>;
-    }).onMessage({ data: voiceMsg(), sessionId: 'sess' }, false);
+    await (
+      service as unknown as {
+        onMessage: (c: unknown, s: boolean) => Promise<unknown>;
+      }
+    ).onMessage({ data: voiceMsg(), sessionId: 'sess' }, false);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
@@ -564,9 +672,14 @@ describe('TranslateService voice notes', () => {
     expect(prompts[0]).toContain('Con Boss này xịn đấy sếp'); // the raw transcript, not a rewrite
 
     // A typed message must NOT carry the hint, or the model gets licence to rewrite what was typed.
-    await (service as unknown as {
-      onMessage: (c: unknown, s: boolean) => Promise<unknown>;
-    }).onMessage({ data: { ...voiceMsg(), type: 'text', body: 'Báo cáo Sếp', media: undefined }, sessionId: 'sess' }, false);
+    await (
+      service as unknown as {
+        onMessage: (c: unknown, s: boolean) => Promise<unknown>;
+      }
+    ).onMessage(
+      { data: { ...voiceMsg(), type: 'text', body: 'Báo cáo Sếp', media: undefined }, sessionId: 'sess' },
+      false,
+    );
     await (service as unknown as { queue: Promise<unknown> }).queue;
 
     expect(prompts).toHaveLength(2);
@@ -574,10 +687,9 @@ describe('TranslateService voice notes', () => {
   });
 
   it('logs the transcript on success so STT accuracy is observable', async () => {
-    const log = jest.spyOn(
-      (service as unknown as { logger: { log: (m: string) => void } }).logger,
-      'log',
-    ).mockImplementation(() => undefined);
+    const log = jest
+      .spyOn((service as unknown as { logger: { log: (m: string) => void } }).logger, 'log')
+      .mockImplementation(() => undefined);
     mockBackends('Con bot này xịn đấy sếp', '這個機器人真厲害');
     await run(voiceMsg());
 
@@ -593,10 +705,9 @@ describe('TranslateService voice notes', () => {
   });
 
   it('still logs and sends when the backend returns no segment data', async () => {
-    const log = jest.spyOn(
-      (service as unknown as { logger: { log: (m: string) => void } }).logger,
-      'log',
-    ).mockImplementation(() => undefined);
+    const log = jest
+      .spyOn((service as unknown as { logger: { log: (m: string) => void } }).logger, 'log')
+      .mockImplementation(() => undefined);
     // A backend that ignores verbose_json returns plain {text} — must degrade, not crash.
     (global as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string) =>
       String(url).includes('/audio/transcriptions')
@@ -669,7 +780,9 @@ describe('TranslateService voice notes', () => {
 
   it('swallows an STT failure without throwing into the receive pipeline', async () => {
     (global as unknown as { fetch: unknown }).fetch = jest.fn(async () => ({
-      ok: false, status: 401, text: async () => 'bad key',
+      ok: false,
+      status: 401,
+      text: async () => 'bad key',
     }));
     await expect(run(voiceMsg())).resolves.toBeUndefined();
     expect(sent).toHaveLength(0);

@@ -22,7 +22,10 @@ export class Glossary {
   private readonly usagePath: string;
   private readonly categoryPath: string;
 
-  constructor(private readonly filePath: string, pendingPath?: string) {
+  constructor(
+    private readonly filePath: string,
+    pendingPath?: string,
+  ) {
     this.pendingPath = pendingPath || filePath.replace(/\.json$/, '-pending.json');
     this.usagePath = filePath.replace(/\.json$/, '-usage.json');
     this.categoryPath = filePath.replace(/\.json$/, '-category.json');
@@ -105,7 +108,9 @@ export class Glossary {
     return Object.entries(this.data['zh-tw:vi'] || {}).map(([source, target]) => {
       const category = this.categories[source];
       // Omit category when unset so existing callers (and equality checks) see the original shape.
-      return category ? { source, target, count: this.usage[source] ?? 0, category } : { source, target, count: this.usage[source] ?? 0 };
+      return category
+        ? { source, target, count: this.usage[source] ?? 0, category }
+        : { source, target, count: this.usage[source] ?? 0 };
     });
   }
 
@@ -294,13 +299,6 @@ export class Glossary {
       return removed ? `已移除術語：${term}` : `找不到術語：${term}`;
     }
 
-    return [
-      '指令：',
-      '/g  列出術語',
-      '/g 詞 = nghĩa',
-      '/g pending',
-      '/g ok|no <id>',
-      '/g del <詞>',
-    ].join('\n');
+    return ['指令：', '/g  列出術語', '/g 詞 = nghĩa', '/g pending', '/g ok|no <id>', '/g del <詞>'].join('\n');
   }
 }

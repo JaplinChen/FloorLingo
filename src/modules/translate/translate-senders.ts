@@ -152,5 +152,4 @@ export class SenderDirectory {
     }
     return out.replace(/(^|\s)@(?=\D)/g, '$1');
   }
-
 }

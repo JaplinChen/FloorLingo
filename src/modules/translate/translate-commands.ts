@@ -94,13 +94,13 @@ export async function handleGlossaryCommand(
   // Each line may repeat the /g prefix (pasted batch adds); strip it per line.
   const lines = raw
     .split(/\r?\n/)
-    .map((l) => l.replace(/^\/(?:glossary|g)(?=\s|$)\s*/i, '').trim())
+    .map(l => l.replace(/^\/(?:glossary|g)(?=\s|$)\s*/i, '').trim())
     .filter((l, i) => i === 0 || l !== '');
   const rest = lines[0] ?? '';
   const author = msg.author || msg.from;
   const canMutate = deps.adminIds.size === 0 || deps.adminIds.has(author);
-  const batch = lines.length > 1 ? lines.filter((l) => l !== '') : lines;
-  const reply = batch.map((l) => deps.glossary.command(l, canMutate, author)).join('\n');
+  const batch = lines.length > 1 ? lines.filter(l => l !== '') : lines;
+  const reply = batch.map(l => deps.glossary.command(l, canMutate, author)).join('\n');
   // ponytail: long lists (full glossary / pending queue) DM the author so they don't flood the
   // group; short results (add/suggest/ok/no/del acks, usage) reply in place.
   const isList = batch.length === 1 && (rest === '' || /^pending(?=\s|$)/i.test(rest));
