@@ -35,16 +35,18 @@ const APPLY_URLS: Record<string, string> = {
   nvidia_nim: 'https://build.nvidia.com/settings/api-keys',
 };
 
+// Module level, not nested in KeyProxy: a component created during render is a new type every render,
+// which remounts the subtree instead of updating it (react-hooks/static-components).
+function RH({ col, onStart }: { col: string; onStart: (col: string) => (e: React.MouseEvent) => void }) {
+  return <span className="kp-resize-handle" aria-hidden="true" onMouseDown={onStart(col)} />;
+}
+
 export function KeyProxy() {
   const { t } = useTranslation();
   useDocumentTitle(t('keyproxy.title'));
   const { canWrite } = useRole();
   const toast = useToast();
   const { ref: tableRef, startResize } = useResizableCol('keyproxy-cols');
-
-  const RH = ({ col }: { col: string }) => (
-    <span className="kp-resize-handle" aria-hidden="true" onMouseDown={startResize(col)} />
-  );
 
   const [keys, setKeys] = useState<KeyStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,13 +182,13 @@ export function KeyProxy() {
             </colgroup>
             <thead>
               <tr>
-                <th data-col="provider">{t('keyproxy.provider')}<RH col="provider" /></th>
-                <th data-col="account">{t('keyproxy.account')}<RH col="account" /></th>
-                <th data-col="keycol">{t('keyproxy.key')}<RH col="keycol" /></th>
-                <th data-col="status">{t('keyproxy.status')}<RH col="status" /></th>
-                <th className="keyproxy-num" data-col="requests">{t('keyproxy.requests')}<RH col="requests" /></th>
-                <th className="keyproxy-num" data-col="quota">{t('keyproxy.quota')}<RH col="quota" /></th>
-                <th className="keyproxy-num" data-col="failures">{t('keyproxy.failures')}<RH col="failures" /></th>
+                <th data-col="provider">{t('keyproxy.provider')}<RH col="provider" onStart={startResize} /></th>
+                <th data-col="account">{t('keyproxy.account')}<RH col="account" onStart={startResize} /></th>
+                <th data-col="keycol">{t('keyproxy.key')}<RH col="keycol" onStart={startResize} /></th>
+                <th data-col="status">{t('keyproxy.status')}<RH col="status" onStart={startResize} /></th>
+                <th className="keyproxy-num" data-col="requests">{t('keyproxy.requests')}<RH col="requests" onStart={startResize} /></th>
+                <th className="keyproxy-num" data-col="quota">{t('keyproxy.quota')}<RH col="quota" onStart={startResize} /></th>
+                <th className="keyproxy-num" data-col="failures">{t('keyproxy.failures')}<RH col="failures" onStart={startResize} /></th>
                 {canWrite && <th />}
               </tr>
             </thead>

@@ -101,10 +101,8 @@ export class TranslationMemory {
   candidatesCount(): Promise<number> {
     return new Promise(resolve => {
       if (!this.db) return resolve(0);
-      this.db.get(
-        `SELECT COUNT(*) AS n FROM translation_memory WHERE status = 'new'`,
-        [],
-        (err, row) => resolve(err || !row ? 0 : Number((row as { n?: number }).n) || 0),
+      this.db.get(`SELECT COUNT(*) AS n FROM translation_memory WHERE status = 'new'`, [], (err, row) =>
+        resolve(err || !row ? 0 : Number((row as { n?: number }).n) || 0),
       );
     });
   }
@@ -143,7 +141,14 @@ export class TranslationMemory {
         [id],
         (err, r) => {
           if (err || !r) return resolve(null);
-          resolve({ id: r.id, pairKey: r.pair_key, source: r.source, translated: r.translated, count: r.count, at: r.updated_at });
+          resolve({
+            id: r.id,
+            pairKey: r.pair_key,
+            source: r.source,
+            translated: r.translated,
+            count: r.count,
+            at: r.updated_at,
+          });
         },
       );
     });

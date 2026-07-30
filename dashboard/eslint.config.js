@@ -24,6 +24,12 @@ export default defineConfig([
       'react-hooks/incompatible-library': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // An `_` prefix already means "deliberately unused" in this codebase (destructuring a field off
+      // an object, signature-compatible params) — honour the convention instead of flagging it.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
     },
   },
 ])

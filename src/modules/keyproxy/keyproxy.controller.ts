@@ -30,10 +30,7 @@ export class KeyProxyController {
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'Delete a provider key by index and restart the proxy' })
   @ApiResponse({ status: 200, description: 'Updated masked key list' })
-  remove(
-    @Param('provider') provider: string,
-    @Param('index', ParseIntPipe) index: number,
-  ): Promise<KeyStatus[]> {
+  remove(@Param('provider') provider: string, @Param('index', ParseIntPipe) index: number): Promise<KeyStatus[]> {
     return this.service.deleteKey(provider, index);
   }
 }

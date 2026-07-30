@@ -42,15 +42,20 @@ describe('Glossary', () => {
   it('migrates reversed entries persisted by older versions on load', () => {
     fs.writeFileSync(
       file,
-      JSON.stringify({ 'zh-tw:vi': { 'sếp ơi': '長官啊', 電腦: 'máy tính' }, 'vi:zh-tw': { 長官啊: 'sếp ơi', 'máy tính': '電腦' } }),
+      JSON.stringify({
+        'zh-tw:vi': { 'sếp ơi': '長官啊', 電腦: 'máy tính' },
+        'vi:zh-tw': { 長官啊: 'sếp ơi', 'máy tính': '電腦' },
+      }),
       'utf8',
     );
     const g = new Glossary(file);
     g.load();
-    expect(g.entries()).toEqual(expect.arrayContaining([
-      { source: '長官啊', target: 'sếp ơi', count: 0 },
-      { source: '電腦', target: 'máy tính', count: 0 },
-    ]));
+    expect(g.entries()).toEqual(
+      expect.arrayContaining([
+        { source: '長官啊', target: 'sếp ơi', count: 0 },
+        { source: '電腦', target: 'máy tính', count: 0 },
+      ]),
+    );
     expect(g.section('vi:zh-tw', 'sếp ơi')).toContain('sếp ơi → 長官啊');
   });
 

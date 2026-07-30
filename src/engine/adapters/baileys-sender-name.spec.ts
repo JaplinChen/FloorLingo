@@ -3,10 +3,10 @@ import type { InboundMapperCtx } from './baileys-inbound-mapper';
 import type { IncomingMessage } from '../interfaces/whatsapp-engine.interface';
 
 const ctxWith = (name: string): Pick<InboundMapperCtx, 'sessionStore'> =>
-  ({ sessionStore: { displayName: () => name } } as unknown as Pick<InboundMapperCtx, 'sessionStore'>);
+  ({ sessionStore: { displayName: () => name } }) as unknown as Pick<InboundMapperCtx, 'sessionStore'>;
 
 const msg = (over: Partial<IncomingMessage>): Pick<IncomingMessage, 'isGroup' | 'fromMe' | 'contact'> =>
-  ({ isGroup: true, fromMe: false, ...over } as IncomingMessage);
+  ({ isGroup: true, fromMe: false, ...over }) as IncomingMessage;
 
 describe('resolveSenderName', () => {
   it('falls back to the store name when the message carried no pushName', () => {

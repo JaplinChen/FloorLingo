@@ -23,6 +23,11 @@ export function Glossary() {
   const { canWrite } = useRole();
   const toast = useToast();
 
+  // Declared before the loader effect that calls it — react-hooks/immutability rejects reading a
+  // `const` from above its own declaration, even though the closure only runs after mount.
+  const fail = (err: unknown) =>
+    toast.error(t('common.failed', { message: err instanceof Error ? err.message : 'unknown' }));
+
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [pending, setPending] = useState<PendingGlossaryTerm[]>([]);
   const [candidates, setCandidates] = useState<TranslationCandidate[]>([]);
@@ -150,9 +155,6 @@ export function Glossary() {
       setBusy(false);
     }
   };
-
-  const fail = (err: unknown) =>
-    toast.error(t('common.failed', { message: err instanceof Error ? err.message : 'unknown' }));
 
   const add = async (zh: string, vi: string, category?: string) => {
     setBusy(true);

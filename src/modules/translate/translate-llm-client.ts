@@ -225,9 +225,7 @@ export async function listModels(p: Pick<LlmParams, 'provider' | 'endpoint' | 'a
   }
   if (p.provider === 'openai' || p.provider === 'groq') {
     const fallback =
-      p.provider === 'groq'
-        ? 'https://api.groq.com/openai/v1/models'
-        : 'https://api.openai.com/v1/models';
+      p.provider === 'groq' ? 'https://api.groq.com/openai/v1/models' : 'https://api.openai.com/v1/models';
     const res = await fetchWithRetry(modelsUrl(p.endpoint, fallback), timeoutFor(p.provider), {
       headers: p.apiKey ? { authorization: `Bearer ${p.apiKey}` } : {},
     });

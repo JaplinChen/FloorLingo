@@ -18,6 +18,10 @@ export function Senders() {
   const { canWrite } = useRole();
   const toast = useToast();
 
+  // Declared before the loader effect that calls it — see the same note in Glossary.tsx.
+  const fail = (err: unknown) =>
+    toast.error(t('common.failed', { message: err instanceof Error ? err.message : 'unknown' }));
+
   const [entries, setEntries] = useState<SenderEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -42,9 +46,6 @@ export function Senders() {
       active = false;
     };
   }, []);
-
-  const fail = (err: unknown) =>
-    toast.error(t('common.failed', { message: err instanceof Error ? err.message : 'unknown' }));
 
   const add = async (jid: string, name: string) => {
     setBusy(true);
