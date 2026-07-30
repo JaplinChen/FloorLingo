@@ -288,6 +288,31 @@ describe('TranslateService glossary', () => {
     expect(out).toBe('Dịch xong');
   });
 
+  it('trips the primary after 2 failures and stops paying its timeout on later messages', async () => {
+    poke({
+      llmProvider: 'ollama',
+      llmEndpoint: 'http://x/api/chat',
+      llmModel: 'primary',
+      llmFallbackModels: ['backup'],
+    });
+    const tried: string[] = [];
+    const fetchMock = jest.fn(async (_url: string, init: { body: string }) => {
+      const model = JSON.parse(init.body).model as string;
+      tried.push(model);
+      if (model === 'primary') return { ok: false, status: 500 } as never;
+      return { ok: true, json: async () => ({ message: { content: 'ok' } }) } as never;
+    });
+    (global as unknown as { fetch: typeof fetchMock }).fetch = fetchMock;
+
+    const translate = (service as unknown as {
+      translate: (t: string, p: { key: string }) => Promise<string>;
+    }).translate.bind(service);
+    for (let i = 0; i < 4; i++) await translate(`你好${i}`, { key: 'zh-tw:vi' } as never);
+
+    // Messages 1-2 probe the dead primary; after it trips, 3-4 go straight to the backup.
+    expect(tried).toEqual(['primary', 'backup', 'primary', 'backup', 'backup', 'backup']);
+  });
+
   it('retries once on Groq 429 honoring Retry-After, then succeeds', async () => {
     poke({ llmProvider: 'groq', llmEndpoint: 'https://api.groq.com/openai/v1/chat/completions', llmModel: 'qwen', llmApiKey: 'k' });
     let calls = 0;

@@ -42,6 +42,11 @@ const VOICE_TYPES = new Set<IncomingMessage['type']>(['voice', 'audio']);
 // Prefix on the transcript line. Unlike a text message, the source isn't already visible in the chat,
 // so the bot echoes what it heard alongside the translation.
 const TRANSCRIPT_MARKER = '🎙 ';
+// Circuit breaker for a stalling model (see modelFails). Trip on the 2nd consecutive failure so a
+// single blip doesn't sideline a healthy primary; 60s cooldown re-probes often enough that recovery
+// costs at most one slow message.
+const MODEL_TRIP_AFTER = 2;
+const MODEL_COOLDOWN_MS = 60_000;
 
 @Injectable()
 export class TranslateService implements OnModuleInit {
@@ -90,6 +95,10 @@ export class TranslateService implements OnModuleInit {
   private sentHookId: string | null = null;
   // Serialize translations behind one chain — a local Ollama model handles one request at a time.
   private queue: Promise<unknown> = Promise.resolve();
+  // Circuit breaker per model entry: a provider that stalls (upstream degradation) would otherwise
+  // charge every queued message the full LLM timeout before falling back. After MODEL_TRIP_AFTER
+  // consecutive failures, skip that entry for MODEL_COOLDOWN_MS so only the first message pays.
+  private modelFails = new Map<string, { fails: number; until: number }>();
 
   constructor(
     private readonly hookManager: HookManager,
@@ -633,7 +642,11 @@ export class TranslateService implements OnModuleInit {
     // Try the primary model, then each fallback in order — covers "model not loaded"/timeout on a
     // local Ollama or a rate-limited cloud model without dropping the translation. A fallback entry
     // may cross providers via a "provider:model" prefix (e.g. groq:llama-3.3-70b-versatile).
-    const entries = [this.cfg.llmModel, ...this.cfg.llmFallbackModels].filter(Boolean);
+    const all = [this.cfg.llmModel, ...this.cfg.llmFallbackModels].filter(Boolean);
+    // Skip tripped entries — unless every entry is tripped, in which case try them all rather than
+    // dropping the translation.
+    const live = all.filter(e => !this.isTripped(e));
+    const entries = live.length ? live : all;
     let lastErr: unknown;
     for (const entry of entries) {
       const params = this.resolveModel(entry);
@@ -644,6 +657,7 @@ export class TranslateService implements OnModuleInit {
       }
       try {
         const out = await llm.callLlm(params, prompt);
+        this.modelFails.delete(entry);
         const result = pair.key === ZH_TO_VI.key ? fixViCasing(out) : out;
         // Log for later glossary curation (best-effort). Exact glossary hits returned above, so this
         // only captures genuine LLM output — not terms already in the glossary.
@@ -652,9 +666,23 @@ export class TranslateService implements OnModuleInit {
       } catch (err) {
         lastErr = err;
         this.logger.warn(`Model "${entry}" failed, trying next fallback: ${String(err)}`);
+        this.tripModel(entry);
       }
     }
     throw lastErr instanceof Error ? lastErr : new Error('All models failed');
+  }
+
+  private isTripped(entry: string): boolean {
+    return (this.modelFails.get(entry)?.until ?? 0) > Date.now();
+  }
+
+  private tripModel(entry: string): void {
+    const fails = (this.modelFails.get(entry)?.fails ?? 0) + 1;
+    const tripped = fails >= MODEL_TRIP_AFTER;
+    this.modelFails.set(entry, { fails, until: tripped ? Date.now() + MODEL_COOLDOWN_MS : 0 });
+    if (tripped) {
+      this.logger.warn(`Model "${entry}" tripped after ${fails} failures; skipping for ${MODEL_COOLDOWN_MS}ms`);
+    }
   }
 
   /**
