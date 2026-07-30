@@ -681,9 +681,24 @@
         ]
       }
     },
+    "/api/sessions/stats/overview": {
+      "get": {
+        "operationId": "SessionController_getStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Session statistics including counts and memory usage"
+          }
+        },
+        "summary": "Get session statistics for multi-session monitoring",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
     "/api/sessions/{id}/chats": {
       "get": {
-        "operationId": "SessionController_getChats",
+        "operationId": "SessionChatController_getChats",
         "parameters": [
           {
             "name": "id",
@@ -732,7 +747,7 @@
     },
     "/api/sessions/{id}/chats/read": {
       "post": {
-        "operationId": "SessionController_markChatRead",
+        "operationId": "SessionChatController_markChatRead",
         "parameters": [
           {
             "name": "id",
@@ -773,7 +788,7 @@
     },
     "/api/sessions/{id}/chats/unread": {
       "post": {
-        "operationId": "SessionController_markChatUnread",
+        "operationId": "SessionChatController_markChatUnread",
         "parameters": [
           {
             "name": "id",
@@ -814,7 +829,7 @@
     },
     "/api/sessions/{id}/chats/delete": {
       "post": {
-        "operationId": "SessionController_deleteChat",
+        "operationId": "SessionChatController_deleteChat",
         "parameters": [
           {
             "name": "id",
@@ -855,7 +870,7 @@
     },
     "/api/sessions/{id}/chats/typing": {
       "post": {
-        "operationId": "SessionController_sendChatState",
+        "operationId": "SessionChatController_sendChatState",
         "parameters": [
           {
             "name": "id",
@@ -886,21 +901,6 @@
           }
         },
         "summary": "Send a typing/recording presence indicator to a chat (or clear it with 'paused')",
-        "tags": [
-          "sessions"
-        ]
-      }
-    },
-    "/api/sessions/stats/overview": {
-      "get": {
-        "operationId": "SessionController_getStats",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Session statistics including counts and memory usage"
-          }
-        },
-        "summary": "Get session statistics for multi-session monitoring",
         "tags": [
           "sessions"
         ]
@@ -1825,9 +1825,47 @@
         ]
       }
     },
+    "/api/sessions/{sessionId}/messages/delete": {
+      "post": {
+        "operationId": "MessageController_deleteMessage",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message deleted"
+          },
+          "400": {
+            "description": "Session not active or message not found"
+          }
+        },
+        "summary": "Delete a message",
+        "tags": [
+          "messages"
+        ]
+      }
+    },
     "/api/sessions/{sessionId}/messages/react": {
       "post": {
-        "operationId": "MessageController_react",
+        "operationId": "ChatHistoryController_react",
         "parameters": [
           {
             "name": "sessionId",
@@ -1866,7 +1904,7 @@
     "/api/sessions/{sessionId}/messages/{chatId}/history": {
       "get": {
         "description": "Reads messages directly from the WhatsApp client for the given chat, bypassing the local DB. Useful for retrieving messages that arrived before the gateway was started.",
-        "operationId": "MessageController_getChatHistory",
+        "operationId": "ChatHistoryController_getChatHistory",
         "parameters": [
           {
             "name": "sessionId",
@@ -1927,7 +1965,7 @@
     },
     "/api/sessions/{sessionId}/messages/{chatId}/{messageId}/reactions": {
       "get": {
-        "operationId": "MessageController_getReactions",
+        "operationId": "ChatHistoryController_getReactions",
         "parameters": [
           {
             "name": "sessionId",
@@ -1968,47 +2006,9 @@
         ]
       }
     },
-    "/api/sessions/{sessionId}/messages/delete": {
-      "post": {
-        "operationId": "MessageController_deleteMessage",
-        "parameters": [
-          {
-            "name": "sessionId",
-            "required": true,
-            "in": "path",
-            "description": "Session ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteMessageDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Message deleted"
-          },
-          "400": {
-            "description": "Session not active or message not found"
-          }
-        },
-        "summary": "Delete a message",
-        "tags": [
-          "messages"
-        ]
-      }
-    },
     "/api/sessions/{sessionId}/messages/send-bulk": {
       "post": {
-        "operationId": "MessageController_sendBulk",
+        "operationId": "BulkMessageController_sendBulk",
         "parameters": [
           {
             "name": "sessionId",
@@ -2053,7 +2053,7 @@
     },
     "/api/sessions/{sessionId}/messages/batch/{batchId}": {
       "get": {
-        "operationId": "MessageController_getBatchStatus",
+        "operationId": "BulkMessageController_getBatchStatus",
         "parameters": [
           {
             "name": "sessionId",
@@ -2090,7 +2090,7 @@
     },
     "/api/sessions/{sessionId}/messages/batch/{batchId}/cancel": {
       "post": {
-        "operationId": "MessageController_cancelBatch",
+        "operationId": "BulkMessageController_cancelBatch",
         "parameters": [
           {
             "name": "sessionId",
@@ -2334,313 +2334,577 @@
         ]
       }
     },
-    "/api/health": {
+    "/api/translate/config": {
       "get": {
-        "operationId": "HealthController_check",
+        "operationId": "TranslateController_getConfig",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Application is healthy"
+            "description": "Current translation config"
           }
         },
-        "summary": "Basic health check",
+        "summary": "Get runtime translation config",
         "tags": [
-          "health"
-        ],
-        "security": []
-      }
-    },
-    "/api/health/live": {
-      "get": {
-        "operationId": "HealthController_liveness",
+          "translate"
+        ]
+      },
+      "put": {
+        "operationId": "TranslateController_updateConfig",
         "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Application is alive"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTranslateConfigDto"
+              }
+            }
           }
         },
-        "summary": "Liveness probe for Kubernetes",
+        "responses": {
+          "200": {
+            "description": "Updated translation config"
+          }
+        },
+        "summary": "Update runtime translation config (applied immediately, no restart)",
         "tags": [
-          "health"
-        ],
-        "security": []
+          "translate"
+        ]
       }
     },
-    "/api/health/ready": {
+    "/api/translate/llm/test": {
+      "post": {
+        "operationId": "TranslateController_testLlm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LlmProbeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ ok, message }"
+          }
+        },
+        "summary": "Test-connect to an LLM endpoint with the given (possibly unsaved) params",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/llm/models": {
+      "post": {
+        "operationId": "TranslateController_listLlmModels",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LlmProbeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ models: string[] }"
+          }
+        },
+        "summary": "List available model names for an LLM endpoint (Ollama/OpenAI-compatible)",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/preview": {
+      "post": {
+        "operationId": "TranslateController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTranslateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "{ pair, translated }"
+          }
+        },
+        "summary": "Translate ad-hoc text through the live pipeline (glossary/senders/casing)",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/glossary": {
       "get": {
-        "operationId": "HealthController_readiness",
+        "operationId": "TranslateController_getGlossary",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Application is ready to accept traffic"
+            "description": "Glossary terms (source = 中文, target = 越南文)"
+          }
+        },
+        "summary": "List zh<->vi glossary terms",
+        "tags": [
+          "translate"
+        ]
+      },
+      "post": {
+        "operationId": "TranslateController_addGlossary",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlossaryTermDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Updated glossary terms"
+          }
+        },
+        "summary": "Add/overwrite a zh<->vi glossary term (both directions)",
+        "tags": [
+          "translate"
+        ]
+      },
+      "delete": {
+        "operationId": "TranslateController_removeGlossary",
+        "parameters": [
+          {
+            "name": "term",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated glossary terms"
+          }
+        },
+        "summary": "Remove any glossary pairing where the term appears on either side",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/glossary/pending": {
+      "get": {
+        "operationId": "TranslateController_getPendingGlossary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Pending suggestions"
+          }
+        },
+        "summary": "List pending glossary suggestions",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/glossary/pending/{id}/approve": {
+      "post": {
+        "operationId": "TranslateController_approvePendingGlossary",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Remaining pending suggestions"
+          }
+        },
+        "summary": "Approve a pending glossary suggestion into the glossary",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/glossary/pending/{id}": {
+      "delete": {
+        "operationId": "TranslateController_rejectPendingGlossary",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remaining pending suggestions"
+          }
+        },
+        "summary": "Reject (drop) a pending glossary suggestion",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/candidates": {
+      "get": {
+        "operationId": "TranslateController_getMemoryCandidates",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           },
-          "503": {
-            "description": "A required dependency is down"
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidates ordered by frequency"
           }
         },
-        "summary": "Readiness probe — verifies the auth/audit + data databases respond",
+        "summary": "Top translation-memory candidates to promote into the glossary",
         "tags": [
-          "health"
-        ],
-        "security": []
+          "translate"
+        ]
       }
     },
-    "/api/settings": {
+    "/api/translate/memory/{id}/approve": {
+      "post": {
+        "operationId": "TranslateController_approveMemoryCandidate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Remaining candidates"
+          }
+        },
+        "summary": "Promote a memory candidate into the glossary",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/{id}": {
+      "delete": {
+        "operationId": "TranslateController_dismissMemoryCandidate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remaining candidates"
+          }
+        },
+        "summary": "Dismiss a memory candidate",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/phrases/scan": {
+      "post": {
+        "operationId": "TranslateController_scanPhraseCandidates",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Refreshed phrase candidates"
+          }
+        },
+        "summary": "Mine high-frequency phrases from translation memory + LLM-suggest terms",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/phrases": {
       "get": {
-        "operationId": "SettingsController_get",
+        "operationId": "TranslateController_getPhraseCandidates",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phrase candidates ordered by frequency"
+          }
+        },
+        "summary": "High-frequency phrase candidates awaiting review",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/phrases/{id}/approve": {
+      "post": {
+        "operationId": "TranslateController_approvePhraseCandidate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Remaining phrase candidates"
+          }
+        },
+        "summary": "Promote a phrase candidate into the glossary",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/phrases/{id}": {
+      "delete": {
+        "operationId": "TranslateController_dismissPhraseCandidate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remaining phrase candidates"
+          }
+        },
+        "summary": "Dismiss a phrase candidate",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/senders": {
+      "get": {
+        "operationId": "TranslateController_getSenders",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Current settings"
+            "description": "Sender overrides"
           }
         },
-        "summary": "Get application settings",
+        "summary": "List @mention JID->name overrides",
         "tags": [
-          "settings"
+          "translate"
         ]
       },
-      "put": {
-        "operationId": "SettingsController_update",
+      "post": {
+        "operationId": "TranslateController_addSender",
         "parameters": [],
-        "responses": {
-          "501": {
-            "description": "Settings are derived from environment configuration and cannot be changed at runtime"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SenderEntryDto"
+              }
+            }
           }
         },
-        "summary": "Settings are read-only at runtime (environment-derived)",
-        "tags": [
-          "settings"
-        ]
-      }
-    },
-    "/api/infra/status": {
-      "get": {
-        "operationId": "InfraController_getStatus",
-        "parameters": [],
         "responses": {
-          "200": {
-            "description": "Infrastructure status"
+          "201": {
+            "description": "Updated sender overrides"
           }
         },
-        "summary": "Get infrastructure status",
+        "summary": "Add/overwrite an @mention JID->name override",
         "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/engines": {
-      "get": {
-        "operationId": "InfraController_getEngines",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of available engines"
-          }
-        },
-        "summary": "Get available WhatsApp engines",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/engines/current": {
-      "get": {
-        "operationId": "InfraController_getCurrentEngine",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Current engine info"
-          }
-        },
-        "summary": "Get current active engine",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/config": {
-      "get": {
-        "operationId": "InfraController_getConfig",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Saved configuration (secrets omitted)"
-          }
-        },
-        "summary": "Read the saved infrastructure configuration for the dashboard form",
-        "tags": [
-          "infrastructure"
+          "translate"
         ]
       },
-      "put": {
-        "operationId": "InfraController_saveConfig",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Configuration to save",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
+      "delete": {
+        "operationId": "TranslateController_removeSender",
+        "parameters": [
+          {
+            "name": "jid",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration saved"
-          }
-        },
-        "summary": "Save infrastructure configuration to .env file",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/restart": {
-      "post": {
-        "operationId": "InfraController_requestRestart",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Server will restart with new profiles"
-          }
-        },
-        "summary": "Request server restart with Docker orchestration",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/health": {
-      "get": {
-        "operationId": "InfraController_healthCheck",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Server is healthy"
-          }
-        },
-        "summary": "Health check endpoint",
-        "tags": [
-          "infrastructure"
         ],
-        "security": []
-      }
-    },
-    "/api/infra/export-data": {
-      "get": {
-        "operationId": "InfraController_exportData",
-        "parameters": [],
         "responses": {
           "200": {
-            "description": "Exported data as JSON"
+            "description": "Updated sender overrides"
           }
         },
-        "summary": "Export all data from Data DB for migration",
+        "summary": "Remove an @mention JID override",
         "tags": [
-          "infrastructure"
+          "translate"
         ]
       }
     },
-    "/api/infra/import-data": {
+    "/api/translate/categories": {
+      "get": {
+        "operationId": "TranslateController_getCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Categories"
+          }
+        },
+        "summary": "List glossary categories",
+        "tags": [
+          "translate"
+        ]
+      },
       "post": {
-        "operationId": "InfraController_importData",
+        "operationId": "TranslateController_addCategory",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Exported data from export-data endpoint",
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "tables": {
-                    "type": "object",
-                    "properties": {
-                      "sessions": {
-                        "type": "array"
-                      },
-                      "webhooks": {
-                        "type": "array"
-                      },
-                      "messages": {
-                        "type": "array"
-                      },
-                      "messageBatches": {
-                        "type": "array"
-                      }
-                    }
-                  }
-                }
+                "$ref": "#/components/schemas/CategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Updated categories"
+          }
+        },
+        "summary": "Add a glossary category",
+        "tags": [
+          "translate"
+        ]
+      },
+      "delete": {
+        "operationId": "TranslateController_removeCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Data imported successfully"
+            "description": "Updated categories"
           }
         },
-        "summary": "Import data to Data DB (replaces existing data)",
+        "summary": "Remove a glossary category",
         "tags": [
-          "infrastructure"
+          "translate"
         ]
       }
     },
-    "/api/infra/storage/files/count": {
-      "get": {
-        "operationId": "InfraController_getStorageFileCount",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "File count and size"
-          }
-        },
-        "summary": "Get file count in current storage",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/storage/export": {
-      "get": {
-        "operationId": "InfraController_exportStorage",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Tar.gz archive stream"
-          }
-        },
-        "summary": "Export all storage files as tar.gz",
-        "tags": [
-          "infrastructure"
-        ]
-      }
-    },
-    "/api/infra/storage/import": {
+    "/api/translate/senders/backfill": {
       "post": {
-        "operationId": "InfraController_importStorage",
+        "operationId": "TranslateController_backfillSenders",
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Path to tar.gz file to import",
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/ImportSendersDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Import result"
+          "201": {
+            "description": "Count filled + updated overrides"
           }
         },
-        "summary": "Import storage files from tar.gz",
+        "summary": "Resolve names for queued empty-name @lid entries via the session contacts",
         "tags": [
-          "infrastructure"
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/senders/import": {
+      "post": {
+        "operationId": "TranslateController_importSenders",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportSendersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Count added + updated overrides"
+          }
+        },
+        "summary": "Seed sender overrides from a session's contacts + joined-group members (skips existing)",
+        "tags": [
+          "translate"
         ]
       }
     },
@@ -3331,6 +3595,401 @@
         "summary": "Revoke group invite code and generate new one",
         "tags": [
           "groups"
+        ]
+      }
+    },
+    "/api/keyproxy/keys": {
+      "get": {
+        "operationId": "KeyProxyController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Masked keys with usage/cooldown status"
+          }
+        },
+        "summary": "List LLM-proxy keys (masked) with per-key rotation status",
+        "tags": [
+          "keyproxy"
+        ]
+      },
+      "post": {
+        "operationId": "KeyProxyController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddKeyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Updated masked key list"
+          }
+        },
+        "summary": "Add a key for a provider and restart the proxy",
+        "tags": [
+          "keyproxy"
+        ]
+      }
+    },
+    "/api/keyproxy/keys/{provider}/{index}": {
+      "delete": {
+        "operationId": "KeyProxyController_remove",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "index",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated masked key list"
+          }
+        },
+        "summary": "Delete a provider key by index and restart the proxy",
+        "tags": [
+          "keyproxy"
+        ]
+      }
+    },
+    "/api/teams/messages": {
+      "post": {
+        "operationId": "TeamsController_messages",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Teams"
+        ],
+        "security": []
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Application is healthy"
+          }
+        },
+        "summary": "Basic health check",
+        "tags": [
+          "health"
+        ],
+        "security": []
+      }
+    },
+    "/api/health/live": {
+      "get": {
+        "operationId": "HealthController_liveness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Application is alive"
+          }
+        },
+        "summary": "Liveness probe for Kubernetes",
+        "tags": [
+          "health"
+        ],
+        "security": []
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "operationId": "HealthController_readiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Application is ready to accept traffic"
+          },
+          "503": {
+            "description": "A required dependency is down"
+          }
+        },
+        "summary": "Readiness probe — verifies the auth/audit + data databases respond",
+        "tags": [
+          "health"
+        ],
+        "security": []
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "SettingsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current settings"
+          }
+        },
+        "summary": "Get application settings",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "operationId": "SettingsController_update",
+        "parameters": [],
+        "responses": {
+          "501": {
+            "description": "Settings are derived from environment configuration and cannot be changed at runtime"
+          }
+        },
+        "summary": "Settings are read-only at runtime (environment-derived)",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/infra/status": {
+      "get": {
+        "operationId": "InfraController_getStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Infrastructure status"
+          }
+        },
+        "summary": "Get infrastructure status",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/engines": {
+      "get": {
+        "operationId": "InfraController_getEngines",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of available engines"
+          }
+        },
+        "summary": "Get available WhatsApp engines",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/engines/current": {
+      "get": {
+        "operationId": "InfraController_getCurrentEngine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current engine info"
+          }
+        },
+        "summary": "Get current active engine",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/config": {
+      "get": {
+        "operationId": "InfraController_getConfig",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Saved configuration (secrets omitted)"
+          }
+        },
+        "summary": "Read the saved infrastructure configuration for the dashboard form",
+        "tags": [
+          "infrastructure"
+        ]
+      },
+      "put": {
+        "operationId": "InfraController_saveConfig",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Configuration to save",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration saved"
+          }
+        },
+        "summary": "Save infrastructure configuration to .env file",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/restart": {
+      "post": {
+        "operationId": "InfraController_requestRestart",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Server will restart with new profiles"
+          }
+        },
+        "summary": "Request server restart with Docker orchestration",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/health": {
+      "get": {
+        "operationId": "InfraController_healthCheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Server is healthy"
+          }
+        },
+        "summary": "Health check endpoint",
+        "tags": [
+          "infrastructure"
+        ],
+        "security": []
+      }
+    },
+    "/api/infra/export-data": {
+      "get": {
+        "operationId": "InfraController_exportData",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Exported data as JSON"
+          }
+        },
+        "summary": "Export all data from Data DB for migration",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/import-data": {
+      "post": {
+        "operationId": "InfraController_importData",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Exported data from export-data endpoint",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tables": {
+                    "type": "object",
+                    "properties": {
+                      "sessions": {
+                        "type": "array"
+                      },
+                      "webhooks": {
+                        "type": "array"
+                      },
+                      "messages": {
+                        "type": "array"
+                      },
+                      "messageBatches": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data imported successfully"
+          }
+        },
+        "summary": "Import data to Data DB (replaces existing data)",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/storage/files/count": {
+      "get": {
+        "operationId": "InfraController_getStorageFileCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "File count and size"
+          }
+        },
+        "summary": "Get file count in current storage",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/storage/export": {
+      "get": {
+        "operationId": "InfraController_exportStorage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tar.gz archive stream"
+          }
+        },
+        "summary": "Export all storage files as tar.gz",
+        "tags": [
+          "infrastructure"
+        ]
+      }
+    },
+    "/api/infra/storage/import": {
+      "post": {
+        "operationId": "InfraController_importStorage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Path to tar.gz file to import",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result"
+          }
+        },
+        "summary": "Import storage files from tar.gz",
+        "tags": [
+          "infrastructure"
         ]
       }
     },
@@ -5300,12 +5959,12 @@
     }
   },
   "info": {
-    "title": "OpenWA API",
+    "title": "OpenWA-Lab API",
     "description": "Open Source WhatsApp API Gateway - Free, Self-Hosted HTTP API",
     "version": "0.8.17",
     "contact": {
-      "name": "OpenWA",
-      "url": "https://github.com/rmyndharis/OpenWA",
+      "name": "OpenWA-Lab",
+      "url": "https://github.com/JaplinChen/OpenWA-Lab",
       "email": "yudhi@rmyndharis.com"
     }
   },
@@ -6346,6 +7005,25 @@
           "messageId"
         ]
       },
+      "DeleteMessageDto": {
+        "type": "object",
+        "properties": {
+          "chatId": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": "string"
+          },
+          "forEveryone": {
+            "type": "boolean",
+            "description": "Delete for everyone (default true)"
+          }
+        },
+        "required": [
+          "chatId",
+          "messageId"
+        ]
+      },
       "ReactMessageDto": {
         "type": "object",
         "properties": {
@@ -6365,25 +7043,6 @@
           "chatId",
           "messageId",
           "emoji"
-        ]
-      },
-      "DeleteMessageDto": {
-        "type": "object",
-        "properties": {
-          "chatId": {
-            "type": "string"
-          },
-          "messageId": {
-            "type": "string"
-          },
-          "forEveryone": {
-            "type": "boolean",
-            "description": "Delete for everyone (default true)"
-          }
-        },
-        "required": [
-          "chatId",
-          "messageId"
         ]
       },
       "BulkMediaDto": {
@@ -6668,6 +7327,34 @@
           }
         }
       },
+      "UpdateTranslateConfigDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "LlmProbeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PreviewTranslateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "GlossaryTermDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SenderEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CategoryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ImportSendersDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateGroupDto": {
         "type": "object",
         "properties": {
@@ -6729,6 +7416,10 @@
         "required": [
           "description"
         ]
+      },
+      "AddKeyDto": {
+        "type": "object",
+        "properties": {}
       },
       "SendTextStatusDto": {
         "type": "object",
