@@ -142,6 +142,9 @@ services:
       - TRANSLATE_VOICE_MAX_BYTES=${TRANSLATE_VOICE_MAX_BYTES:-}
       - TRANSLATE_VOICE_TIMEOUT_MS=${TRANSLATE_VOICE_TIMEOUT_MS:-}
       - TRANSLATE_VOICE_INCLUDE_AUDIO=${TRANSLATE_VOICE_INCLUDE_AUDIO:-}
+      # Blank = no audio kept. Set to a path under /app/data ONLY for a model-comparison window
+      # (scripts/voice-model-ab.mjs), then unset and delete the directory — this is real conversation audio.
+      - TRANSLATE_VOICE_ARCHIVE_DIR=${TRANSLATE_VOICE_ARCHIVE_DIR:-}
       # Per-LLM-call deadline. Every translation is serialized behind one queue, so a stalled provider
       # charges this much to EVERY queued message before the fallback runs — keep it well under a
       # chat-tolerable lag. Forwarded like the vars above or .env never reaches the container.

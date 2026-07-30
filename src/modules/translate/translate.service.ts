@@ -37,7 +37,15 @@ import {
   splitList,
 } from './translate-config.store';
 import { parseCommand, type CommandContext } from './translate-commands';
-import { HourlyCap, VoiceConfig, transcribe, voiceConfigFromEnv, voiceEnabled } from './translate-voice';
+import {
+  HourlyCap,
+  VoiceConfig,
+  appendVoiceStat,
+  archiveAudio,
+  transcribe,
+  voiceConfigFromEnv,
+  voiceEnabled,
+} from './translate-voice';
 import { ConcurrencyLimiter } from '../../common/utils/concurrency-limiter';
 import { recordSttCall } from '../keyproxy/stt-usage.store';
 
@@ -544,6 +552,21 @@ export class TranslateService implements OnModuleInit {
           recordSttCall(this.voice.apiKey, false);
           throw err;
         });
+      // Recorded BEFORE the empty-transcript exit: "whisper heard nothing" is itself a data point the
+      // threshold has to account for, and dropping it would bias the sample toward successful notes.
+      const ts = Date.now();
+      appendVoiceStat({
+        ts,
+        model: this.voice.model,
+        file: archiveAudio(audio, media.mimetype, ts) || undefined,
+        ms: Date.now() - startedAt,
+        bytes: audio.byteLength,
+        chars: text.length,
+        noSpeech: confidence?.maxNoSpeech ?? null,
+        logprob: confidence?.minLogprob ?? null,
+        segments: confidence?.segments ?? null,
+        text,
+      });
       if (!text) {
         this.logger.warn(`Voice transcript empty chat=${msg.chatId}`);
         return;

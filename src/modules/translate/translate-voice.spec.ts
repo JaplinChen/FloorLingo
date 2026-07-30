@@ -1,5 +1,11 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {
   HourlyCap,
+  appendVoiceStat,
+  archiveAudio,
+  type VoiceStat,
   parseConfusions,
   summarizeConfidence,
   audioExtension,
@@ -225,5 +231,58 @@ describe('parseConfusions', () => {
     expect(parseConfusions('bot=')).toEqual(new Map());
     expect(parseConfusions('=boss')).toEqual(new Map());
     expect(parseConfusions('')).toEqual(new Map());
+  });
+});
+
+describe('appendVoiceStat', () => {
+  const stat = {
+    ts: 1,
+    model: 'whisper-large-v3-turbo',
+    ms: 900,
+    bytes: 4096,
+    chars: 5,
+    noSpeech: 0.82,
+    logprob: -1.4,
+    segments: 2,
+    text: 'hello',
+  };
+
+  it('appends one JSONL row per call and creates the directory', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vstat-')), 'nested', 'voice-stats.jsonl');
+    appendVoiceStat(stat, file);
+    appendVoiceStat({ ...stat, ts: 2, text: '' }, file);
+    const rows = fs
+      .readFileSync(file, 'utf8')
+      .trim()
+      .split('\n')
+      .map(l => JSON.parse(l) as VoiceStat);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual(stat);
+    expect(rows[1].text).toBe('');
+  });
+
+  it('truncates the transcript and never throws on an unwritable path', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vstat-')), 'voice-stats.jsonl');
+    appendVoiceStat({ ...stat, text: 'x'.repeat(500) }, file);
+    expect((JSON.parse(fs.readFileSync(file, 'utf8')) as VoiceStat).text).toHaveLength(300);
+    expect(() => appendVoiceStat(stat, path.join(file, 'is-a-file', 'x.jsonl'))).not.toThrow();
+  });
+});
+
+describe('archiveAudio', () => {
+  it('is off by default and returns no filename', () => {
+    expect(archiveAudio(Buffer.from('abc'), 'audio/ogg', 123, '')).toBe('');
+  });
+
+  it('writes the raw bytes under a ts-named file with the sniffed extension', () => {
+    const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'varch-')), 'nested');
+    expect(archiveAudio(Buffer.from('abc'), 'audio/ogg; codecs=opus', 123, dir)).toBe('123.ogg');
+    expect(fs.readFileSync(path.join(dir, '123.ogg'), 'utf8')).toBe('abc');
+  });
+
+  it('returns empty instead of throwing when the dir is unusable', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'varch-')), 'a-file');
+    fs.writeFileSync(file, 'x');
+    expect(archiveAudio(Buffer.from('abc'), 'audio/ogg', 1, path.join(file, 'sub'))).toBe('');
   });
 });
