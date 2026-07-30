@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { SttQuota, quotaFromHeaders } from '../keyproxy/stt-usage.store';
 
 // Voice notes carry no `body`, so the translate hook drops them and a spoken message silently breaks
@@ -180,6 +182,67 @@ export function summarizeConfidence(segments: unknown): TranscriptionConfidence 
   const noSpeech = segments.map(s => num((s as { no_speech_prob?: unknown })?.no_speech_prob, 0));
   const logprob = segments.map(s => num((s as { avg_logprob?: unknown })?.avg_logprob, 0));
   return { maxNoSpeech: Math.max(...noSpeech), minLogprob: Math.min(...logprob), segments: segments.length };
+}
+
+/** One recorded transcription, the row a `no_speech`/`logprob` threshold gets derived from. */
+export interface VoiceStat {
+  ts: number;
+  model: string;
+  ms: number;
+  bytes: number;
+  chars: number;
+  noSpeech: number | null;
+  logprob: number | null;
+  segments: number | null;
+  /** Truncated — enough to judge whether a low-confidence row was actually garbage. */
+  text: string;
+  /** Archived audio filename, when TRANSLATE_VOICE_ARCHIVE_DIR is set. Absent otherwise. */
+  file?: string;
+}
+
+/**
+ * Append one JSONL row to `data/voice-stats.jsonl`.
+ *
+ * The confidence numbers only ever reached `logger.log()`, and container logs die with the container —
+ * so after months of voice traffic there was no sample to pick a threshold from. This is the durable
+ * copy (named volume, survives restart/rebuild).
+ *
+ * ponytail: unbounded append, ~200B/note at a few notes a day. Rotate or prune when it matters.
+ */
+export function appendVoiceStat(
+  stat: VoiceStat,
+  file = process.env.TRANSLATE_VOICE_STATS_PATH || 'data/voice-stats.jsonl',
+): void {
+  try {
+    fs.mkdirSync(path.dirname(file) || '.', { recursive: true });
+    fs.appendFileSync(file, JSON.stringify({ ...stat, text: stat.text.slice(0, 300) }) + '\n', 'utf8');
+  } catch {
+    // Stats are diagnostics: a full/read-only disk must never cost a voice note its translation.
+  }
+}
+
+/**
+ * Save the raw note so a model comparison has something to replay. OFF unless
+ * TRANSLATE_VOICE_ARCHIVE_DIR is set: this writes real conversation audio to disk, so it's an explicit
+ * opt-in for a measurement window, not a default. Turn it off and delete the directory when done.
+ *
+ * Returns the filename to record in the stat row, or '' if archiving is off or the write failed.
+ */
+export function archiveAudio(
+  audio: Buffer,
+  mimetype: string,
+  ts: number,
+  dir = process.env.TRANSLATE_VOICE_ARCHIVE_DIR || '',
+): string {
+  if (!dir) return '';
+  const name = `${ts}.${audioExtension(mimetype)}`;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, name), audio);
+    return name;
+  } catch {
+    return ''; // same rule as the stats row: diagnostics never cost a note its translation
+  }
 }
 
 /**
