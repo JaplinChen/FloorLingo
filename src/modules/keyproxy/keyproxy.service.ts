@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { DockerService } from '../docker/docker.service';
 import { createLogger } from '../../common/services/logger.service';
 import { KeyProxyEnvStore } from './keyproxy-env.store';
-import { keySuffix, sttUsageFor } from './stt-usage.store';
+import { SttQuota, keySuffix, sttUsageFor } from './stt-usage.store';
 
 // Compose service name / label of the key-rotation proxy (see docker-compose.yml).
 const PROXY_SERVICE = 'llm-key-proxy';
@@ -18,6 +18,12 @@ export interface KeyStatus {
   failureCount: number;
   /** Subset of requestCount that went straight to the provider (voice transcription), not via the proxy. */
   voiceRequestCount: number;
+  /**
+   * Provider-reported ceiling for this key, when the provider reports one at all. Null for providers
+   * that send no rate-limit headers (Gemini) — the UI must then show a bare count, never a guess: the
+   * real ceiling depends on the account tier and inventing a number is worse than showing none.
+   */
+  quota: SttQuota | null;
 }
 
 // quota-stats shape (only the fields we read). NOTE: each credential also carries `full_path` — the
@@ -68,6 +74,7 @@ export class KeyProxyService {
         failureCount: (s?.failureCount ?? 0) + stt.failures,
         // Broken out so the UI can say how much of the total never went through the proxy.
         voiceRequestCount: stt.requests,
+        quota: stt.quota,
       };
     });
   }

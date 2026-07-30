@@ -516,7 +516,7 @@ export class TranslateService implements OnModuleInit {
       const { text, confidence } = await this.voiceLimiter
         .run(() => transcribe(audio, media.mimetype, this.voice))
         .then(r => {
-          recordSttCall(this.voice.apiKey, true);
+          recordSttCall(this.voice.apiKey, true, r.quota);
           return r;
         })
         .catch(err => {
