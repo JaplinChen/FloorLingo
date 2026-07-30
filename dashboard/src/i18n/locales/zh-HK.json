@@ -967,7 +967,10 @@
     "keyPlaceholder": "貼上 API 金鑰",
     "accountPlaceholder": "帳號（選填）",
     "voiceCount": "語音 {{count}}",
-    "voiceHint": "語音轉錄直連供應商，這些請求不經過輪替代理。"
+    "voiceHint": "語音轉錄直連供應商，這些請求不經過輪替代理。",
+    "quota": "配額",
+    "quotaHint": "供應商於上次呼叫回報：請求 {{usedRequests}}/{{limitRequests}}，音訊秒數 {{usedAudio}}/{{limitAudio}}。音訊秒數通常先用完。",
+    "quotaNoneHint": "此供應商不回傳配額標頭，無從得知上限。寧可不顯示，也不猜測數字。"
   },
   "senders": {
     "title": "發送者",

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { keySuffix, recordSttCall, sttUsageFor } from './stt-usage.store';
+import { keySuffix, quotaFromHeaders, recordSttCall, sttUsageFor } from './stt-usage.store';
 
 describe('stt-usage store', () => {
   let file: string;
@@ -12,15 +12,15 @@ describe('stt-usage store', () => {
   });
 
   it('reports zeroes for a key that has never been used', () => {
-    expect(sttUsageFor('abcd')).toEqual({ requests: 0, failures: 0, lastUsedAt: 0 });
+    expect(sttUsageFor('abcd')).toEqual({ requests: 0, failures: 0, lastUsedAt: 0, quota: null });
   });
 
   it('counts successes and failures separately, keyed by suffix', () => {
-    recordSttCall('gsk_secret_value_wxyz', true, 1000);
-    recordSttCall('gsk_secret_value_wxyz', false, 2000);
-    recordSttCall('gsk_secret_value_wxyz', true, 3000);
+    recordSttCall('gsk_secret_value_wxyz', true, null, 1000);
+    recordSttCall('gsk_secret_value_wxyz', false, null, 2000);
+    recordSttCall('gsk_secret_value_wxyz', true, null, 3000);
 
-    expect(sttUsageFor('wxyz')).toEqual({ requests: 3, failures: 1, lastUsedAt: 3000 });
+    expect(sttUsageFor('wxyz')).toEqual({ requests: 3, failures: 1, lastUsedAt: 3000, quota: null });
   });
 
   it('never writes the key itself to disk', () => {
@@ -32,9 +32,9 @@ describe('stt-usage store', () => {
   });
 
   it('keeps separate totals per key', () => {
-    recordSttCall('key-one-aaaa', true, 10);
-    recordSttCall('key-two-bbbb', true, 20);
-    recordSttCall('key-two-bbbb', true, 30);
+    recordSttCall('key-one-aaaa', true, null, 10);
+    recordSttCall('key-two-bbbb', true, null, 20);
+    recordSttCall('key-two-bbbb', true, null, 30);
 
     expect(sttUsageFor('aaaa').requests).toBe(1);
     expect(sttUsageFor('bbbb').requests).toBe(2);
@@ -47,9 +47,56 @@ describe('stt-usage store', () => {
 
   it('survives a corrupt usage file rather than throwing into the STT path', () => {
     fs.writeFileSync(file, 'not json at all', 'utf8');
-    expect(sttUsageFor('wxyz')).toEqual({ requests: 0, failures: 0, lastUsedAt: 0 });
+    expect(sttUsageFor('wxyz')).toEqual({ requests: 0, failures: 0, lastUsedAt: 0, quota: null });
     expect(() => recordSttCall('key-wxyz', true)).not.toThrow();
     expect(sttUsageFor('wxyz').requests).toBe(1);
+  });
+
+  const headers = (h: Record<string, string>) => ({ get: (n: string) => h[n] ?? null });
+
+  it('reads the full x-ratelimit family Groq sends', () => {
+    expect(
+      quotaFromHeaders(
+        headers({
+          'x-ratelimit-limit-requests': '2000',
+          'x-ratelimit-remaining-requests': '1999',
+          'x-ratelimit-limit-audio-seconds': '7200',
+          'x-ratelimit-remaining-audio-seconds': '7197',
+        }),
+      ),
+    ).toEqual({
+      limitRequests: 2000,
+      remainingRequests: 1999,
+      limitAudioSeconds: 7200,
+      remainingAudioSeconds: 7197,
+    });
+  });
+
+  it('treats a partial or absent header set as no quota, not a half-filled one', () => {
+    expect(quotaFromHeaders(headers({}))).toBeNull(); // Gemini and friends report nothing
+    expect(quotaFromHeaders(undefined)).toBeNull(); // response without a headers bag at all
+    expect(quotaFromHeaders(headers({ 'x-ratelimit-limit-requests': '2000' }))).toBeNull();
+    expect(
+      quotaFromHeaders(
+        headers({
+          'x-ratelimit-limit-requests': 'lots',
+          'x-ratelimit-remaining-requests': '1',
+          'x-ratelimit-limit-audio-seconds': '1',
+          'x-ratelimit-remaining-audio-seconds': '1',
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('stores the reported quota and keeps the last reading when a later call reports none', () => {
+    const q = { limitRequests: 2000, remainingRequests: 1999, limitAudioSeconds: 7200, remainingAudioSeconds: 7197 };
+    recordSttCall('key-wxyz', true, q, 1000);
+    expect(sttUsageFor('wxyz').quota).toEqual(q);
+
+    // A transport failure reports nothing; the known ceiling must not be blanked by it.
+    recordSttCall('key-wxyz', false, null, 2000);
+    expect(sttUsageFor('wxyz').quota).toEqual(q);
+    expect(sttUsageFor('wxyz').failures).toBe(1);
   });
 
   it('keySuffix takes the last four characters', () => {

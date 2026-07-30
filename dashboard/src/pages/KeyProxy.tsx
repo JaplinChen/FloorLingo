@@ -9,6 +9,19 @@ import { useToast } from '../components/Toast';
 import { PageHeader } from '../components/PageHeader';
 import './KeyProxy.css';
 
+/**
+ * Providers report what is LEFT, not what was spent, and the window resets on its own schedule — so
+ * "used" is derived per reading rather than accumulated. Audio seconds are surfaced too because for
+ * transcription they run out first: 7200s at ~5s per voice note is ~1440 notes against a 2000 request
+ * ceiling, so the request count alone would suggest more headroom than actually exists.
+ */
+const quotaParts = (q: NonNullable<KeyStatus['quota']>) => ({
+  usedRequests: q.limitRequests - q.remainingRequests,
+  limitRequests: q.limitRequests,
+  usedAudio: Math.round(q.limitAudioSeconds - q.remainingAudioSeconds),
+  limitAudio: q.limitAudioSeconds,
+});
+
 // Providers the llm-key-proxy supports that make sense for free-tier rotation here.
 const PROVIDERS = ['gemini', 'groq', 'openai', 'anthropic', 'mistral', 'openrouter', 'nvidia_nim'];
 
@@ -160,6 +173,8 @@ export function KeyProxy() {
               <col style={{ width: 'var(--col-keycol, auto)' }} />
               <col style={{ width: 'var(--col-status, 7rem)' }} />
               <col style={{ width: 'var(--col-requests, 6rem)' }} />
+              {/* Wider than the neighbours: holds "1234/2000", not a single number. */}
+              <col style={{ width: 'var(--col-quota, 8rem)' }} />
               <col style={{ width: 'var(--col-failures, 6rem)' }} />
               {canWrite && <col style={{ width: '3rem' }} />}
             </colgroup>
@@ -170,6 +185,7 @@ export function KeyProxy() {
                 <th data-col="keycol">{t('keyproxy.key')}<RH col="keycol" /></th>
                 <th data-col="status">{t('keyproxy.status')}<RH col="status" /></th>
                 <th className="keyproxy-num" data-col="requests">{t('keyproxy.requests')}<RH col="requests" /></th>
+                <th className="keyproxy-num" data-col="quota">{t('keyproxy.quota')}<RH col="quota" /></th>
                 <th className="keyproxy-num" data-col="failures">{t('keyproxy.failures')}<RH col="failures" /></th>
                 {canWrite && <th />}
               </tr>
@@ -189,6 +205,17 @@ export function KeyProxy() {
                       <span className="keyproxy-muted" title={t('keyproxy.voiceHint')}>
                         {' '}
                         ({t('keyproxy.voiceCount', { count: k.voiceRequestCount })})
+                      </span>
+                    )}
+                  </td>
+                  <td className="keyproxy-num">
+                    {k.quota ? (
+                      <span title={t('keyproxy.quotaHint', { ...quotaParts(k.quota) })}>
+                        {quotaParts(k.quota).usedRequests}/{k.quota.limitRequests}
+                      </span>
+                    ) : (
+                      <span className="keyproxy-muted" title={t('keyproxy.quotaNoneHint')}>
+                        —
                       </span>
                     )}
                   </td>

@@ -1,3 +1,5 @@
+import { SttQuota, quotaFromHeaders } from '../keyproxy/stt-usage.store';
+
 // Voice notes carry no `body`, so the translate hook drops them and a spoken message silently breaks
 // the conversation. Transcribe to text first, then feed that text through the normal translate path so
 // glossary / senders / memory / feedback all apply unchanged.
@@ -163,6 +165,8 @@ export interface Transcription {
   text: string;
   /** Null when the backend returned plain `json` (no segment data) rather than `verbose_json`. */
   confidence: TranscriptionConfidence | null;
+  /** Provider-reported quota from this call's response headers; null when it reports none. */
+  quota: SttQuota | null;
 }
 
 /**
@@ -216,6 +220,7 @@ export async function transcribe(audio: Buffer, mimetype: string, cfg: VoiceConf
     return {
       text: typeof json.text === 'string' ? json.text.trim() : '',
       confidence: summarizeConfidence(json.segments),
+      quota: quotaFromHeaders(res.headers),
     };
   } finally {
     clearTimeout(timer);
