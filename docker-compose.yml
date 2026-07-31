@@ -1,5 +1,9 @@
-# OpenWA - Docker Compose Configuration
+# FloorLingo - Docker Compose Configuration
 # Smart Orchestration with Profiles
+#
+# NOTE: container names, the `openwa-lab-network` network, the `openwa_*` volumes and the
+# `com.openwa-lab.*` labels are matched by LITERAL string in src/modules/docker/* — they are
+# identifiers, not branding. Renaming them orphans existing volumes and breaks orchestration.
 
 services:
   # ===== CORE: Docker Socket Proxy (sole container with /var/run/docker.sock access) =====

@@ -1,8 +1,8 @@
 {
-  "name": "openwa-lab",
+  "name": "floorlingo",
   "version": "0.8.17",
-  "description": "Open Source WhatsApp API Gateway - Free, Self-Hosted HTTP API for WhatsApp",
-  "author": "Yudhi Armyndharis & OpenWA Contributors",
+  "description": "FloorLingo - self-hosted WhatsApp gateway with zh <-> vi shop-floor translation and glossary management",
+  "author": "Japlin Chen (built on OpenWA by Yudhi Armyndharis & OpenWA Contributors)",
   "private": true,
   "license": "MIT",
   "engines": {
