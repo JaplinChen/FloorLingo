@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /**
  * Weak shape returned by the GET status endpoints ({@code list}/{@code fromContact}).

@@ -1,20 +1,20 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CreateWebhookRequest;
-import com.rmyndharis.openwa.model.UpdateWebhookRequest;
-import com.rmyndharis.openwa.model.WebhookResponse;
-import com.rmyndharis.openwa.model.WebhookTestResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CreateWebhookRequest;
+import io.github.japlinchen.floorlingo.model.UpdateWebhookRequest;
+import io.github.japlinchen.floorlingo.model.WebhookResponse;
+import io.github.japlinchen.floorlingo.model.WebhookTestResult;
 import java.util.List;
 
 /** Webhooks resource — configure event delivery to external HTTP endpoints. */
 public final class WebhooksResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public WebhooksResource(OpenWAClient client) {
+    public WebhooksResource(FloorLingoClient client) {
         this.client = client;
     }
 

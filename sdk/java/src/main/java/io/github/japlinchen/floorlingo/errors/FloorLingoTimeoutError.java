@@ -1,8 +1,8 @@
-package com.rmyndharis.openwa.errors;
+package io.github.japlinchen.floorlingo.errors;
 
 /** Thrown when a request exceeds the configured timeout. */
-public class OpenWATimeoutError extends OpenWAError {
-    public OpenWATimeoutError(long timeoutMs) {
+public class FloorLingoTimeoutError extends FloorLingoError {
+    public FloorLingoTimeoutError(long timeoutMs) {
         super("Request timed out after " + timeoutMs + "ms");
     }
 }

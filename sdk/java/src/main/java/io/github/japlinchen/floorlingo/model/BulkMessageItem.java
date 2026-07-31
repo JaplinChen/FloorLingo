@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 import java.util.Map;
 

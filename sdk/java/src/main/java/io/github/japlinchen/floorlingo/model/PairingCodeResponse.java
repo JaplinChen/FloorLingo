@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** An 8-character pairing code for phone-based login. */
 public record PairingCodeResponse(

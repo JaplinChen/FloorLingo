@@ -1,6 +1,6 @@
-package com.rmyndharis.openwa;
+package io.github.japlinchen.floorlingo;
 
-import com.rmyndharis.openwa.http.HttpTransport;
+import io.github.japlinchen.floorlingo.http.HttpTransport;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -12,28 +12,28 @@ public final class ClientConfig {
     final String apiKey;
     final Duration timeout;
     final Map<String, String> defaultHeaders;
-    final HttpTransport transport; // nullable → OpenWAClient supplies DefaultHttpTransport
+    final HttpTransport transport; // nullable → FloorLingoClient supplies DefaultHttpTransport
 
     private ClientConfig(Builder b) {
         String url = b.baseUrl == null ? null : b.baseUrl.strip();
         if (url == null || url.isEmpty()) {
-            throw new IllegalArgumentException("OpenWAClient: baseUrl is required");
+            throw new IllegalArgumentException("FloorLingoClient: baseUrl is required");
         }
         try {
             new URI(url);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("OpenWAClient: baseUrl is not a valid URL: " + url);
+            throw new IllegalArgumentException("FloorLingoClient: baseUrl is not a valid URL: " + url);
         }
         String key = b.apiKey == null ? null : b.apiKey.strip();
         if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("OpenWAClient: apiKey is required");
+            throw new IllegalArgumentException("FloorLingoClient: apiKey is required");
         }
         if (hasControlChar(key)) {
             throw new IllegalArgumentException(
-                "OpenWAClient: apiKey contains illegal characters (whitespace or control) — check for a stray newline");
+                "FloorLingoClient: apiKey contains illegal characters (whitespace or control) — check for a stray newline");
         }
         if (b.timeout != null && (b.timeout.isZero() || b.timeout.isNegative())) {
-            throw new IllegalArgumentException("OpenWAClient: timeout must be positive");
+            throw new IllegalArgumentException("FloorLingoClient: timeout must be positive");
         }
         warnIfInsecureHttp(url);
         // baseUrl/apiKey are stripped so a trailing newline from a file/env var can't break the request.
@@ -69,7 +69,7 @@ public final class ClientConfig {
                 String h = host.replaceAll("^\\[|\\]$", "").toLowerCase();
                 if (!h.equals("localhost") && !h.equals("127.0.0.1") && !h.equals("::1")) {
                     System.err.println(
-                        "[OpenWA SDK] WARNING: baseUrl uses an insecure http:// URL (host: " + host + "). "
+                        "[FloorLingo SDK] WARNING: baseUrl uses an insecure http:// URL (host: " + host + "). "
                             + "The API key will be sent in cleartext. Use https:// in production.");
                 }
             }
@@ -89,7 +89,7 @@ public final class ClientConfig {
         private Map<String, String> defaultHeaders;
         private HttpTransport transport;
 
-        /** Base URL of the OpenWA API, e.g. {@code http://localhost:2785}. */
+        /** Base URL of the FloorLingo API, e.g. {@code http://localhost:2785}. */
         public Builder baseUrl(String v) {
             this.baseUrl = v;
             return this;
@@ -113,7 +113,7 @@ public final class ClientConfig {
             return this;
         }
 
-        /** Injectable transport; defaults to {@link com.rmyndharis.openwa.http.DefaultHttpTransport}. */
+        /** Injectable transport; defaults to {@link io.github.japlinchen.floorlingo.http.DefaultHttpTransport}. */
         public Builder transport(HttpTransport v) {
             this.transport = v;
             return this;

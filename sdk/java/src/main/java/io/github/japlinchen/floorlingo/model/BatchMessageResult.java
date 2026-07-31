@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Per-message outcome within a batch result list. Optional fields are {@code null} when absent. */
 public record BatchMessageResult(

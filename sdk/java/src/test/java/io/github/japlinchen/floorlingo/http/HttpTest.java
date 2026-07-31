@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.http;
+package io.github.japlinchen.floorlingo.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

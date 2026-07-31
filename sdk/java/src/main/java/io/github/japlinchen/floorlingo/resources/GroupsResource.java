@@ -1,25 +1,25 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CreateGroupRequest;
-import com.rmyndharis.openwa.model.GroupDescriptionRequest;
-import com.rmyndharis.openwa.model.GroupInfo;
-import com.rmyndharis.openwa.model.GroupSubjectRequest;
-import com.rmyndharis.openwa.model.GroupSummary;
-import com.rmyndharis.openwa.model.InviteCodeResponse;
-import com.rmyndharis.openwa.model.ListGroupsQuery;
-import com.rmyndharis.openwa.model.ParticipantsRequest;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CreateGroupRequest;
+import io.github.japlinchen.floorlingo.model.GroupDescriptionRequest;
+import io.github.japlinchen.floorlingo.model.GroupInfo;
+import io.github.japlinchen.floorlingo.model.GroupSubjectRequest;
+import io.github.japlinchen.floorlingo.model.GroupSummary;
+import io.github.japlinchen.floorlingo.model.InviteCodeResponse;
+import io.github.japlinchen.floorlingo.model.ListGroupsQuery;
+import io.github.japlinchen.floorlingo.model.ParticipantsRequest;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /** Groups resource — WhatsApp group management. */
 public final class GroupsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public GroupsResource(OpenWAClient client) {
+    public GroupsResource(FloorLingoClient client) {
         this.client = client;
     }
 

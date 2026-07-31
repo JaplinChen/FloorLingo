@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Media payload for a status post: provide {@code url} OR {@code base64}. */
 public record StatusMediaInput(String url, String base64, String mimetype) {

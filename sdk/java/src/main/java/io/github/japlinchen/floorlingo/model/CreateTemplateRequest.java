@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for creating a template. Optional fields are omitted from the payload when {@code null}. */
 public record CreateTemplateRequest(String name, String body, String header, String footer) {

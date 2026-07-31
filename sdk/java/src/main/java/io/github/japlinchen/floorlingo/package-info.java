@@ -1,2 +1,2 @@
-/** Official Java SDK for the OpenWA WhatsApp API Gateway. */
-package com.rmyndharis.openwa;
+/** Official Java SDK for the FloorLingo WhatsApp API Gateway. */
+package io.github.japlinchen.floorlingo;

@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.errors;
+package io.github.japlinchen.floorlingo.errors;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -14,14 +14,14 @@ import java.util.stream.StreamSupport;
  * cases — it parses the NestJS error envelope and returns the most specific
  * subclass.
  */
-public class OpenWAApiError extends OpenWAError {
+public class FloorLingoApiError extends FloorLingoError {
     private static final Gson GSON = new Gson();
 
     private final int status;
     private final Object body;
     private final String errorKind;
 
-    public OpenWAApiError(String message, int status, Object body, String errorKind) {
+    public FloorLingoApiError(String message, int status, Object body, String errorKind) {
         super(message);
         this.status = status;
         this.body = body;
@@ -45,13 +45,13 @@ public class OpenWAApiError extends OpenWAError {
 
     /**
      * Build the most specific error subclass from a non-2xx response. A 3xx
-     * surfaces as a generic {@link OpenWAApiError} whose message states the
+     * surfaces as a generic {@link FloorLingoApiError} whose message states the
      * redirect was not followed (the API key is never re-sent to a redirect
      * target).
      */
-    public static OpenWAApiError fromResponse(int status, String statusText, String rawBody, String context) {
+    public static FloorLingoApiError fromResponse(int status, String statusText, String rawBody, String context) {
         if (status >= 300 && status < 400) {
-            return new OpenWAApiError(
+            return new FloorLingoApiError(
                 "Unexpected redirect (not followed; the API key is never re-sent to a redirect target) — " + context,
                 status, null, null);
         }
@@ -80,7 +80,7 @@ public class OpenWAApiError extends OpenWAError {
         // emitting a double space, and omit the trailing ": " when there is no message text at all.
         String reason = statusText == null || statusText.isBlank() ? "" : " " + statusText;
         String tail = messageText.isEmpty() ? "" : ": " + messageText;
-        String message = "OpenWA API " + status + reason + " — " + context + tail;
+        String message = "FloorLingo API " + status + reason + " — " + context + tail;
         return classify(status, message, parsedBody, errorKind);
     }
 
@@ -99,15 +99,15 @@ public class OpenWAApiError extends OpenWAError {
     }
 
     /** Construct the most specific subclass for a status code. */
-    public static OpenWAApiError classify(int status, String message, Object body, String errorKind) {
+    public static FloorLingoApiError classify(int status, String message, Object body, String errorKind) {
         return switch (status) {
-            case 401 -> new OpenWAAuthError(message, status, body, errorKind);
-            case 403 -> new OpenWAForbiddenError(message, status, body, errorKind);
-            case 404 -> new OpenWANotFoundError(message, status, body, errorKind);
-            case 409 -> new OpenWAConflictError(message, status, body, errorKind);
-            case 429 -> new OpenWARateLimitError(message, status, body, errorKind);
-            case 501 -> new OpenWANotImplementedError(message, status, body, errorKind);
-            default -> new OpenWAApiError(message, status, body, errorKind);
+            case 401 -> new FloorLingoAuthError(message, status, body, errorKind);
+            case 403 -> new FloorLingoForbiddenError(message, status, body, errorKind);
+            case 404 -> new FloorLingoNotFoundError(message, status, body, errorKind);
+            case 409 -> new FloorLingoConflictError(message, status, body, errorKind);
+            case 429 -> new FloorLingoRateLimitError(message, status, body, errorKind);
+            case 501 -> new FloorLingoNotImplementedError(message, status, body, errorKind);
+            default -> new FloorLingoApiError(message, status, body, errorKind);
         };
     }
 }

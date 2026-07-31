@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** A member of a WhatsApp group. Optional fields are {@code null} when absent. */
 public record GroupParticipant(

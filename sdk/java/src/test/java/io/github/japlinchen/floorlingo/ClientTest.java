@@ -1,27 +1,27 @@
-package com.rmyndharis.openwa;
+package io.github.japlinchen.floorlingo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.rmyndharis.openwa.errors.OpenWANotFoundError;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.SuccessResult;
-import com.rmyndharis.openwa.support.MockTransport;
+import io.github.japlinchen.floorlingo.errors.FloorLingoNotFoundError;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
+import io.github.japlinchen.floorlingo.support.MockTransport;
 import org.junit.jupiter.api.Test;
 
 class ClientTest {
     final MockTransport tx = new MockTransport();
-    final OpenWAClient client = new OpenWAClient(
+    final FloorLingoClient client = new FloorLingoClient(
         ClientConfig.builder().baseUrl("http://h:2785").apiKey("owa_k1_x").transport(tx).build());
 
     @Test
     void constructorRejectsMissingConfig() {
         assertThrows(IllegalArgumentException.class,
-            () -> new OpenWAClient(ClientConfig.builder().apiKey("x").build()));
+            () -> new FloorLingoClient(ClientConfig.builder().apiKey("x").build()));
         assertThrows(IllegalArgumentException.class,
-            () -> new OpenWAClient(ClientConfig.builder().baseUrl("http://h").build()));
+            () -> new FloorLingoClient(ClientConfig.builder().baseUrl("http://h").build()));
     }
 
     @Test
@@ -37,7 +37,7 @@ class ClientTest {
     @Test
     void nonOkResponseThrowsClassifiedError() {
         tx.respond(404, "{\"statusCode\":404,\"message\":\"nope\",\"error\":\"Not Found\"}");
-        assertThrows(OpenWANotFoundError.class,
+        assertThrows(FloorLingoNotFoundError.class,
             () -> client.request(HttpMethod.GET, "/api/x", null, null, SuccessResult.class));
     }
 

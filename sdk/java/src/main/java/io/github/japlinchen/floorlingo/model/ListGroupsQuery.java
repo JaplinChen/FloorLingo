@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Query parameters for listing groups. Null fields are omitted from the query string. */
 public record ListGroupsQuery(Integer limit, Integer offset) {

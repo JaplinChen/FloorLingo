@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Query parameters for {@code GET /sessions/:id/messages/:chatId/history}. Null fields are omitted. */
 public record MessageHistoryQuery(Integer limit, Boolean includeMedia, Boolean deep) {

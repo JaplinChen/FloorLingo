@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for adding a label to a chat. Requires an OPERATOR-level key. */
 public record AddLabelRequest(String labelId) {

@@ -1,15 +1,15 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.HealthReadyResponse;
-import com.rmyndharis.openwa.model.HealthResponse;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.HealthReadyResponse;
+import io.github.japlinchen.floorlingo.model.HealthResponse;
 
 /** Health resource — connectivity and readiness probes. */
 public final class HealthResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public HealthResource(OpenWAClient client) {
+    public HealthResource(FloorLingoClient client) {
         this.client = client;
     }
 

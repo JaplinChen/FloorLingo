@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for deleting a chat from the chat list. */
 public record DeleteChatRequest(String chatId) {

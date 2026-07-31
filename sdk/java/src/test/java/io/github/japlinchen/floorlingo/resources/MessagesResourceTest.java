@@ -1,33 +1,33 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.rmyndharis.openwa.ClientConfig;
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.BulkMessageContent;
-import com.rmyndharis.openwa.model.BulkMessageItem;
-import com.rmyndharis.openwa.model.BulkMessageType;
-import com.rmyndharis.openwa.model.DeleteMessageRequest;
-import com.rmyndharis.openwa.model.ForwardMessageRequest;
-import com.rmyndharis.openwa.model.ListMessagesQuery;
-import com.rmyndharis.openwa.model.MessageHistoryQuery;
-import com.rmyndharis.openwa.model.ReactMessageRequest;
-import com.rmyndharis.openwa.model.ReplyMessageRequest;
-import com.rmyndharis.openwa.model.SendBulkRequest;
-import com.rmyndharis.openwa.model.SendContactRequest;
-import com.rmyndharis.openwa.model.SendLocationRequest;
-import com.rmyndharis.openwa.model.SendMediaRequest;
-import com.rmyndharis.openwa.model.SendTemplateRequest;
-import com.rmyndharis.openwa.model.SendTextRequest;
-import com.rmyndharis.openwa.support.MockTransport;
+import io.github.japlinchen.floorlingo.ClientConfig;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.BulkMessageContent;
+import io.github.japlinchen.floorlingo.model.BulkMessageItem;
+import io.github.japlinchen.floorlingo.model.BulkMessageType;
+import io.github.japlinchen.floorlingo.model.DeleteMessageRequest;
+import io.github.japlinchen.floorlingo.model.ForwardMessageRequest;
+import io.github.japlinchen.floorlingo.model.ListMessagesQuery;
+import io.github.japlinchen.floorlingo.model.MessageHistoryQuery;
+import io.github.japlinchen.floorlingo.model.ReactMessageRequest;
+import io.github.japlinchen.floorlingo.model.ReplyMessageRequest;
+import io.github.japlinchen.floorlingo.model.SendBulkRequest;
+import io.github.japlinchen.floorlingo.model.SendContactRequest;
+import io.github.japlinchen.floorlingo.model.SendLocationRequest;
+import io.github.japlinchen.floorlingo.model.SendMediaRequest;
+import io.github.japlinchen.floorlingo.model.SendTemplateRequest;
+import io.github.japlinchen.floorlingo.model.SendTextRequest;
+import io.github.japlinchen.floorlingo.support.MockTransport;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class MessagesResourceTest {
     final MockTransport tx = new MockTransport();
-    final OpenWAClient client = new OpenWAClient(
+    final FloorLingoClient client = new FloorLingoClient(
         ClientConfig.builder().baseUrl("http://h").apiKey("k").transport(tx).build());
 
     private static final String MSG = "{\"messageId\":\"m1\",\"timestamp\":123}";

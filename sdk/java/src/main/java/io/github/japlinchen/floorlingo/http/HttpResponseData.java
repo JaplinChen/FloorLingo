@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.http;
+package io.github.japlinchen.floorlingo.http;
 
 import java.util.List;
 import java.util.Map;

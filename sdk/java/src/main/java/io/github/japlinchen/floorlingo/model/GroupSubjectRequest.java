@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for updating a group subject (name). */
 public record GroupSubjectRequest(String subject) {

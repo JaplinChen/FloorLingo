@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Query parameters for listing catalog products. All fields optional; Gson omits nulls. */
 public record CatalogProductsQuery(Integer page, Integer limit) {

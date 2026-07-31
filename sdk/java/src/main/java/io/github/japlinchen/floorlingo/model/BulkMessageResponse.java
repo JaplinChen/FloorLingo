@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Acknowledgement returned by {@code POST /messages/send-bulk} (HTTP 202). */
 public record BulkMessageResponse(

@@ -1,19 +1,19 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CreateTemplateRequest;
-import com.rmyndharis.openwa.model.TemplateRecord;
-import com.rmyndharis.openwa.model.UpdateTemplateRequest;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CreateTemplateRequest;
+import io.github.japlinchen.floorlingo.model.TemplateRecord;
+import io.github.japlinchen.floorlingo.model.UpdateTemplateRequest;
 import java.util.List;
 
 /** Templates resource — stored message templates with {@code {{variable}}} placeholders. */
 public final class TemplatesResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public TemplatesResource(OpenWAClient client) {
+    public TemplatesResource(FloorLingoClient client) {
         this.client = client;
     }
 

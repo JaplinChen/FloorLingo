@@ -1,15 +1,15 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.ChatSummary;
-import com.rmyndharis.openwa.model.DeleteChatRequest;
-import com.rmyndharis.openwa.model.ListChatsQuery;
-import com.rmyndharis.openwa.model.MarkChatRequest;
-import com.rmyndharis.openwa.model.SendChatStateRequest;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.ChatSummary;
+import io.github.japlinchen.floorlingo.model.DeleteChatRequest;
+import io.github.japlinchen.floorlingo.model.ListChatsQuery;
+import io.github.japlinchen.floorlingo.model.MarkChatRequest;
+import io.github.japlinchen.floorlingo.model.SendChatStateRequest;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /**
@@ -20,9 +20,9 @@ import java.util.List;
  * resource for clarity.
  */
 public final class ChatsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public ChatsResource(OpenWAClient client) {
+    public ChatsResource(FloorLingoClient client) {
         this.client = client;
     }
 

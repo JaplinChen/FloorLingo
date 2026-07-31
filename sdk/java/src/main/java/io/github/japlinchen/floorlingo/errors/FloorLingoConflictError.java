@@ -1,8 +1,8 @@
-package com.rmyndharis.openwa.errors;
+package io.github.japlinchen.floorlingo.errors;
 
 /** 409 Conflict — typically an engine-not-ready condition from the backend. */
-public class OpenWAConflictError extends OpenWAApiError {
-    public OpenWAConflictError(String message, int status, Object body, String errorKind) {
+public class FloorLingoConflictError extends FloorLingoApiError {
+    public FloorLingoConflictError(String message, int status, Object body, String errorKind) {
         super(message, status, body, errorKind);
     }
 }

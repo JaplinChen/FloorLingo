@@ -1,8 +1,8 @@
-package com.rmyndharis.openwa.support;
+package io.github.japlinchen.floorlingo.support;
 
-import com.rmyndharis.openwa.http.HttpRequestData;
-import com.rmyndharis.openwa.http.HttpResponseData;
-import com.rmyndharis.openwa.http.HttpTransport;
+import io.github.japlinchen.floorlingo.http.HttpRequestData;
+import io.github.japlinchen.floorlingo.http.HttpResponseData;
+import io.github.japlinchen.floorlingo.http.HttpTransport;
 import java.util.List;
 import java.util.Map;
 

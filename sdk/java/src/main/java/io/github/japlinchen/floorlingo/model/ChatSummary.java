@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /**
  * A chat-list entry. Optional fields are {@code null} when absent.

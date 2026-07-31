@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /**
  * Query parameters for {@code GET /search}. {@code q} is required and non-empty; all other

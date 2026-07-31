@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.http;
+package io.github.japlinchen.floorlingo.http;
 
 import java.io.IOException;
 

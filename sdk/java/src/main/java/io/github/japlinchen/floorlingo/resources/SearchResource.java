@@ -1,9 +1,9 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.SearchQuery;
-import com.rmyndharis.openwa.model.SearchResults;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.SearchQuery;
+import io.github.japlinchen.floorlingo.model.SearchResults;
 
 /**
  * Search resource — full-text message search across sessions via {@code GET /search}.
@@ -11,9 +11,9 @@ import com.rmyndharis.openwa.model.SearchResults;
  * <p>Requires an OPERATOR-level API key. {@code q} is the only required parameter.
  */
 public final class SearchResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public SearchResource(OpenWAClient client) {
+    public SearchResource(FloorLingoClient client) {
         this.client = client;
     }
 

@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Query params for {@code channels.messages(...)}. Gson omits null fields. */
 public record ChannelMessageQuery(Integer limit) {

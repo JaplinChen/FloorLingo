@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for subscribing to a channel by its invite code. */
 public record SubscribeChannelRequest(String inviteCode) {

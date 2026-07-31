@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /**
  * Result of a status POST ({@code send-text}/{@code send-image}/{@code send-video}).

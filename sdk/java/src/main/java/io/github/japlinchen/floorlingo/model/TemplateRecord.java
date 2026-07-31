@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** A stored message template with {@code {{variable}}} placeholders. Optional fields are {@code null} when absent. */
 public record TemplateRecord(

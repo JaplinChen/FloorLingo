@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for sending a contact card. */
 public record SendContactRequest(String chatId, String contactName, String contactNumber) {

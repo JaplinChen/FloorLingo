@@ -1,16 +1,16 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CatalogInfo;
-import com.rmyndharis.openwa.model.CatalogProduct;
-import com.rmyndharis.openwa.model.CatalogProductsQuery;
-import com.rmyndharis.openwa.model.MessageResponse;
-import com.rmyndharis.openwa.model.PaginatedProducts;
-import com.rmyndharis.openwa.model.SendCatalogRequest;
-import com.rmyndharis.openwa.model.SendProductRequest;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CatalogInfo;
+import io.github.japlinchen.floorlingo.model.CatalogProduct;
+import io.github.japlinchen.floorlingo.model.CatalogProductsQuery;
+import io.github.japlinchen.floorlingo.model.MessageResponse;
+import io.github.japlinchen.floorlingo.model.PaginatedProducts;
+import io.github.japlinchen.floorlingo.model.SendCatalogRequest;
+import io.github.japlinchen.floorlingo.model.SendProductRequest;
 
 /**
  * Catalog resource — WhatsApp Business catalog, products, and product/catalog sends.
@@ -21,9 +21,9 @@ import com.rmyndharis.openwa.model.SendProductRequest;
  * require an OPERATOR-level key.
  */
 public final class CatalogResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public CatalogResource(OpenWAClient client) {
+    public CatalogResource(FloorLingoClient client) {
         this.client = client;
     }
 

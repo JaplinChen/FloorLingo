@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for sending media (image/video/audio/document/sticker). Provide {@code url} or {@code base64}. */
 public record SendMediaRequest(

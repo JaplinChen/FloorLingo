@@ -1,28 +1,28 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.BatchStatusResponse;
-import com.rmyndharis.openwa.model.BulkMessageResponse;
-import com.rmyndharis.openwa.model.ChatHistoryMessage;
-import com.rmyndharis.openwa.model.DeleteMessageRequest;
-import com.rmyndharis.openwa.model.ForwardMessageRequest;
-import com.rmyndharis.openwa.model.ListMessagesQuery;
-import com.rmyndharis.openwa.model.MessageHistoryQuery;
-import com.rmyndharis.openwa.model.MessageListResponse;
-import com.rmyndharis.openwa.model.MessageResponse;
-import com.rmyndharis.openwa.model.ReactMessageRequest;
-import com.rmyndharis.openwa.model.ReactionRecord;
-import com.rmyndharis.openwa.model.ReplyMessageRequest;
-import com.rmyndharis.openwa.model.SendBulkRequest;
-import com.rmyndharis.openwa.model.SendContactRequest;
-import com.rmyndharis.openwa.model.SendLocationRequest;
-import com.rmyndharis.openwa.model.SendMediaRequest;
-import com.rmyndharis.openwa.model.SendTemplateRequest;
-import com.rmyndharis.openwa.model.SendTextRequest;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.BatchStatusResponse;
+import io.github.japlinchen.floorlingo.model.BulkMessageResponse;
+import io.github.japlinchen.floorlingo.model.ChatHistoryMessage;
+import io.github.japlinchen.floorlingo.model.DeleteMessageRequest;
+import io.github.japlinchen.floorlingo.model.ForwardMessageRequest;
+import io.github.japlinchen.floorlingo.model.ListMessagesQuery;
+import io.github.japlinchen.floorlingo.model.MessageHistoryQuery;
+import io.github.japlinchen.floorlingo.model.MessageListResponse;
+import io.github.japlinchen.floorlingo.model.MessageResponse;
+import io.github.japlinchen.floorlingo.model.ReactMessageRequest;
+import io.github.japlinchen.floorlingo.model.ReactionRecord;
+import io.github.japlinchen.floorlingo.model.ReplyMessageRequest;
+import io.github.japlinchen.floorlingo.model.SendBulkRequest;
+import io.github.japlinchen.floorlingo.model.SendContactRequest;
+import io.github.japlinchen.floorlingo.model.SendLocationRequest;
+import io.github.japlinchen.floorlingo.model.SendMediaRequest;
+import io.github.japlinchen.floorlingo.model.SendTemplateRequest;
+import io.github.japlinchen.floorlingo.model.SendTextRequest;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /**
@@ -31,9 +31,9 @@ import java.util.List;
  * <p>The real routes use the {@code /send-} prefix, e.g. {@code /messages/send-text}.
  */
 public final class MessagesResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public MessagesResource(OpenWAClient client) {
+    public MessagesResource(FloorLingoClient client) {
         this.client = client;
     }
 

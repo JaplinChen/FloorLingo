@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa;
+package io.github.japlinchen.floorlingo;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

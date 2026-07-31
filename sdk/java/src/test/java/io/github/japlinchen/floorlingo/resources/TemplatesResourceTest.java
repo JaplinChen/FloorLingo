@@ -1,19 +1,19 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.rmyndharis.openwa.ClientConfig;
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CreateTemplateRequest;
-import com.rmyndharis.openwa.model.UpdateTemplateRequest;
-import com.rmyndharis.openwa.support.MockTransport;
+import io.github.japlinchen.floorlingo.ClientConfig;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CreateTemplateRequest;
+import io.github.japlinchen.floorlingo.model.UpdateTemplateRequest;
+import io.github.japlinchen.floorlingo.support.MockTransport;
 import org.junit.jupiter.api.Test;
 
 class TemplatesResourceTest {
     final MockTransport tx = new MockTransport();
-    final OpenWAClient client = new OpenWAClient(
+    final FloorLingoClient client = new FloorLingoClient(
         ClientConfig.builder().baseUrl("http://h").apiKey("k").transport(tx).build());
 
     @Test

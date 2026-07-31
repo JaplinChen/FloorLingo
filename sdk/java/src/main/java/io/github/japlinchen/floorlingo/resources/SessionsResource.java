@@ -1,22 +1,22 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CreateSessionRequest;
-import com.rmyndharis.openwa.model.PairingCodeResponse;
-import com.rmyndharis.openwa.model.QrCodeResponse;
-import com.rmyndharis.openwa.model.RequestPairingCodeRequest;
-import com.rmyndharis.openwa.model.SessionResponse;
-import com.rmyndharis.openwa.model.SessionStatsOverview;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CreateSessionRequest;
+import io.github.japlinchen.floorlingo.model.PairingCodeResponse;
+import io.github.japlinchen.floorlingo.model.QrCodeResponse;
+import io.github.japlinchen.floorlingo.model.RequestPairingCodeRequest;
+import io.github.japlinchen.floorlingo.model.SessionResponse;
+import io.github.japlinchen.floorlingo.model.SessionStatsOverview;
 import java.util.List;
 
 /** Sessions resource — lifecycle management for WhatsApp sessions. */
 public final class SessionsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public SessionsResource(OpenWAClient client) {
+    public SessionsResource(FloorLingoClient client) {
         this.client = client;
     }
 

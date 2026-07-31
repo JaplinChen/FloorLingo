@@ -1,14 +1,14 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.ChannelMessageQuery;
-import com.rmyndharis.openwa.model.ChannelRecord;
-import com.rmyndharis.openwa.model.MessageRecord;
-import com.rmyndharis.openwa.model.SubscribeChannelRequest;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.ChannelMessageQuery;
+import io.github.japlinchen.floorlingo.model.ChannelRecord;
+import io.github.japlinchen.floorlingo.model.MessageRecord;
+import io.github.japlinchen.floorlingo.model.SubscribeChannelRequest;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /**
@@ -17,9 +17,9 @@ import java.util.List;
  * <p>Backed by {@code sessions/:sessionId/channels}.
  */
 public final class ChannelsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public ChannelsResource(OpenWAClient client) {
+    public ChannelsResource(FloorLingoClient client) {
         this.client = client;
     }
 

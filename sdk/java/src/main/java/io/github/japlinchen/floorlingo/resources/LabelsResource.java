@@ -1,12 +1,12 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.AddLabelRequest;
-import com.rmyndharis.openwa.model.LabelRecord;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.AddLabelRequest;
+import io.github.japlinchen.floorlingo.model.LabelRecord;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /**
@@ -15,9 +15,9 @@ import java.util.List;
  * <p>Labels are a WhatsApp Business feature; the session must be a business account.
  */
 public final class LabelsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public LabelsResource(OpenWAClient client) {
+    public LabelsResource(FloorLingoClient client) {
         this.client = client;
     }
 

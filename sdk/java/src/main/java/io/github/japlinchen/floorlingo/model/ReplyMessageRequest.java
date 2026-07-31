@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for replying to a specific message. */
 public record ReplyMessageRequest(String chatId, String quotedMessageId, String text) {

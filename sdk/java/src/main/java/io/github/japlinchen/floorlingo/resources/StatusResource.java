@@ -1,14 +1,14 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.SendImageStatusRequest;
-import com.rmyndharis.openwa.model.SendTextStatusRequest;
-import com.rmyndharis.openwa.model.SendVideoStatusRequest;
-import com.rmyndharis.openwa.model.StatusListResult;
-import com.rmyndharis.openwa.model.StatusResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.SendImageStatusRequest;
+import io.github.japlinchen.floorlingo.model.SendTextStatusRequest;
+import io.github.japlinchen.floorlingo.model.SendVideoStatusRequest;
+import io.github.japlinchen.floorlingo.model.StatusListResult;
+import io.github.japlinchen.floorlingo.model.StatusResult;
 
 /**
  * Status (Stories) resource — WhatsApp status updates.
@@ -16,9 +16,9 @@ import com.rmyndharis.openwa.model.StatusResult;
  * <p>NOTE: this is WhatsApp "Status/Stories", distinct from session lifecycle status.
  */
 public final class StatusResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public StatusResource(OpenWAClient client) {
+    public StatusResource(FloorLingoClient client) {
         this.client = client;
     }
 

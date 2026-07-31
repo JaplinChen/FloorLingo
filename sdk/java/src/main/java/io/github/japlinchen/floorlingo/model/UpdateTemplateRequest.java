@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for updating a template. Every field is optional; {@code null} fields are omitted from the payload. */
 public record UpdateTemplateRequest(String name, String body, String header, String footer) {

@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for deleting a message. */
 public record DeleteMessageRequest(String chatId, String messageId, Boolean forEveryone) {

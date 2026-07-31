@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Content payload for one bulk-send item. Populate the field matching the item's {@link BulkMessageType}. */
 public record BulkMessageContent(

@@ -1,22 +1,22 @@
-package com.rmyndharis.openwa.resources;
+package io.github.japlinchen.floorlingo.resources;
 
-import static com.rmyndharis.openwa.http.Http.encodeSegment;
+import static io.github.japlinchen.floorlingo.http.Http.encodeSegment;
 
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.http.HttpMethod;
-import com.rmyndharis.openwa.model.CheckNumberResponse;
-import com.rmyndharis.openwa.model.ContactPhoneResponse;
-import com.rmyndharis.openwa.model.ContactRecord;
-import com.rmyndharis.openwa.model.ListContactsQuery;
-import com.rmyndharis.openwa.model.ProfilePictureResponse;
-import com.rmyndharis.openwa.model.SuccessResult;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.http.HttpMethod;
+import io.github.japlinchen.floorlingo.model.CheckNumberResponse;
+import io.github.japlinchen.floorlingo.model.ContactPhoneResponse;
+import io.github.japlinchen.floorlingo.model.ContactRecord;
+import io.github.japlinchen.floorlingo.model.ListContactsQuery;
+import io.github.japlinchen.floorlingo.model.ProfilePictureResponse;
+import io.github.japlinchen.floorlingo.model.SuccessResult;
 import java.util.List;
 
 /** Contacts resource — contact lookup and management. */
 public final class ContactsResource {
-    private final OpenWAClient client;
+    private final FloorLingoClient client;
 
-    public ContactsResource(OpenWAClient client) {
+    public ContactsResource(FloorLingoClient client) {
         this.client = client;
     }
 

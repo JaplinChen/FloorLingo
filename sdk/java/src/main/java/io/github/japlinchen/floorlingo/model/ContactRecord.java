@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** A contact known to a session. Optional fields are {@code null} when absent. */
 public record ContactRecord(

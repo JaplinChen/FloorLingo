@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.http;
+package io.github.japlinchen.floorlingo.http;
 
 /** HTTP methods the SDK issues. */
 public enum HttpMethod {

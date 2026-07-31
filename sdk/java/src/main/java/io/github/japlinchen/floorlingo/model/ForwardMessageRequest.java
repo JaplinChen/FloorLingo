@@ -1,4 +1,4 @@
-package com.rmyndharis.openwa.model;
+package io.github.japlinchen.floorlingo.model;
 
 /** Request body for forwarding a message to another chat. */
 public record ForwardMessageRequest(String fromChatId, String toChatId, String messageId) {
