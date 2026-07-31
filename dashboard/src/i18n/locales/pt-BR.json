@@ -86,7 +86,9 @@
     "glossary": "Glossário",
     "settings": "Configurações",
     "senders": "Senders",
-    "llm": "LLM Settings"
+    "llm": "LLM Settings",
+    "showAdvanced": "Mostrar avançado",
+    "hideAdvanced": "Ocultar avançado"
   },
   "chats": {
     "media": {

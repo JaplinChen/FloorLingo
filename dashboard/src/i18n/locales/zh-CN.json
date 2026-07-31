@@ -124,7 +124,9 @@
     "messageTester": "消息测试器",
     "infrastructure": "基础设施",
     "plugins": "插件",
-    "logs": "日志"
+    "logs": "日志",
+    "showAdvanced": "显示高级设置",
+    "hideAdvanced": "隐藏高级设置"
   },
   "chats": {
     "media": {
