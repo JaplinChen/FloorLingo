@@ -1,17 +1,21 @@
 # FloorLingo - Docker Compose Configuration
 # Smart Orchestration with Profiles
 #
-# NOTE: container names, the `openwa-lab-network` network, the `openwa_*` volumes and the
-# `com.openwa-lab.*` labels are matched by LITERAL string in src/modules/docker/* — they are
-# identifiers, not branding. Renaming them orphans existing volumes and breaks orchestration.
+# NOTE: container names, the `floorlingo-network` network and the `com.floorlingo.*` labels are
+# matched by LITERAL string in src/modules/docker/* — keep the two sides in sync when renaming.
+#
+# The `openwa_*` VOLUME names are deliberately NOT renamed: they hold the live data (sessions,
+# SQLite, media). A rename would mount fresh empty volumes and strand the old ones. The name is
+# historical; the data is not.
+name: floorlingo
 
 services:
   # ===== CORE: Docker Socket Proxy (sole container with /var/run/docker.sock access) =====
   docker-proxy:
     image: tecnativa/docker-socket-proxy:v0.4.2
-    container_name: openwa-lab-docker-proxy
+    container_name: floorlingo-docker-proxy
     restart: unless-stopped
-    # Only on the isolated internal network — reachable solely by openwa-lab-api, NOT the
+    # Only on the isolated internal network — reachable solely by floorlingo-api, NOT the
     # dashboard or any other peer. `internal: true` also denies the proxy
     # outbound access; it only needs the locally-mounted docker socket.
     networks:
@@ -28,15 +32,15 @@ services:
       DELETE: 1
       # Everything else is denied by default (AUTH, SECRETS, NETWORKS, PLUGINS, SWARM, TASKS, SERVICES, CONFIGS, NODES, DISTRIBUTIONS)
     labels:
-      - 'com.openwa-lab.service=docker-proxy'
-      - 'com.openwa-lab.core=true'
+      - 'com.floorlingo.service=docker-proxy'
+      - 'com.floorlingo.core=true'
 
   # ===== CORE: OpenWA Backend API =====
-  openwa-lab-api:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: openwa-lab-api
+    container_name: floorlingo-api
     restart: unless-stopped
     # Give the graceful drain room to complete before Docker SIGKILLs the container: the shutdown
     # grace (SHUTDOWN_DELAY_MS, default 3s) plus the worst-case per-engine teardown bound (~10s) can
@@ -45,9 +49,9 @@ services:
     stop_grace_period: 45s
     # App network for datastores + the isolated network to reach
     # docker-proxy (DOCKER_HOST). createService() in docker.service.ts attaches
-    # orchestrated containers to the literal `openwa-lab-network`, so its name is fixed.
+    # orchestrated containers to the literal `floorlingo-network`, so its name is fixed.
     networks:
-      - openwa-lab-network
+      - floorlingo-network
       - internal-docker
     extra_hosts:
       - 'host.docker.internal:host-gateway'
@@ -202,10 +206,10 @@ services:
       - PLUGINS_DIR=${PLUGINS_DIR:-/app/data/plugins}
       # Security
       - API_MASTER_KEY=${API_MASTER_KEY:-}
-      # Docker socket proxy (openwa-lab-api never touches /var/run/docker.sock directly)
+      # Docker socket proxy (floorlingo-api never touches /var/run/docker.sock directly)
       - DOCKER_HOST=tcp://docker-proxy:2375
     volumes:
-      - openwa-lab-data:/app/data
+      - app-data:/app/data
       # Hand-edited term tables bind-mounted from host so local edits apply without docker cp.
       # ONLY these two JSON files — the rest of /app/data (sqlite DBs, sessions, media) stays on the
       # named volume, keeping SQLite off the Windows bind mount (WSL2/9p locking + corruption risk).
@@ -238,18 +242,18 @@ services:
       retries: 3
       start_period: 30s
     labels:
-      - 'com.openwa-lab.service=api'
-      - 'com.openwa-lab.core=true'
+      - 'com.floorlingo.service=api'
+      - 'com.floorlingo.core=true'
 
   # ===== CORE: LLM key-rotation proxy (multi-key Gemini/Groq for translate) =====
   # Keys live in keyproxy/.env (gitignored): PROXY_API_KEY + GEMINI_API_KEY_N / GROQ_API_KEY_N.
   # Translate points its OpenAI-compatible endpoint at http://llm-key-proxy:8000/v1/chat/completions.
   llm-key-proxy:
     image: ghcr.io/mirrowel/llm-api-key-proxy:latest
-    container_name: openwa-lab-llm-key-proxy
+    container_name: floorlingo-llm-key-proxy
     restart: unless-stopped
     networks:
-      - openwa-lab-network
+      - floorlingo-network
     security_opt:
       - 'no-new-privileges:true'
     environment:
@@ -261,20 +265,20 @@ services:
     ports:
       - '127.0.0.1:8600:8000'
     labels:
-      - 'com.openwa-lab.service=llm-key-proxy'
+      - 'com.floorlingo.service=llm-key-proxy'
 
-  # The dashboard SPA is now bundled into the openwa-lab-api image and served by NestJS on the
-  # same port (2785) — there is no separate dashboard container. Reach it at the openwa-lab-api
+  # The dashboard SPA is now bundled into the floorlingo-api image and served by NestJS on the
+  # same port (2785) — there is no separate dashboard container. Reach it at the floorlingo-api
   # port directly; put your own TLS reverse proxy (nginx/Caddy/cloud LB) in front if needed.
 
   # ===== OPTIONAL: Built-in PostgreSQL =====
   postgres:
     image: postgres:16-alpine
-    container_name: openwa-lab-postgres
+    container_name: floorlingo-postgres
     profiles: ['postgres', 'full']
     restart: unless-stopped
     networks:
-      - openwa-lab-network
+      - floorlingo-network
     security_opt:
       - 'no-new-privileges:true'
     environment:
@@ -300,17 +304,17 @@ services:
       timeout: 3s
       retries: 5
     labels:
-      - 'com.openwa-lab.service=database'
-      - 'com.openwa-lab.builtin=true'
+      - 'com.floorlingo.service=database'
+      - 'com.floorlingo.builtin=true'
 
   # ===== OPTIONAL: Built-in Redis =====
   redis:
     image: redis:7-alpine
-    container_name: openwa-lab-redis
+    container_name: floorlingo-redis
     profiles: ['redis', 'full']
     restart: unless-stopped
     networks:
-      - openwa-lab-network
+      - floorlingo-network
     security_opt:
       - 'no-new-privileges:true'
     command: redis-server --appendonly yes
@@ -322,17 +326,17 @@ services:
       timeout: 3s
       retries: 5
     labels:
-      - 'com.openwa-lab.service=cache'
-      - 'com.openwa-lab.builtin=true'
+      - 'com.floorlingo.service=cache'
+      - 'com.floorlingo.builtin=true'
 
   # ===== OPTIONAL: Built-in MinIO (S3-compatible) =====
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: openwa-lab-minio
+    container_name: floorlingo-minio
     profiles: ['minio', 'full']
     restart: unless-stopped
     networks:
-      - openwa-lab-network
+      - floorlingo-network
     security_opt:
       - 'no-new-privileges:true'
     command: server /data --console-address ":9001"
@@ -354,14 +358,14 @@ services:
       timeout: 5s
       retries: 3
     labels:
-      - 'com.openwa-lab.service=storage'
-      - 'com.openwa-lab.builtin=true'
+      - 'com.floorlingo.service=storage'
+      - 'com.floorlingo.builtin=true'
 
 volumes:
   # Pin explicit volume names so the compose path and the Docker-API orchestration path (which uses
   # the literal `openwa_<svc>-data` names in docker.service.ts) bind the SAME volume regardless of the
   # compose project name — otherwise re-enabling a built-in service could mount a fresh empty volume.
-  openwa-lab-data:
+  app-data:
     name: openwa_openwa-data
     driver: local
   postgres-data:
@@ -378,12 +382,12 @@ volumes:
     driver: local
 
 networks:
-  # Application network — datastores and openwa-lab-api. Keep the name `openwa-lab-network`:
+  # Application network — datastores and floorlingo-api. Keep the name `floorlingo-network`:
   # docker.service.ts attaches orchestrated containers to it by literal name.
-  openwa-lab-network:
-    name: openwa-lab-network
+  floorlingo-network:
+    name: floorlingo-network
   # Isolated network for the Docker socket proxy. `internal: true` means no external
-  # connectivity; only openwa-lab-api joins it, so nothing else can reach docker-proxy:2375.
+  # connectivity; only floorlingo-api joins it, so nothing else can reach docker-proxy:2375.
   internal-docker:
-    name: openwa-lab-internal-docker
+    name: floorlingo-internal-docker
     internal: true

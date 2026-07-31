@@ -77,7 +77,8 @@
 
 ### 更名
 - 專案 **OpenWA → OpenWA-Lab → FloorLingo**。
-- FloorLingo 一輪只換品牌面（套件名、README、compose 標題）。docker 容器名、`openwa-lab-network`、`openwa_*` volume 與 `com.openwa-lab.*` label 一律不動——這些字串在 `src/modules/docker/*` 被逐字比對，改了會孤兒化既有 volume 並打斷編排。
+- 容器名、network 與 label 已一併改成 `floorlingo-*` / `com.floorlingo.*`，compose 專案名固定為 `floorlingo`（不再取自資料夾名），本機 image 因此是 `floorlingo-api`。
+- **`openwa_*` volume 名稱刻意保留**：裡面裝的是實際資料（session、SQLite、媒體），改名會掛上全新的空 volume 並把舊的孤兒化。名字是歷史遺留，資料不是。
 
 ---
 
