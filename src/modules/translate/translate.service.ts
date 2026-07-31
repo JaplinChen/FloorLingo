@@ -668,13 +668,24 @@ export class TranslateService implements OnModuleInit {
     return run;
   }
 
+  /**
+   * Resolve unknown @mention JIDs to names, then expand Vietnamese factory shorthand — vi source
+   * only, since a zh message never carries it and expanding would corrupt an ASCII word. Shared by
+   * the live path and preview so the two can't drift.
+   */
+  private prepareSource(text: string, pair: Pair): string {
+    const applied = this.senders.apply(text);
+    if (pair.key === ZH_TO_VI.key) return applied;
+    return this.shorthand.expand(applied, s => this.glossary.hasSource(pair.key, s));
+  }
+
+  /** Glossary terms used by this message, plus the vi->zh domain rule (see VI_DOMAIN_RULE). */
+  private promptExtras(pair: Pair, applied: string): string {
+    return this.glossary.section(pair.key, applied) + (pair.key === ZH_TO_VI.key ? '' : VI_DOMAIN_RULE);
+  }
+
   private async translate(text: string, pair: Pair, fromSpeech = false): Promise<string> {
-    // Resolve unknown @mention JIDs to names, then expand Vietnamese factory shorthand (vi source
-    // only — a zh message never carries it, and expanding would corrupt an ASCII word).
-    const applied =
-      pair.key === ZH_TO_VI.key
-        ? this.senders.apply(text)
-        : this.shorthand.expand(this.senders.apply(text), s => this.glossary.hasSource(pair.key, s));
+    const applied = this.prepareSource(text, pair);
 
     // Whole-message exact glossary hit (short conversational phrases like 明白/好/收到): answer
     // directly and skip the LLM, which weak models otherwise reply to conversationally ("請提供
@@ -685,10 +696,7 @@ export class TranslateService implements OnModuleInit {
     // Inject only the glossary terms that actually appear in this message (see Glossary.section).
     // A speech-sourced message rides in on the same slot, so buildPrompt and any custom template that
     // already honours {glossary} pick it up with no extra placeholder to keep in sync.
-    const extras =
-      this.glossary.section(pair.key, applied) +
-      (pair.key === ZH_TO_VI.key ? '' : VI_DOMAIN_RULE) +
-      (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
+    const extras = this.promptExtras(pair, applied) + (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
     const prompt = buildPrompt(applied, pair, extras, this.cfg.llmPromptTemplate);
 
     // Try the primary model, then each fallback in order — covers "model not loaded"/timeout on a
@@ -787,12 +795,8 @@ export class TranslateService implements OnModuleInit {
 
   // Single-engine translate (no fallback loop) — used by preview to test one provider deterministically.
   private async translateWith(text: string, pair: Pair, params: LlmParams): Promise<string> {
-    const applied =
-      pair.key === ZH_TO_VI.key
-        ? this.senders.apply(text)
-        : this.shorthand.expand(this.senders.apply(text), s => this.glossary.hasSource(pair.key, s));
-    const extras = this.glossary.section(pair.key, applied) + (pair.key === ZH_TO_VI.key ? '' : VI_DOMAIN_RULE);
-    const prompt = buildPrompt(applied, pair, extras, this.cfg.llmPromptTemplate);
+    const applied = this.prepareSource(text, pair);
+    const prompt = buildPrompt(applied, pair, this.promptExtras(pair, applied), this.cfg.llmPromptTemplate);
     const out = await llm.callLlm(params, prompt);
     return pair.key === ZH_TO_VI.key ? fixViCasing(out) : out;
   }
