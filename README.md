@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/logo/openwa_logo.webp" alt="FloorLingo Logo" width="200"/>
-</p>
-
 <h1 align="center">FloorLingo</h1>
 <p align="center">
   <strong>工廠現場的中越（zh ↔ vi）即時翻譯與詞彙治理，架在自架的 WhatsApp Gateway 上</strong>

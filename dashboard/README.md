@@ -1,10 +1,6 @@
-# OpenWA-Lab Dashboard
+# FloorLingo Dashboard
 
-<p align="center">
-  <img src="../docs/logo/openwa_logo.webp" alt="OpenWA-Lab Logo" width="120"/>
-</p>
-
-Modern web dashboard for managing OpenWA-Lab WhatsApp API Gateway sessions, webhooks, and infrastructure.
+Modern web dashboard for managing FloorLingo WhatsApp API Gateway sessions, webhooks, and infrastructure.
 
 ## ✨ Features
 
@@ -96,4 +92,4 @@ VITE_WS_URL=http://localhost:2785
 
 ## 📄 License
 
-MIT License - Part of the [OpenWA-Lab](https://github.com/JaplinChen/OpenWA-Lab) project.
+MIT License - Part of the [FloorLingo](https://github.com/JaplinChen/FloorLingo) project.
