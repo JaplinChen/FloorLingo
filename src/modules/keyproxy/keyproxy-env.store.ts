@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { atomicWriteFileSync } from '../../core/plugins/plugin-storage.fs';
 
 // The llm-key-proxy container reads its keys from this .env at startup (PROVIDER_API_KEY_N lines).
-// Mounted into openwa-lab-api at /app/keyproxy (see docker-compose.yml); overridable for tests.
+// Mounted into floorlingo-api at /app/keyproxy (see docker-compose.yml); overridable for tests.
 export const keyproxyEnvPath = (): string => process.env.KEYPROXY_ENV_PATH || 'keyproxy/.env';
 
 export interface KeyEntry {

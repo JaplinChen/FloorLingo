@@ -116,8 +116,8 @@ export class DockerService implements OnModuleInit {
     const isRunning = (svc: string): boolean =>
       containers.some(
         c =>
-          c.labels['com.openwa-lab.service'] === svc &&
-          c.labels['com.openwa-lab.builtin'] === 'true' &&
+          c.labels['com.floorlingo.service'] === svc &&
+          c.labels['com.floorlingo.builtin'] === 'true' &&
           c.state === 'running',
       );
     return { database: isRunning('database'), cache: isRunning('cache'), storage: isRunning('storage') };

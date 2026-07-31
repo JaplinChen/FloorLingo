@@ -754,16 +754,16 @@ services:
 services:
   openwa-lab:
     networks:
-      - openwa-lab-network
+      - floorlingo-network
     extra_hosts:
       - "host.docker.internal:host-gateway"  # Access host from container
 
   postgres:
     networks:
-      - openwa-lab-network
+      - floorlingo-network
 
 networks:
-  openwa-lab-network:
+  floorlingo-network:
     driver: bridge
 ```
 

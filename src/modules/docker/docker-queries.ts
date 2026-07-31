@@ -10,7 +10,7 @@ export interface DockerCtx {
   logger: Logger;
 }
 
-/** List all OpenWA-related containers (by label or `/openwa-lab-` name prefix). */
+/** List all FloorLingo-related containers (by label or `/floorlingo-` name prefix). */
 export async function listContainers(ctx: DockerCtx): Promise<ContainerInfo[]> {
   const { docker, isAvailable, logger } = ctx;
   if (!docker || !isAvailable) {
@@ -22,7 +22,7 @@ export async function listContainers(ctx: DockerCtx): Promise<ContainerInfo[]> {
     return containers
       .filter(c => {
         const labels = c.Labels || {};
-        return labels['com.openwa-lab.service'] || c.Names?.some(n => n.startsWith('/openwa-lab-'));
+        return labels['com.floorlingo.service'] || c.Names?.some(n => n.startsWith('/floorlingo-'));
       })
       .map(c => ({
         id: c.Id.substring(0, 12),
@@ -37,7 +37,7 @@ export async function listContainers(ctx: DockerCtx): Promise<ContainerInfo[]> {
   }
 }
 
-/** Get container by service label, falling back to an EXACT `openwa-lab-<service>` name match. */
+/** Get container by service label, falling back to an EXACT `floorlingo-<service>` name match. */
 export async function getContainerByService(ctx: DockerCtx, service: string): Promise<Docker.Container | null> {
   const { docker, isAvailable, logger } = ctx;
   if (!docker || !isAvailable) {
@@ -48,7 +48,7 @@ export async function getContainerByService(ctx: DockerCtx, service: string): Pr
     const containers = await docker.listContainers({
       all: true,
       filters: {
-        label: [`com.openwa-lab.service=${service}`],
+        label: [`com.floorlingo.service=${service}`],
       },
     });
 
@@ -57,8 +57,8 @@ export async function getContainerByService(ctx: DockerCtx, service: string): Pr
     }
 
     // Fallback: try by EXACT name (never a substring — a substring, and especially the empty
-    // string, would resolve an arbitrary container). OpenWA-managed containers are `openwa-lab-<service>`.
-    const target = `openwa-lab-${service}`;
+    // string, would resolve an arbitrary container). FloorLingo-managed containers are `floorlingo-<service>`.
+    const target = `floorlingo-${service}`;
     const allContainers = await docker.listContainers({ all: true });
     const match = allContainers.find(c => c.Names?.some(n => n === target || n === `/${target}`));
 

@@ -132,7 +132,7 @@ services:
     volumes:
       - sessions:/app/data/sessions
     networks:
-      - openwa-lab-net
+      - floorlingo-net
     depends_on:
       - postgres
       - redis
@@ -151,7 +151,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - openwa-lab-net
+      - floorlingo-net
 
   redis:
     image: redis:7-alpine
@@ -161,7 +161,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - openwa-lab-net
+      - floorlingo-net
 
   # NOTE (v0.4.0): FloorLingo no longer ships a bundled Traefik container.
   # For TLS / public exposure, bring your own reverse proxy (Traefik, nginx,
@@ -174,7 +174,7 @@ volumes:
   sessions:
 
 networks:
-  openwa-lab-net:
+  floorlingo-net:
     driver: overlay
 ```
 
@@ -212,7 +212,7 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: openwa-lab-config
+  name: floorlingo-config
   namespace: openwa-lab
 data:
   NODE_ENV: 'production'
@@ -232,7 +232,7 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: openwa-lab-secrets
+  name: floorlingo-secrets
   namespace: openwa-lab
 type: Opaque
 stringData:
@@ -269,9 +269,9 @@ spec:
               name: http
           envFrom:
             - configMapRef:
-                name: openwa-lab-config
+                name: floorlingo-config
             - secretRef:
-                name: openwa-lab-secrets
+                name: floorlingo-secrets
           env:
             - name: NODE_ID
               valueFrom:
@@ -315,7 +315,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: openwa-lab-service
+  name: floorlingo-service
   namespace: openwa-lab
 spec:
   type: ClusterIP
@@ -329,7 +329,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: openwa-lab-headless
+  name: floorlingo-headless
   namespace: openwa-lab
 spec:
   clusterIP: None
@@ -346,11 +346,11 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: openwa-lab-ingress
+  name: floorlingo-ingress
   namespace: openwa-lab
   annotations:
     nginx.ingress.kubernetes.io/affinity: 'cookie'
-    nginx.ingress.kubernetes.io/session-cookie-name: 'openwa-lab-session'
+    nginx.ingress.kubernetes.io/session-cookie-name: 'floorlingo-session'
     nginx.ingress.kubernetes.io/session-cookie-max-age: '172800'
 spec:
   ingressClassName: nginx
@@ -362,13 +362,13 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: openwa-lab-service
+                name: floorlingo-service
                 port:
                   number: 80
   tls:
     - hosts:
         - openwa.example.com
-      secretName: openwa-lab-tls
+      secretName: floorlingo-tls
 ```
 
 ### Deploy to Kubernetes
@@ -416,9 +416,9 @@ http:
             secure: true
             httpOnly: true
         servers:
-          - url: 'http://openwa-lab-1:2785'
-          - url: 'http://openwa-lab-2:2785'
-          - url: 'http://openwa-lab-3:2785'
+          - url: 'http://floorlingo-1:2785'
+          - url: 'http://floorlingo-2:2785'
+          - url: 'http://floorlingo-3:2785'
         healthCheck:
           path: /api/health
           interval: 10s
@@ -431,9 +431,9 @@ http:
 upstream openwa-lab {
     ip_hash;  # Sticky sessions based on client IP
 
-    server openwa-lab-1:2785 weight=1 max_fails=3 fail_timeout=30s;
-    server openwa-lab-2:2785 weight=1 max_fails=3 fail_timeout=30s;
-    server openwa-lab-3:2785 weight=1 max_fails=3 fail_timeout=30s;
+    server floorlingo-1:2785 weight=1 max_fails=3 fail_timeout=30s;
+    server floorlingo-2:2785 weight=1 max_fails=3 fail_timeout=30s;
+    server floorlingo-3:2785 weight=1 max_fails=3 fail_timeout=30s;
 }
 
 server {
@@ -496,7 +496,7 @@ Tested on 2 vCPU / 4GB RAM nodes:
 ### Prometheus Metrics (Future)
 
 ```yaml
-# prometheus/openwa-lab-rules.yaml
+# prometheus/floorlingo-rules.yaml
 groups:
   - name: openwa-lab
     rules:

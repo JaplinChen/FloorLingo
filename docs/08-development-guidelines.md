@@ -1106,7 +1106,7 @@ constructor(
 
 **Check logs:**
 ```bash
-docker compose logs openwa-lab-api --tail 100
+docker compose logs floorlingo-api --tail 100
 ```
 
 **Common causes:**
@@ -1125,7 +1125,7 @@ docker run --shm-size=2gb openwa
 Or in docker-compose.yml:
 ```yaml
 services:
-  openwa-lab-api:
+  floorlingo-api:
     shm_size: '2gb'
 ```
 ```

@@ -7,14 +7,15 @@
 # production compose (docker-compose.yml) never forces synchronize (it defaults to false).
 #
 # Quick Start: docker compose -f docker-compose.dev.yml up -d
+name: floorlingo
 
 services:
   # API Backend
-  openwa-lab:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: openwa-lab-api
+    container_name: floorlingo-api
     # Container hardening — same posture as production (same Dockerfile/entrypoint).
     security_opt:
       - 'no-new-privileges:true'
@@ -92,4 +93,4 @@ services:
 
 networks:
   default:
-    name: openwa-lab-network
+    name: floorlingo-network

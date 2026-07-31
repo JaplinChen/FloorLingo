@@ -6,7 +6,7 @@ import Docker from 'dockerode';
  */
 export const MANAGED_DOCKER_PROFILES: readonly string[] = ['postgres', 'redis', 'minio'];
 
-/** profile (compose name) -> `com.openwa-lab.service` label value. */
+/** profile (compose name) -> `com.floorlingo.service` label value. */
 export const PROFILE_TO_SERVICE: Record<string, string> = {
   postgres: 'database',
   redis: 'cache',
@@ -55,7 +55,7 @@ export function getContainerSpec(profile: string): ContainerSpec | null {
   const specs: Record<string, ContainerSpec> = {
     redis: {
       image: 'redis:7-alpine',
-      name: 'openwa-lab-redis',
+      name: 'floorlingo-redis',
       alias: 'redis', // DNS alias for resolution
       cmd: ['redis-server', '--appendonly', 'yes'],
       volumes: [{ name: 'openwa_redis-data', path: '/data' }],
@@ -66,13 +66,13 @@ export function getContainerSpec(profile: string): ContainerSpec | null {
         retries: 5,
       },
       labels: {
-        'com.openwa-lab.service': 'cache',
-        'com.openwa-lab.builtin': 'true',
+        'com.floorlingo.service': 'cache',
+        'com.floorlingo.builtin': 'true',
       },
     },
     postgres: {
       image: 'postgres:16-alpine',
-      name: 'openwa-lab-postgres',
+      name: 'floorlingo-postgres',
       alias: 'postgres',
       // Use hardcoded defaults for built-in container (don't inherit SQLite paths)
       env: ['POSTGRES_USER=openwa', 'POSTGRES_PASSWORD=openwa', 'POSTGRES_DB=openwa'],
@@ -84,13 +84,13 @@ export function getContainerSpec(profile: string): ContainerSpec | null {
         retries: 5,
       },
       labels: {
-        'com.openwa-lab.service': 'database',
-        'com.openwa-lab.builtin': 'true',
+        'com.floorlingo.service': 'database',
+        'com.floorlingo.builtin': 'true',
       },
     },
     minio: {
       image: 'minio/minio',
-      name: 'openwa-lab-minio',
+      name: 'floorlingo-minio',
       alias: 'minio',
       cmd: ['server', '/data', '--console-address', ':9001'],
       env: [
@@ -111,8 +111,8 @@ export function getContainerSpec(profile: string): ContainerSpec | null {
         retries: 3,
       },
       labels: {
-        'com.openwa-lab.service': 'storage',
-        'com.openwa-lab.builtin': 'true',
+        'com.floorlingo.service': 'storage',
+        'com.floorlingo.builtin': 'true',
       },
     },
   };
@@ -128,7 +128,7 @@ export function buildContainerConfig(spec: ContainerSpec, profile: string): Dock
     Env: spec.env,
     Labels: spec.labels,
     HostConfig: {
-      NetworkMode: 'openwa-lab-network',
+      NetworkMode: 'floorlingo-network',
       RestartPolicy: { Name: 'unless-stopped' },
       Binds: spec.volumes?.map(v => `${v.name}:${v.path}`),
       PortBindings: spec.ports?.reduce<Record<string, { HostIp: string; HostPort: string }[]>>((acc, p) => {
@@ -146,7 +146,7 @@ export function buildContainerConfig(spec: ContainerSpec, profile: string): Dock
       : undefined,
     NetworkingConfig: {
       EndpointsConfig: {
-        'openwa-lab-network': {
+        'floorlingo-network': {
           Aliases: [spec.alias, profile], // Add DNS aliases for network resolution
         },
       },
