@@ -2,7 +2,7 @@
 
 > ## ⚠️ DESIGN REFERENCE ONLY — NOT IMPLEMENTED
 >
-> **OpenWA-Lab is currently a single-process, single-instance application.** Live WhatsApp
+> **FloorLingo is currently a single-process, single-instance application.** Live WhatsApp
 > engine state (browser + WebSocket + reconnect/error state) lives in an in-memory `Map`
 > in `SessionService`; there is **no** DB-backed session registry, **no** node-claim/lease,
 > and **no** Socket.IO Redis adapter.
@@ -14,9 +14,9 @@
 >
 > Everything in this guide (session-claim, node affinity, `replicas: 3`) is a **future
 > design sketch**, retained for planning. Until it is implemented, deploy with
-> **`replicas: 1`** for the OpenWA-Lab API service.
+> **`replicas: 1`** for the FloorLingo API service.
 
-This guide explains a *proposed* design for deploying OpenWA-Lab in a horizontally scaled environment for high availability and increased capacity.
+This guide explains a *proposed* design for deploying FloorLingo in a horizontally scaled environment for high availability and increased capacity.
 
 ## 13.1 Architecture Overview
 
@@ -26,10 +26,10 @@ flowchart TB
         NGINX[Nginx/Traefik]
     end
 
-    subgraph Nodes["OpenWA-Lab Nodes"]
-        N1[OpenWA-Lab Node 1]
-        N2[OpenWA-Lab Node 2]
-        N3[OpenWA-Lab Node 3]
+    subgraph Nodes["FloorLingo Nodes"]
+        N1[FloorLingo Node 1]
+        N2[FloorLingo Node 2]
+        N3[FloorLingo Node 3]
     end
 
     subgraph Storage["Shared Storage"]
@@ -163,7 +163,7 @@ services:
     networks:
       - openwa-lab-net
 
-  # NOTE (v0.4.0): OpenWA-Lab no longer ships a bundled Traefik container.
+  # NOTE (v0.4.0): FloorLingo no longer ships a bundled Traefik container.
   # For TLS / public exposure, bring your own reverse proxy (Traefik, nginx,
   # Caddy, a cloud load balancer, etc.) and point it at openwa-lab:2785.
   # See section 13.5 for Traefik / nginx config examples.
@@ -405,7 +405,7 @@ http:
     sticky-session:
       headers:
         customResponseHeaders:
-          X-OpenWA-Node: '{{.Node}}'
+          X-FloorLingo-Node: '{{.Node}}'
 
   services:
     openwa-lab:
@@ -506,7 +506,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'OpenWA-Lab node high memory usage'
+          summary: 'FloorLingo node high memory usage'
 
       - alert: NodeDown
         expr: up{job="openwa-lab"} == 0
@@ -514,7 +514,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: 'OpenWA-Lab node is down'
+          summary: 'FloorLingo node is down'
 ```
 
 ### Health Check Endpoints

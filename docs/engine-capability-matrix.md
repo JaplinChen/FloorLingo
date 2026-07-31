@@ -4,7 +4,7 @@ This page is the operator- and engineer-facing view of which `IWhatsAppEngine` c
 
 The committed source of truth is `src/engine/engine-capability-matrix.ts`. Every `IWhatsAppEngine` method has a row with two adapters; each adapter is either `supported` (works end-to-end) or `not-available`, and each `not-available` cell carries a **rootCause**:
 
-- **`adapter-gap`** — the underlying library already HAS the capability; only the OpenWA adapter wiring is missing. **Fixable in this repo** with a PR that calls the library symbol the evidence points at.
+- **`adapter-gap`** — the underlying library already HAS the capability; only the FloorLingo adapter wiring is missing. **Fixable in this repo** with a PR that calls the library symbol the evidence points at.
 - **`library-limitation`** — the underlying library exposes no first-class symbol for the operation. Not fixable without a raw-proto/fork effort or an event-cache hack.
 - **`uncertain`** — the source trace was inconclusive; needs a live spike.
 
@@ -57,7 +57,7 @@ The `rootCause`/`evidence` fields are hand-curated from source traces of the ins
 | `sendCatalog` | not-available — **library-limitation** | not-available — **library-limitation** |
 
 - **`getProducts` (baileys, adapter-gap).** `sock.getCatalog({jid, limit, cursor})` (`Socket/business.d.ts:7`) returns `{products, nextPageCursor}` — paginated, maps to `PaginatedProducts`. Caveat: cursor-based, so `total` is unknown (approximate or iterate).
-- **`getCatalog` (baileys, adapter-gap, medium-confidence).** `getCatalog` returns a product list + cursor, **not** the OpenWA `Catalog` metadata wrapper. Name needs `getCollections(jid)` (`business.d.ts:11`); `id`/`description`/`url` have no source — the adapter would synthesize a partial Catalog (`productCount=products.length`, rest best-effort).
+- **`getCatalog` (baileys, adapter-gap, medium-confidence).** `getCatalog` returns a product list + cursor, **not** the FloorLingo `Catalog` metadata wrapper. Name needs `getCollections(jid)` (`business.d.ts:11`); `id`/`description`/`url` have no source — the adapter would synthesize a partial Catalog (`productCount=products.length`, rest best-effort).
 - **`getProduct` (baileys, adapter-gap, medium-confidence).** No direct `getProduct(id)`; call `getCatalog({jid,limit})` then `products.find(p=>p.id===productId)` — loads the whole page to fetch one product.
 - **`sendProduct` (baileys, adapter-gap).** `AnyRegularMessageContent` accepts `{product: WASendableProduct, businessOwnerJid, body}` (`Types/Message.d.ts:203`, built in `messages.js:397`). Two-step wiring: `getCatalog` lookup to resolve the product's image/title/price, then `sock.sendMessage(chatId, {product:{...}, body})`. `productId`-only send without the lookup is not possible.
 - **`sendCatalog` (both, library-limitation).** No catalog-share message type exists in either library. Baileys `AnyMessageContent` has only `{product}` (single product); the catalog CRUD nodes (`Socket/business.js:294-362`) mutate the catalog, they don't send it. Would require raw-proto relay hacks (unverified).
@@ -76,7 +76,7 @@ The `rootCause`/`evidence` fields are hand-curated from source traces of the ins
 | `getContactStatuses` | not-available — **library-limitation** | supported |
 
 > **Wired.** ✅ `getContactStatus` / `getContactStatuses` on whatsapp-web.js — `getBroadcastById(id)` / `getBroadcasts()` flattened to `Status[]` (contact via `broadcast.getContact()`; type from `MessageTypes`; 24h TTL). **Caveat:** `Status.type` is the `text|image|video` union — audio/other story types collapse to `text`.
-- **`getContactStatus` / `getContactStatuses` (baileys, library-limitation).** `fetchStatus` (`Socket/chats.d.ts:42` via `USyncStatusProtocol`) returns the *about/profile text* line (`{status, setAt}`), **not** 24h stories. No story-read getter exists; story broadcasts surface only as `status@broadcast` messages via `messages.upsert` / `messaging-history.set` events. Would require OpenWA to accumulate `status@broadcast` messages itself and project them into `Status[]`.
+- **`getContactStatus` / `getContactStatuses` (baileys, library-limitation).** `fetchStatus` (`Socket/chats.d.ts:42` via `USyncStatusProtocol`) returns the *about/profile text* line (`{status, setAt}`), **not** 24h stories. No story-read getter exists; story broadcasts surface only as `status@broadcast` messages via `messages.upsert` / `messaging-history.set` events. Would require FloorLingo to accumulate `status@broadcast` messages itself and project them into `Status[]`.
 
 ### Messaging misc — delete / history / reactions
 
@@ -85,14 +85,14 @@ The `rootCause`/`evidence` fields are hand-curated from source traces of the ins
 | `getChatHistory` | not-available — **library-limitation** | supported |
 | `getMessageReactions` | not-available — **library-limitation** | supported |
 
-- **`getChatHistory` (baileys, library-limitation).** The only history primitive is `fetchMessageHistory(count, oldestMsgKey, oldestMsgTimestamp)` (`Socket/business.d.ts:25`) — it returns a sync-token *string*, not messages; the messages are delivered later via the `messaging-history.set` event. There is no per-chat `fetchMessages(chatId, limit)` on the socket. A synchronous `Promise<IncomingMessage[]>` for one chat would require an OpenWA-side chat-indexed store populated from `messages.upsert` + `messaging-history.set` events.
+- **`getChatHistory` (baileys, library-limitation).** The only history primitive is `fetchMessageHistory(count, oldestMsgKey, oldestMsgTimestamp)` (`Socket/business.d.ts:25`) — it returns a sync-token *string*, not messages; the messages are delivered later via the `messaging-history.set` event. There is no per-chat `fetchMessages(chatId, limit)` on the socket. A synchronous `Promise<IncomingMessage[]>` for one chat would require an FloorLingo-side chat-indexed store populated from `messages.upsert` + `messaging-history.set` events.
 - **`getMessageReactions` (baileys, library-limitation).** No on-demand server fetch. Reactions exist only as event-augmented state on `WAMessage.reactions` (`proto.IReaction[]` at `WAProto/index.d.ts:10623`), mutated by `updateMessageWithReaction` and surfaced via the `messages.reaction` event. The adapter already processes `reactionMessage` events (`baileys.adapter.ts:1048-1057`) and emits `onMessageReaction`, but it does **not** persist `.reactions` into its `messageStore` (early-returns at line 1058). A store-backed read would need that persistence added first; even then, only reactions observed since session start are known (no historical backfill).
 
 ---
 
 ## Prioritized roadmap — adapter gaps (fixable in this repo)
 
-These are the capabilities the underlying library already supports but the OpenWA adapter does not wire. Ranked high-value + low-effort first. Each is a self-contained backlog item; an engineer can open the cited symbol and start.
+These are the capabilities the underlying library already supports but the FloorLingo adapter does not wire. Ranked high-value + low-effort first. Each is a self-contained backlog item; an engineer can open the cited symbol and start.
 
 > **Progress.** ✅ `deleteMessage` (`forEveryone=false`, Baileys) — wired via `chatModify({ deleteForMe })`; moved to `supported`.
 
@@ -132,9 +132,9 @@ These are honestly out of reach of a clean adapter wiring because the installed 
 **baileys (9 cells):**
 - `getSubscribedChannels` — no enumerate-newsletters query; all `Socket/newsletter.d.ts` exports are per-jid. Needs a raw WMex/app-state hack.
 - `getLabels` / `getLabelById` / `getChatLabels` — no label read symbol; only writes (`Types/Label.d.ts` is types-only). Workaround: capture labels from the `messaging-history.set` app-state event into an in-memory cache (relay hack, no on-demand refresh).
-- `getChatHistory` — only `fetchMessageHistory` (event-delivered sync token); no synchronous per-chat `fetchMessages`. Needs an OpenWA-side chat-indexed store fed from `messages.upsert` + `messaging-history.set`.
+- `getChatHistory` — only `fetchMessageHistory` (event-delivered sync token); no synchronous per-chat `fetchMessages`. Needs an FloorLingo-side chat-indexed store fed from `messages.upsert` + `messaging-history.set`.
 - `getMessageReactions` — no on-demand fetch; reactions only arrive via the `messages.reaction` event. Partial local path: persist each event into the `messageStore`, then read (no historical backfill).
-- `getContactStatus` / `getContactStatuses` — `fetchStatus` returns the *about* text, not 24h stories; stories only surface as `status@broadcast` messages. Needs an OpenWA-side story accumulator.
+- `getContactStatus` / `getContactStatuses` — `fetchStatus` returns the *about* text, not 24h stories; stories only surface as `status@broadcast` messages. Needs an FloorLingo-side story accumulator.
 - `sendCatalog` — no catalog-share message type in `AnyMessageContent` (only single `{product}`).
 
 **wwjs (5 cells):**

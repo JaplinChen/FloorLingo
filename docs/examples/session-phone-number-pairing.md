@@ -1,10 +1,10 @@
 # Session Phone-Number Pairing
 
-OpenWA supports linking an existing WhatsApp account to a session by phone number as an alternative to scanning a QR code.
+FloorLingo supports linking an existing WhatsApp account to a session by phone number as an alternative to scanning a QR code.
 
 This flow returns an 8-character pairing code that the user enters in WhatsApp on their phone.
 
-> This does **not** create or register a new WhatsApp account. It only links an existing WhatsApp account as a companion device for an OpenWA session.
+> This does **not** create or register a new WhatsApp account. It only links an existing WhatsApp account as a companion device for an FloorLingo session.
 
 ## Flow
 
@@ -84,13 +84,13 @@ On the phone that owns the WhatsApp account:
 2. Go to **Settings**.
 3. Open **Linked Devices**.
 4. Choose **Link with phone number**.
-5. Enter the pairing code returned by OpenWA.
+5. Enter the pairing code returned by FloorLingo.
 
-After the code is accepted, the OpenWA session should move to a connected/ready state.
+After the code is accepted, the FloorLingo session should move to a connected/ready state.
 
 ## Troubleshooting
 
-- If OpenWA returns `Session is not started`, call `POST /api/sessions/{sessionId}/start` first.
-- If OpenWA returns `Session is already authenticated`, the account is already linked and no pairing code is needed.
+- If FloorLingo returns `Session is not started`, call `POST /api/sessions/{sessionId}/start` first.
+- If FloorLingo returns `Session is already authenticated`, the account is already linked and no pairing code is needed.
 - If the phone number is rejected, send digits only in international format, without `+`, spaces, or punctuation.
-- If you want to create a brand-new WhatsApp account programmatically, that is outside OpenWA's scope. OpenWA only links an existing WhatsApp account.
+- If you want to create a brand-new WhatsApp account programmatically, that is outside FloorLingo's scope. FloorLingo only links an existing WhatsApp account.

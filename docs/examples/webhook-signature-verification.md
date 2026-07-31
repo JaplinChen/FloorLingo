@@ -1,10 +1,10 @@
 # Webhook Signature Verification
 
-OpenWA signs webhook deliveries when a webhook is configured with a secret. Receivers should verify the signature before processing the event.
+FloorLingo signs webhook deliveries when a webhook is configured with a secret. Receivers should verify the signature before processing the event.
 
 ## Headers
 
-OpenWA sends these system headers with webhook deliveries:
+FloorLingo sends these system headers with webhook deliveries:
 
 | Header | Description |
 | ------ | ----------- |
@@ -33,7 +33,7 @@ const express = require('express');
 const app = express();
 const WEBHOOK_SECRET = process.env.OPENWA_WEBHOOK_SECRET;
 
-function verifyOpenWASignature(rawBody, signature, secret) {
+function verifyFloorLingoSignature(rawBody, signature, secret) {
   if (!signature || !secret) return false;
 
   const expected =
@@ -50,7 +50,7 @@ function verifyOpenWASignature(rawBody, signature, secret) {
 app.post('/openwa/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const signature = req.header('X-OpenWA-Signature');
 
-  if (!verifyOpenWASignature(req.body, signature, WEBHOOK_SECRET)) {
+  if (!verifyFloorLingoSignature(req.body, signature, WEBHOOK_SECRET)) {
     return res.status(401).send('Invalid signature');
   }
 

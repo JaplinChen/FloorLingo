@@ -1,6 +1,6 @@
 # n8n Appointment Booking Workflow
 
-This example shows how to use OpenWA and n8n to collect appointment requests over WhatsApp, check availability in an external system, and send a confirmation or alternative time slots.
+This example shows how to use FloorLingo and n8n to collect appointment requests over WhatsApp, check availability in an external system, and send a confirmation or alternative time slots.
 
 The workflow is intentionally generic. The availability source can be Google Calendar, Cal.com, a CRM, a database, or any HTTP API that returns available slots.
 
@@ -37,7 +37,7 @@ Use the **OpenWA Trigger** node.
 | Field | Value |
 | ----- | ----- |
 | Event | `message.received` |
-| Session | Your connected OpenWA session |
+| Session | Your connected FloorLingo session |
 
 The incoming message body is available at:
 
@@ -142,4 +142,4 @@ Reply with 1 or 2 to confirm one of these options.
 - Set: normalizes `chatId`, message body, requested date/time, and service.
 - Availability node: checks the calendar, API, database, or spreadsheet.
 - Booking node: creates the appointment only when a slot is available.
-- OpenWA Send Text: sends confirmation, alternatives, or clarification.
+- FloorLingo Send Text: sends confirmation, alternatives, or clarification.

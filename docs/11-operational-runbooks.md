@@ -2,7 +2,7 @@
 
 ## 11.1 Overview
 
-This document contains Standard Operating Procedures (SOP) for OpenWA-Lab operations, including incident response, maintenance procedures, and troubleshooting guides.
+This document contains Standard Operating Procedures (SOP) for FloorLingo operations, including incident response, maintenance procedures, and troubleshooting guides.
 
 ### Runbook Structure
 
