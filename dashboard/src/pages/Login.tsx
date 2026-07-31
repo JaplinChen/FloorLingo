@@ -58,9 +58,7 @@ export function Login({ onLogin }: LoginProps) {
     <div className="login-container">
       <main className="login-card">
         <div className="login-logo">
-          <h1 className="logo-heading">
-            <img src="/openwa_logo.webp" alt="OpenWA-Lab" className="logo-icon" />
-          </h1>
+          <h1 className="logo-heading">{t('common.appName')}</h1>
           <span className="version-info">
             {t('login.version', {
               version: __APP_VERSION__,
@@ -111,7 +109,7 @@ export function Login({ onLogin }: LoginProps) {
         <p className="login-help">
           {t('login.help')}{' '}
           <a
-            href="https://github.com/JaplinChen/OpenWA-Lab/blob/main/docs/01-project-overview.md"
+            href="https://github.com/JaplinChen/FloorLingo/blob/main/docs/01-project-overview.md"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -123,7 +121,7 @@ export function Login({ onLogin }: LoginProps) {
       <footer className="login-footer">
         <span>{t('login.footer')}</span>
         <a
-          href="https://github.com/JaplinChen/OpenWA-Lab"
+          href="https://github.com/JaplinChen/FloorLingo"
           target="_blank"
           rel="noopener noreferrer"
           className="github-link"
