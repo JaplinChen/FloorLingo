@@ -1,6 +1,6 @@
 name: Split PHP SDK
 
-# Mirrors the PHP SDK (sdk/php) into the standalone repo rmyndharis/openwa-php,
+# Mirrors the PHP SDK (sdk/php) into the standalone repo JaplinChen/floorlingo-php,
 # which is what Packagist installs (Packagist needs composer.json at a repo root
 # and does not support subdirectories). Uses a dependency-free `git subtree
 # split` + force-push — no third-party action.
@@ -11,8 +11,8 @@ name: Split PHP SDK
 # repo directly (see sdk/php — RELEASING below), e.g. `git tag 0.1.0`.
 #
 # One-time setup:
-#   1. Create an empty GitHub repo: rmyndharis/openwa-php
-#   2. Create a PAT (fine-grained, repo = openwa-php, Contents: read & write)
+#   1. Create an empty GitHub repo: JaplinChen/floorlingo-php
+#   2. Create a PAT (fine-grained, repo = floorlingo-php, Contents: read & write)
 #   3. Add it to THIS repo as the secret PHP_SDK_SPLIT_TOKEN
 
 on:
@@ -44,7 +44,7 @@ jobs:
       - run: ./vendor/bin/phpunit
 
   split:
-    name: Mirror sdk/php -> rmyndharis/openwa-php
+    name: Mirror sdk/php -> JaplinChen/floorlingo-php
     # Never mirror an untested (red) SDK to Packagist dev-main.
     needs: [test]
     runs-on: ubuntu-latest
@@ -60,14 +60,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${SPLIT_TOKEN:-}" ]; then
-            echo "::notice::PHP_SDK_SPLIT_TOKEN is not set — skipping. Create rmyndharis/openwa-php and add the secret to enable the mirror."
+            echo "::notice::PHP_SDK_SPLIT_TOKEN is not set — skipping. Create JaplinChen/floorlingo-php and add the secret to enable the mirror."
             exit 0
           fi
-          git config user.name "rmyndharis"
-          git config user.email "yudhi@rmyndharis.com"
+          git config user.name "JaplinChen"
+          git config user.email "japlinchen@gmail.com"
           SPLIT_SHA="$(git subtree split --prefix=sdk/php HEAD)"
           echo "Split SHA: $SPLIT_SHA"
           git push --force \
-            "https://x-access-token:${SPLIT_TOKEN}@github.com/rmyndharis/openwa-php.git" \
+            "https://x-access-token:${SPLIT_TOKEN}@github.com/JaplinChen/floorlingo-php.git" \
             "${SPLIT_SHA}:refs/heads/main"
-          echo "Mirrored sdk/php -> rmyndharis/openwa-php@main"
+          echo "Mirrored sdk/php -> JaplinChen/floorlingo-php@main"

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Tests;
+namespace FloorLingo\Tests;
 
 use PHPUnit\Framework\TestCase;
 

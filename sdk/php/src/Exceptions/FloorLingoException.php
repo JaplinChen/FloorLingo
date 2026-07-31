@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Exceptions;
+namespace FloorLingo\Exceptions;
 
 /**
- * Base class for every error thrown by the OpenWA SDK.
+ * Base class for every error thrown by the FloorLingo SDK.
  */
-class OpenWAException extends \Exception
+class FloorLingoException extends \Exception
 {
 }

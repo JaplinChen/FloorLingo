@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Exceptions;
+namespace FloorLingo\Exceptions;
 
 /** Raised when a request exceeds the configured timeout. */
-class OpenWATimeoutException extends OpenWAException
+class FloorLingoTimeoutException extends FloorLingoException
 {
     private float $timeout;
 

@@ -1,20 +1,26 @@
 {
-    "name": "rmyndharis/openwa",
-    "description": "Official PHP SDK for OpenWA WhatsApp API Gateway",
+    "name": "japlinchen/floorlingo",
+    "description": "Official PHP SDK for FloorLingo WhatsApp API Gateway",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "whatsapp",
         "api",
         "sdk",
-        "openwa",
+        "floorlingo",
         "gateway"
     ],
+    "homepage": "https://github.com/JaplinChen/FloorLingo",
     "authors": [
         {
-            "name": "OpenWA Contributors"
+            "name": "FloorLingo Contributors",
+            "homepage": "https://github.com/JaplinChen/FloorLingo"
         }
     ],
+    "support": {
+        "issues": "https://github.com/JaplinChen/FloorLingo/issues",
+        "source": "https://github.com/JaplinChen/FloorLingo"
+    },
     "require": {
         "php": ">=8.1",
         "guzzlehttp/guzzle": "^7.9"
@@ -24,12 +30,12 @@
     },
     "autoload": {
         "psr-4": {
-            "OpenWA\\": "src/"
+            "FloorLingo\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "OpenWA\\Tests\\": "tests/"
+            "FloorLingo\\Tests\\": "tests/"
         }
     },
     "config": {
