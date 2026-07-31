@@ -90,8 +90,8 @@
 與上游相同——完整設定請見 [上游 README](https://github.com/rmyndharis/OpenWA/blob/main/README.md)。複製 FloorLingo：
 
 ```bash
-git clone https://github.com/JaplinChen/OpenWA-Lab.git
-cd OpenWA-Lab
+git clone https://github.com/JaplinChen/FloorLingo.git
+cd FloorLingo
 docker compose -f docker-compose.dev.yml up -d
 # 儀表板: http://localhost:2785   API: http://localhost:2785/api   Swagger: http://localhost:2785/api/docs
 ```
