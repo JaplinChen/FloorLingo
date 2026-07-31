@@ -7,7 +7,7 @@
   },
   "common": {
     "session": "Sessão",
-    "appName": "OpenWA-Lab",
+    "appName": "FloorLingo",
     "appSubtitle": "API do WhatsApp",
     "loading": "Carregando...",
     "save": "Salvar",
@@ -156,7 +156,7 @@
     "connectionError": "Não foi possível conectar ao servidor. Por favor, tente novamente.",
     "help": "Precisa de ajuda?",
     "viewDocs": "Ver documentação",
-    "footer": "Feito com ❤️ por Yudhi Armyndharis e a comunidade OpenWA-Lab",
+    "footer": "Feito com ❤️ por Yudhi Armyndharis e a comunidade FloorLingo",
     "version": "v{{version}} · {{date}}"
   },
   "dashboard": {
@@ -599,7 +599,7 @@
       "postgres": "PostgreSQL",
       "postgresDesc": "Banco de dados para produção",
       "useBuiltIn": "Usar contêiner PostgreSQL integrado",
-      "builtInDesc": "OpenWA-Lab gerenciará um contêiner PostgreSQL para você",
+      "builtInDesc": "FloorLingo gerenciará um contêiner PostgreSQL para você",
       "dbName": "Nome do banco de dados",
       "schema": "Esquema",
       "schemaDesc": "Esquema do PostgreSQL (ignorado para SQLite). Padrão 'public'. O esquema já deve existir.",
@@ -635,7 +635,7 @@
       "enable": "Habilitar Redis",
       "enableDesc": "Necessário para cache, armazenamento de sessões e filas BullMQ",
       "useBuiltIn": "Usar contêiner Redis integrado",
-      "builtInDesc": "OpenWA-Lab gerenciará um contêiner Redis para você",
+      "builtInDesc": "FloorLingo gerenciará um contêiner Redis para você",
       "queueTitle": "Habilitar sistema de filas BullMQ",
       "queueDesc": "Use filas de mensagens para entrega confiável de mensagens e webhooks",
       "statsTitle": "Estatísticas das filas",
@@ -657,7 +657,7 @@
       "s3": "Amazon S3",
       "s3Desc": "Armazenamento em nuvem (compatível com S3)",
       "useBuiltIn": "Usar contêiner MinIO integrado",
-      "builtInDesc": "OpenWA-Lab gerenciará um contêiner MinIO (compatível com S3) para você",
+      "builtInDesc": "FloorLingo gerenciará um contêiner MinIO (compatível com S3) para você",
       "storagePath": "Caminho de armazenamento",
       "bucket": "Nome do bucket",
       "region": "Região",
@@ -705,7 +705,7 @@
       "importFailed": "Não foi possível importar os dados",
       "importOk": "Dados importados",
       "importConfirm": "A importação IRÁ SUBSTITUIR todos os dados atuais pelo backup ({{rows}} linhas). Isso não pode ser desfeito. Continuar?",
-      "invalidFile": "Esse arquivo não é um backup de dados válido do OpenWA-Lab.",
+      "invalidFile": "Esse arquivo não é um backup de dados válido do FloorLingo.",
       "importTooLarge": "O backup excede o limite da requisição. Aumente BODY_SIZE_LIMIT no servidor e tente novamente."
     },
     "statusLoadError": "Não foi possível carregar o status atual da infraestrutura. Atualize para tentar novamente."
@@ -733,7 +733,7 @@
     "engineSwitchHint": "Defina-o como motor ativo nas Configurações e reinicie",
     "empty": {
       "title": "Nenhum plugin encontrado",
-      "description": "Instale plugins para ampliar a funcionalidade do OpenWA-Lab"
+      "description": "Instale plugins para ampliar a funcionalidade do FloorLingo"
     },
     "config": {
       "title": "Configurar {{name}}",
