@@ -154,6 +154,15 @@ export class Glossary {
     return removed;
   }
 
+  /**
+   * Whether `term` is a source-side term for this pair. Exact match on purpose: section() matches the
+   * body case-sensitively, so a case-insensitive answer here would skip expanding a token whose
+   * glossary rule then never fires — leaving the model with a bare abbreviation and no hint.
+   */
+  hasSource(pairKey: string, term: string): boolean {
+    return term in (this.data[pairKey] || {});
+  }
+
   has(zh: string, vi: string): boolean {
     return (this.data['zh-tw:vi'] || {})[zh] === vi;
   }

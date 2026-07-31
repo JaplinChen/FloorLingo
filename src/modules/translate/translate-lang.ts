@@ -103,6 +103,22 @@ export function speechSourceRule(confusions: Map<string, string[]>): string {
   ].join('\n');
 }
 
+/**
+ * Domain context for vi->zh only. The groups are factory production-status groups, and the local
+ * date shorthand ("t5/7/2026" = week 5 of July) has no chance of being read correctly without being
+ * told — the model defaults to "the 7th week of May". ShorthandTable handles word forms; only
+ * patterns that can't be a table entry live here.
+ */
+export const VI_DOMAIN_RULE = [
+  '',
+  '背景：這是製造業工廠的生產進度群組，訊息多為工單、完工率、單位分派。',
+  '越南文縮寫慣例：',
+  '- t<N>/<M>/<YYYY> 指「<YYYY>年<M>月第<N>週」（例：t5/7/2026 = 2026年7月第5週）；t<M>/<YYYY> 指「<YYYY>年<M>月」。',
+  '- x<N>（或 xưởng <N>）指第<N>廠，例：x6 = 六廠。',
+  '- lệnh（lệnh sản xuất）指製令／工單；hoàn công 指完工。',
+  '',
+].join('\n');
+
 /** Build the translation prompt for the local model, injecting the glossary section for this pair. */
 export function buildPrompt(text: string, pair: Pair, glossarySection: string, template?: string): string {
   return (template || DEFAULT_PROMPT_TEMPLATE)
