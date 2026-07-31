@@ -149,12 +149,6 @@ services:
       # charges this much to EVERY queued message before the fallback runs — keep it well under a
       # chat-tolerable lag. Forwarded like the vars above or .env never reaches the container.
       - TRANSLATE_LLM_TIMEOUT_MS=${TRANSLATE_LLM_TIMEOUT_MS:-}
-      # Teams bot credentials (Azure Bot registration). Forwarded like the vars above — without these
-      # lines the .env values never reach the container. Empty MicrosoftAppId + TEAMS_ALLOW_ANONYMOUS
-      # unset makes /api/teams/messages refuse every request (see TeamsService.process).
-      - MicrosoftAppId=${MicrosoftAppId:-}
-      - MicrosoftAppPassword=${MicrosoftAppPassword:-}
-      - TEAMS_ALLOW_ANONYMOUS=${TEAMS_ALLOW_ANONYMOUS:-}
       # Engine launch options (session data path, headless, browser args). Forwarded EMPTY by default
       # so the dashboard (Infrastructure > Engine) selections saved to data/.env.generated apply — like
       # ENGINE_TYPE above. main.ts treats a blank value as unset (.env.generated wins), and the app
