@@ -61,18 +61,6 @@ body.sidebar-resizing .main-content {
   padding: 1.5rem 1rem;
 }
 
-.sidebar-logo {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.mobile-brand .sidebar-logo {
-  width: 24px;
-  height: 24px;
-}
-
 .sidebar-brand {
   display: flex;
   flex-direction: column;

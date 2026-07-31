@@ -33,18 +33,13 @@
   margin-bottom: 1.5rem;
 }
 
-/* The logo is the page title, so it carries the h1. Strip the heading's own box
-   and let .logo-icon keep defining the size. */
+/* The product name is the page title, so it carries the h1. */
 .login-container .logo-heading{
   margin: 0;
-  font-size: 0;
-  line-height: 0;
-}
-
-.login-container .logo-icon{
-  width: 127px;
-  height: 127px;
-  object-fit: contain;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .login-container .version-info{
@@ -252,9 +247,8 @@
     border-radius: 10px;
   }
 
-  .login-container .logo-icon{
-    width: 80px;
-    height: 80px;
+  .login-container .logo-heading{
+    font-size: 1.5rem;
   }
 
   .login-container .login-title{
