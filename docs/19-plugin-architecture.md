@@ -31,7 +31,7 @@
 
 ## 19.1 Overview
 
-The plugin architecture enables OpenWA-Lab extensibility without modifying the core codebase. Plugins can add new features, integrate with external services, or customize behavior.
+The plugin architecture enables FloorLingo extensibility without modifying the core codebase. Plugins can add new features, integrate with external services, or customize behavior.
 
 ### Design Goals
 
@@ -118,7 +118,7 @@ a host version. The config schema is the top-level `configSchema` (note: not nes
   "name": "My Awesome Plugin",
   "version": "1.0.0",
   "type": "extension",
-  "description": "An awesome plugin for OpenWA-Lab",
+  "description": "An awesome plugin for FloorLingo",
   "author": "Your Name",
   "license": "MIT",
 
@@ -327,7 +327,7 @@ export interface PluginStorage {
 
 ```mermaid
 sequenceDiagram
-    participant Core as OpenWA-Lab Core
+    participant Core as FloorLingo Core
     participant HM as Hook Manager
     participant P1 as Plugin 1
     participant P2 as Plugin 2

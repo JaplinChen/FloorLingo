@@ -2,7 +2,7 @@
 
 ## 14.1 Overview
 
-This document provides a comprehensive guide for migrating OpenWA-Lab, including:
+This document provides a comprehensive guide for migrating FloorLingo, including:
 
 - Database migration (SQLite → PostgreSQL)
 - Version upgrades (v0.1 → v0.2 → v1.0)
@@ -90,7 +90,7 @@ flowchart TD
 
 ### API-Based Migration (Recommended for v0.2+)
 
-OpenWA-Lab v0.2+ includes built-in migration API endpoints that leverage the **Dual-Database Architecture**:
+FloorLingo v0.2+ includes built-in migration API endpoints that leverage the **Dual-Database Architecture**:
 
 ```bash
 # Step 1: Export all Data DB tables
@@ -115,7 +115,7 @@ curl -X POST 'http://localhost:2785/api/infra/import-data' \
 > [!NOTE]
 > **Dual-Database Architecture**
 >
-> OpenWA-Lab separates databases:
+> FloorLingo separates databases:
 >
 > - **Main DB** (SQLite): API keys, audit logs - never migrated, always local
 > - **Data DB** (Pluggable): Sessions, webhooks, messages - this is what gets migrated
@@ -145,7 +145,7 @@ curl -X POST 'http://localhost:2785/api/infra/import-data' \
 
 ### Storage Migration (Local ↔ S3/MinIO)
 
-OpenWA-Lab v0.2+ supports migrating media files between storage backends:
+FloorLingo v0.2+ supports migrating media files between storage backends:
 
 ```bash
 # Step 1: Check current storage file count
@@ -184,7 +184,7 @@ curl -X POST 'http://localhost:2785/api/infra/storage/import' \
 
 ### Redis Migration (Cache)
 
-Redis in OpenWA-Lab is used **only for caching** with TTL-based expiration. Cache data is ephemeral and automatically regenerates from the database.
+Redis in FloorLingo is used **only for caching** with TTL-based expiration. Cache data is ephemeral and automatically regenerates from the database.
 
 **No migration API needed** - just change configuration:
 
@@ -425,7 +425,7 @@ migrateSqliteToPostgres(config)
 ### Step-by-Step Migration
 
 ```bash
-# Step 1: Stop OpenWA-Lab
+# Step 1: Stop FloorLingo
 docker compose down
 
 # Step 2: Backup current data
@@ -734,7 +734,7 @@ breaking_changes:
 
 set -e
 
-echo "🚀 Upgrading OpenWA-Lab v0.1.x → v0.2.x"
+echo "🚀 Upgrading FloorLingo v0.1.x → v0.2.x"
 
 # 1. Backup
 echo "📦 Creating backup..."
@@ -758,7 +758,7 @@ docker run --rm \
 # 4. Migrate configuration
 echo "⚙️ Migrating configuration..."
 cat > .env.new << 'EOF'
-# OpenWA-Lab v0.2.x Configuration
+# FloorLingo v0.2.x Configuration
 
 # Database (unchanged if using SQLite)
 DATABASE_ADAPTER=sqlite
@@ -834,7 +834,7 @@ breaking_changes:
 
 set -e
 
-echo "🚀 Upgrading OpenWA-Lab v0.2.x → v1.0.0"
+echo "🚀 Upgrading FloorLingo v0.2.x → v1.0.0"
 
 # Pre-flight checks
 CURRENT_VERSION=$(docker inspect ghcr.io/rmyndharis/openwa --format '{{.Config.Labels.version}}' 2>/dev/null || echo "unknown")
@@ -1254,7 +1254,7 @@ async function fullImport(options: ImportOptions): Promise<void> {
 
 **Cause:** a deployment previously bootstrapped with `DATABASE_SYNCHRONIZE=true` on PostgreSQL has native `uuid` `id`/FK columns (TypeORM derives them from `@PrimaryGeneratedColumn('uuid')`), while the migration chain assumes `varchar`. The two are incompatible, and migrations run unconditionally on the Postgres data connection (`migrationsRun: true`), so boot cannot complete (issue #690).
 
-**Fix (automatic for most deployments):** OpenWA ships a guard migration (`NormalizeSynchronizeUuidColumns`, ordered before the first collision) that converts the affected `uuid` columns to `varchar` on the next boot. For small-to-medium databases this is transparent — upgrade and restart.
+**Fix (automatic for most deployments):** FloorLingo ships a guard migration (`NormalizeSynchronizeUuidColumns`, ordered before the first collision) that converts the affected `uuid` columns to `varchar` on the next boot. For small-to-medium databases this is transparent — upgrade and restart.
 
 **Large-database maintenance window:** the conversion rewrites `messages` and `message_batches` in full under an exclusive lock. If either table is large (millions of rows) and your orchestrator's liveness/readiness grace is tight, run the migration against the stopped app during a planned window:
 

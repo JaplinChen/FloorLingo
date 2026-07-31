@@ -4,7 +4,7 @@
 
 ```mermaid
 timeline
-    title OpenWA-Lab Release Timeline
+    title FloorLingo Release Timeline
 
     section v0.0.1 - MVP
         Month 1-3 : Foundation & Engine
@@ -557,9 +557,9 @@ Delivered additively whenever ready, per SemVer (not gated to one version). The 
 
 | Feature                | Priority | Status | Description                     |
 | ---------------------- | -------- | ------ | ------------------------------- |
-| JavaScript/Node.js SDK | P1       | ✅ Shipped (`@rmyndharis/openwa`) | Official client library |
-| Python SDK             | P2       | ✅ Shipped (`rmyndharis-openwa`) | Python client library |
-| PHP SDK                | P2       | ✅ Shipped (`rmyndharis/openwa`) | PHP client library |
+| JavaScript/Node.js SDK | P1       | ✅ Shipped (`floorlingo-sdk`) | Official client library |
+| Python SDK             | P2       | ✅ Shipped (`floorlingo`) | Python client library |
+| PHP SDK                | P2       | ✅ Shipped (`japlinchen/floorlingo`) | PHP client library |
 | Postman Collection     | P1       | ◐ cURL collection (doc 07); Postman export TBD | Ready-to-use API collection |
 | Docs Site              | P1       | ☐ Open | Documentation website |
 | Video Tutorials        | P2       | ☐ Open | Getting started video series    |

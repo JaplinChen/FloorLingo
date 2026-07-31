@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Resources;
+namespace FloorLingo\Resources;
 
-use OpenWA\Http\HttpExecutor;
+use FloorLingo\Http\HttpExecutor;
 
 /**
  * Catalog resource — WhatsApp Business catalog, products, and product/catalog sends.

@@ -1,10 +1,10 @@
-"""Unit tests for the OpenWA Python SDK — assert exact paths and bodies."""
+"""Unit tests for the FloorLingo Python SDK — assert exact paths and bodies."""
 
 from __future__ import annotations
 
 import pytest
 
-from openwa import OpenWAClient, OpenWAApiError, OpenWANotFoundError
+from floorlingo import FloorLingoClient, FloorLingoApiError, FloorLingoNotFoundError
 
 from conftest import MockBackend, make_client
 
@@ -15,9 +15,9 @@ from conftest import MockBackend, make_client
 class TestClientCore:
     def test_requires_base_url_and_api_key(self):
         with pytest.raises(ValueError):
-            OpenWAClient(base_url="", api_key="k")
+            FloorLingoClient(base_url="", api_key="k")
         with pytest.raises(ValueError):
-            OpenWAClient(base_url="http://x", api_key="")
+            FloorLingoClient(base_url="http://x", api_key="")
 
     def test_sends_api_key_header(self):
         backend = MockBackend().on("GET", "/api/sessions", body=[])
@@ -29,7 +29,7 @@ class TestClientCore:
     def test_default_headers_cannot_override_api_key(self):
         # A caller-supplied default header must NEVER clobber the auth/JSON headers.
         backend = MockBackend().on("GET", "/api/sessions", body=[])
-        client = OpenWAClient(
+        client = FloorLingoClient(
             base_url="http://x",
             api_key="REAL_KEY",
             default_headers={"X-API-Key": "EVIL", "Content-Type": "text/plain", "X-Trace": "keep"},
@@ -46,7 +46,7 @@ class TestClientCore:
         def handler(_req: httpx.Request) -> httpx.Response:
             return httpx.Response(200, content=b"plain text", headers={"content-type": "text/plain"})
 
-        client = OpenWAClient(base_url="http://x", api_key="k", transport=httpx.MockTransport(handler))
+        client = FloorLingoClient(base_url="http://x", api_key="k", transport=httpx.MockTransport(handler))
         # A non-JSON 2xx body must surface as text, not raise a raw JSONDecodeError.
         assert client.sessions.list() == "plain text"
 
@@ -77,16 +77,16 @@ class TestClientCore:
                 content=b'{"redirected": true}',
             )
 
-        client = OpenWAClient(base_url="http://x", api_key="k", transport=httpx.MockTransport(handler))
+        client = FloorLingoClient(base_url="http://x", api_key="k", transport=httpx.MockTransport(handler))
         # A redirect is NOT followed (which would re-send X-API-Key to the target). An unfollowed 3xx
         # is not a usable response, so it surfaces as an API error — matching the JS transport.
-        with pytest.raises(OpenWAApiError):
+        with pytest.raises(FloorLingoApiError):
             client.sessions.list()
         assert len(calls) == 1  # the redirect target was never requested
 
     def test_strips_trailing_slash(self):
         backend = MockBackend().on("GET", "/api/sessions", body=[])
-        client = OpenWAClient(base_url="http://localhost:2785/", api_key="k", transport=backend.as_transport())
+        client = FloorLingoClient(base_url="http://localhost:2785/", api_key="k", transport=backend.as_transport())
         client.sessions.list()
         assert backend.last_call.url == "http://localhost:2785/api/sessions"
 
@@ -105,7 +105,7 @@ class TestClientCore:
         backend = MockBackend().on("GET", "/api/sessions/missing", status=404, body={
             "statusCode": 404, "message": "Session not found", "error": "Not Found"
         })
-        with pytest.raises(OpenWANotFoundError):
+        with pytest.raises(FloorLingoNotFoundError):
             make_client(backend).sessions.get("missing")
 
     def test_exposes_all_resources(self):

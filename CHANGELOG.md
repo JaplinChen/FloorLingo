@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **Naming.** This project was called OpenWA, then OpenWA-Lab, and is now **FloorLingo**.
+> Entries below keep the name the project actually had at the time of that release —
+> they are a record, not current branding.
+
 ## [Unreleased]
 
 ### Added

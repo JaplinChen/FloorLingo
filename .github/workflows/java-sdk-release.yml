@@ -1,6 +1,6 @@
 name: Java SDK Release
 
-# Publishes com.rmyndharis:openwa to Maven Central from sdk/java. Cleanly no-ops
+# Publishes io.github.japlinchen:floorlingo to Maven Central from sdk/java. Cleanly no-ops
 # until the one-time setup is done (see sdk/java/README.md -> RELEASING):
 #   - MAVEN_CENTRAL_USERNAME / MAVEN_CENTRAL_PASSWORD  (Sonatype Central user token halves)
 #   - GPG_PRIVATE_KEY                                   (ASCII-armored signing key)

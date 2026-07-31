@@ -1,6 +1,6 @@
-# OpenWA-Lab SDKs
+# FloorLingo SDKs
 
-Official client libraries for the [OpenWA-Lab](https://github.com/JaplinChen/OpenWA-Lab)
+Official client libraries for the [FloorLingo](https://github.com/JaplinChen/FloorLingo)
 WhatsApp API Gateway.
 
 All four SDKs are **hand-written** against the exact API surface (paths, DTOs,
@@ -12,10 +12,10 @@ hand-written resource methods.
 
 | Language                | Package                         | Notes                       |
 | ----------------------- | ------------------------------- | --------------------------- |
-| JavaScript / TypeScript | [`@rmyndharis/openwa`](javascript/) | dual ESM/CJS, bundled types |
-| Python                  | [`rmyndharis-openwa`](python/)      | sync (httpx), PEP 561 typed |
-| PHP                     | [`rmyndharis/openwa`](php/)         | sync (Guzzle, PHP 8.1+)     |
-| Java                    | [`com.rmyndharis:openwa`](java/)    | sync (java.net.http + Gson, Java 17) |
+| JavaScript / TypeScript | [`floorlingo-sdk`](javascript/) | dual ESM/CJS, bundled types |
+| Python                  | [`floorlingo`](python/)      | sync (httpx), PEP 561 typed |
+| PHP                     | [`japlinchen/floorlingo`](php/)         | sync (Guzzle, PHP 8.1+)     |
+| Java                    | [`io.github.japlinchen:floorlingo`](java/)    | sync (java.net.http + Gson, Java 17) |
 
 ## Coverage
 
@@ -43,13 +43,13 @@ All three SDKs expose the same fluent resource surface:
 ## JavaScript / TypeScript
 
 ```bash
-npm install @rmyndharis/openwa
+npm install floorlingo-sdk
 ```
 
 ```typescript
-import { OpenWAClient } from '@rmyndharis/openwa';
+import { FloorLingoClient } from 'floorlingo-sdk';
 
-const client = new OpenWAClient({
+const client = new FloorLingoClient({
   baseUrl: 'http://localhost:2785',
   apiKey: 'owa_k1_…',
 });
@@ -57,7 +57,7 @@ const client = new OpenWAClient({
 await client.sessions.start('my-session');
 const result = await client.messages.sendText('my-session', {
   chatId: '628123456789@c.us',
-  text: 'Hello from the OpenWA-Lab SDK!',
+  text: 'Hello from the FloorLingo SDK!',
 });
 console.log(result.messageId);
 ```
@@ -65,11 +65,11 @@ console.log(result.messageId);
 Errors are typed — branch with `instanceof`:
 
 ```typescript
-import { OpenWANotFoundError, OpenWAConflictError } from '@rmyndharis/openwa';
+import { FloorLingoNotFoundError, FloorLingoConflictError } from 'floorlingo-sdk';
 try {
   await client.messages.sendText(/* … */);
 } catch (e) {
-  if (e instanceof OpenWAConflictError) {
+  if (e instanceof FloorLingoConflictError) {
     /* engine not ready (409) */
   }
 }
@@ -81,13 +81,13 @@ try {
 ## Python
 
 ```bash
-pip install rmyndharis-openwa
+pip install floorlingo
 ```
 
 ```python
-from openwa import OpenWAClient, OpenWANotFoundError
+from floorlingo import FloorLingoClient, FloorLingoNotFoundError
 
-client = OpenWAClient(
+client = FloorLingoClient(
     base_url="http://localhost:2785",
     api_key="owa_k1_…",
 )
@@ -95,7 +95,7 @@ client = OpenWAClient(
 client.sessions.start("my-session")
 result = client.messages.send_text("my-session", {
     "chatId": "628123456789@c.us",
-    "text": "Hello from the OpenWA-Lab Python SDK!",
+    "text": "Hello from the FloorLingo Python SDK!",
 })
 print(result["messageId"])
 ```
@@ -106,12 +106,12 @@ monkey-patching required.
 ## PHP
 
 ```bash
-composer require rmyndharis/openwa
+composer require japlinchen/floorlingo
 ```
 
 ```php
 <?php
-use OpenWA\Client;
+use FloorLingo\Client;
 
 $client = new Client([
     'baseUrl' => 'http://localhost:2785',
@@ -121,7 +121,7 @@ $client = new Client([
 $client->sessions->start('my-session');
 $result = $client->messages->sendText('my-session', [
     'chatId' => '628123456789@c.us',
-    'text'   => 'Hello from the OpenWA-Lab PHP SDK!',
+    'text'   => 'Hello from the FloorLingo PHP SDK!',
 ]);
 echo $result['messageId'];
 ```
@@ -133,30 +133,30 @@ handler is a `MockHandler` — no global state, no network.
 
 ```xml
 <dependency>
-  <groupId>com.rmyndharis</groupId>
-  <artifactId>openwa</artifactId>
+  <groupId>io.github.japlinchen</groupId>
+  <artifactId>floorlingo</artifactId>
   <version>0.1.1</version>
 </dependency>
 ```
 
 ```java
-import com.rmyndharis.openwa.OpenWAClient;
-import com.rmyndharis.openwa.model.MessageResponse;
-import com.rmyndharis.openwa.model.SendTextRequest;
+import io.github.japlinchen.floorlingo.FloorLingoClient;
+import io.github.japlinchen.floorlingo.model.MessageResponse;
+import io.github.japlinchen.floorlingo.model.SendTextRequest;
 
-OpenWAClient client = new OpenWAClient("http://localhost:2785", "owa_k1_…");
+FloorLingoClient client = new FloorLingoClient("http://localhost:2785", "owa_k1_…");
 
 client.sessions.start("my-session");
 MessageResponse result = client.messages.sendText("my-session",
     SendTextRequest.builder()
         .chatId("628123456789@c.us")
-        .text("Hello from the OpenWA-Lab Java SDK!")
+        .text("Hello from the FloorLingo Java SDK!")
         .build());
 System.out.println(result.messageId());
 ```
 
 Requires Java 17+. Errors are a typed, unchecked hierarchy — branch with
-`instanceof OpenWANotFoundError` / `OpenWAConflictError`. For testing, inject a
+`instanceof FloorLingoNotFoundError` / `FloorLingoConflictError`. For testing, inject a
 custom `HttpTransport` that records the request — no network. See
 [`java/README.md`](java/README.md) for the full guide.
 

@@ -1,23 +1,23 @@
-# rmyndharis-openwa
+# floorlingo
 
-Official Python SDK for the [OpenWA-Lab](https://github.com/JaplinChen/OpenWA-Lab) WhatsApp API Gateway.
+Official Python SDK for the [FloorLingo](https://github.com/JaplinChen/FloorLingo) WhatsApp API Gateway.
 
 A synchronous client built on [httpx](https://www.python-httpx.org/), with bundled type hints (PEP 561).
 
 ## Install
 
 ```bash
-pip install rmyndharis-openwa
+pip install floorlingo
 ```
 
-Requires Python 3.9+. The importable module is `openwa`.
+Requires Python 3.9+. The importable module is `floorlingo`.
 
 ## Usage
 
 ```python
-from openwa import OpenWAClient
+from floorlingo import FloorLingoClient
 
-client = OpenWAClient(
+client = FloorLingoClient(
     base_url="https://your-gateway.example.com",
     api_key="owa_k1_…",
 )
@@ -26,7 +26,7 @@ client.sessions.start("my-session")
 
 result = client.messages.send_text("my-session", {
     "chatId": "628123456789@c.us",
-    "text": "Hello from the OpenWA-Lab Python SDK!",
+    "text": "Hello from the FloorLingo Python SDK!",
 })
 print(result["messageId"])
 ```
@@ -34,7 +34,7 @@ print(result["messageId"])
 The client is also a context manager (it closes the underlying connection pool on exit):
 
 ```python
-with OpenWAClient(base_url="…", api_key="…") as client:
+with FloorLingoClient(base_url="…", api_key="…") as client:
     client.messages.send_text("my-session", {"chatId": "…@c.us", "text": "hi"})
 ```
 
@@ -42,7 +42,7 @@ For tests, pass an httpx transport — no global monkey-patching required:
 
 ```python
 import httpx
-client = OpenWAClient(base_url="…", api_key="…", transport=httpx.MockTransport(handler))
+client = FloorLingoClient(base_url="…", api_key="…", transport=httpx.MockTransport(handler))
 ```
 
 ## Search
@@ -65,17 +65,17 @@ for hit in res["hits"]:
 
 ## Errors
 
-A non-2xx response raises a typed `OpenWAApiError` subclass — `OpenWAAuthError` (401),
-`OpenWAForbiddenError` (403), `OpenWANotFoundError` (404), `OpenWAConflictError` (409),
-`OpenWARateLimitError` (429), `OpenWANotImplementedError` (501) — each carrying `.status`
-and the parsed `.body`. A timeout raises `OpenWATimeoutError`.
+A non-2xx response raises a typed `FloorLingoApiError` subclass — `FloorLingoAuthError` (401),
+`FloorLingoForbiddenError` (403), `FloorLingoNotFoundError` (404), `FloorLingoConflictError` (409),
+`FloorLingoRateLimitError` (429), `FloorLingoNotImplementedError` (501) — each carrying `.status`
+and the parsed `.body`. A timeout raises `FloorLingoTimeoutError`.
 
 ```python
-from openwa import OpenWANotFoundError
+from floorlingo import FloorLingoNotFoundError
 
 try:
     client.sessions.get("missing")
-except OpenWANotFoundError as e:
+except FloorLingoNotFoundError as e:
     print(e.status)  # 404
 ```
 

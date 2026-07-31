@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Http;
+namespace FloorLingo\Http;
 
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ConnectException;
-use OpenWA\Exceptions\OpenWAApiException;
-use OpenWA\Exceptions\OpenWATimeoutException;
+use FloorLingo\Exceptions\FloorLingoApiException;
+use FloorLingo\Exceptions\FloorLingoTimeoutException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Injectable HTTP transport for the OpenWA SDK.
+ * Injectable HTTP transport for the FloorLingo SDK.
  *
  * The client never builds a bare Guzzle client with a hard-coded handler.
  * Instead it accepts an optional Guzzle {@see ClientInterface} (defaulting to a
@@ -71,8 +71,8 @@ class HttpExecutor
      *
      * @return mixed Decoded JSON, or null for empty/204 responses.
      *
-     * @throws OpenWAApiException  On any non-2xx response (typed subclass).
-     * @throws OpenWATimeoutException On timeout.
+     * @throws FloorLingoApiException  On any non-2xx response (typed subclass).
+     * @throws FloorLingoTimeoutException On timeout.
      */
     public function request(string $method, string $path, array $query = [], $body = null)
     {
@@ -110,7 +110,7 @@ class HttpExecutor
             $errno = $e->getHandlerContext()['errno'] ?? null;
             $isTimeout = $errno === 28 || str_contains($e->getMessage(), 'timed out');
             if ($isTimeout) {
-                throw new OpenWATimeoutException($this->timeout);
+                throw new FloorLingoTimeoutException($this->timeout);
             }
             throw $e;
         }
@@ -132,7 +132,7 @@ class HttpExecutor
         return $decoded === null && json_last_error() !== JSON_ERROR_NONE ? $text : $decoded;
     }
 
-    private function buildApiException(ResponseInterface $response, string $method, string $path): OpenWAApiException
+    private function buildApiException(ResponseInterface $response, string $method, string $path): FloorLingoApiException
     {
         $status = $response->getStatusCode();
         $text = (string) $response->getBody();
@@ -154,8 +154,8 @@ class HttpExecutor
             $messageText = $rawMessage === null ? $response->getReasonPhrase() : (string) $rawMessage;
         }
         $reason = $response->getReasonPhrase();
-        $message = "OpenWA API {$status} {$reason} — {$method} {$path}: {$messageText}";
+        $message = "FloorLingo API {$status} {$reason} — {$method} {$path}: {$messageText}";
 
-        return OpenWAApiException::classify($status, $message, $data, $envelope['error'] ?? null);
+        return FloorLingoApiException::classify($status, $message, $data, $envelope['error'] ?? null);
     }
 }

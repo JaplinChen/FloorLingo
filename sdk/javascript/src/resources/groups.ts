@@ -6,7 +6,7 @@
  */
 
 import { encodeSegment } from '../http.js';
-import type { OpenWAClient } from '../client.js';
+import type { FloorLingoClient } from '../client.js';
 import type { CreateGroupRequest, GroupInfo, GroupSummary, InviteCodeResponse, SuccessResult } from '../types.js';
 
 export interface ListGroupsQuery {
@@ -15,7 +15,7 @@ export interface ListGroupsQuery {
 }
 
 export class GroupsResource {
-  constructor(private readonly client: OpenWAClient) {}
+  constructor(private readonly client: FloorLingoClient) {}
 
   /** List all groups for the session. */
   list(sessionId: string, query?: ListGroupsQuery): Promise<GroupSummary[]> {

@@ -209,7 +209,7 @@ stuck. Often seen on ARM64 (e.g. Raspberry Pi) after upgrading to v0.2.x.
 stalls the post-link sync. (If you also see `chrome_crashpad_handler: --database is required` *and the
 session never starts at all*, that is a different problem — see "Session fails to launch …" below.)
 
-**Fix:** OpenWA-Lab reconciles a missed `ready` event when WhatsApp Web is connected, the injected
+**Fix:** FloorLingo reconciles a missed `ready` event when WhatsApp Web is connected, the injected
 runtime is available, and whatsapp-web.js has populated the linked account identity. If your
 environment still hits a WA-Web compatibility hang, pin a known-good WA-Web version with
 `WWEBJS_WEB_VERSION`:
@@ -346,7 +346,7 @@ limit the instant before the failure — that tells you A vs B. If neither moves
 > **Engine:** This issue applies to the `whatsapp-web.js` engine only (Chromium/Puppeteer-based). It does not affect `ENGINE_TYPE=baileys`.
 
 **Symptoms:** A `whatsapp-web.js` session that was already authenticated fails within seconds of
-**Start** after upgrading OpenWA — no QR is produced — and the session's `lastError` / container log
+**Start** after upgrading FloorLingo — no QR is produced — and the session's `lastError` / container log
 show:
 
 ```text
@@ -777,8 +777,8 @@ docker exec openwa-lab curl http://host.docker.internal:8080
 
 ### General Questions
 
-**Q: Is OpenWA-Lab safe to use?**
-> A: OpenWA-Lab uses unofficial WhatsApp Web API. While we implement best practices to avoid detection, there's inherent risk of account restrictions. We recommend:
+**Q: Is FloorLingo safe to use?**
+> A: FloorLingo uses unofficial WhatsApp Web API. While we implement best practices to avoid detection, there's inherent risk of account restrictions. We recommend:
 > - Use dedicated phone number (not personal)
 > - Don't send spam or bulk unsolicited messages
 > - Follow WhatsApp's Terms of Service
@@ -793,7 +793,7 @@ docker exec openwa-lab curl http://host.docker.internal:8080
 > With `ENGINE_TYPE=baileys` (browser-free), RAM per session is significantly lower — you can run more sessions on the same hardware. Exact figures depend on message volume and group membership.
 
 **Q: Can I use WhatsApp Business account?**
-> A: Yes, OpenWA-Lab works with both personal and WhatsApp Business accounts. Note that WhatsApp Business API (official Meta API) is different and not supported.
+> A: Yes, FloorLingo works with both personal and WhatsApp Business accounts. Note that WhatsApp Business API (official Meta API) is different and not supported.
 
 **Q: How to avoid getting banned?**
 > Best practices:
@@ -869,9 +869,9 @@ server {
 
 **Q: How to run behind Traefik / Coolify?**
 
-Traefik forwards WebSocket upgrades automatically, so OpenWA-Lab's single-port Socket.IO channel works with a normal HTTP router. Two things keep a public deployment stable:
+Traefik forwards WebSocket upgrades automatically, so FloorLingo's single-port Socket.IO channel works with a normal HTTP router. Two things keep a public deployment stable:
 
-**1. Let Traefik reach the container over the Docker network — don't _also_ publish the host port.** This is the most common cause of intermittent `504`s on Coolify/Traefik. If OpenWA-Lab publishes its port to the host (`ports: ["2785:2785"]`) **and** Traefik also routes to it, every request additionally traverses Docker's userland `docker-proxy`. OpenWA-Lab holds a long-lived Socket.IO connection per client (HTTP long-poll → WebSocket upgrade), so those held-open connections accumulate across both hops and gradually exhaust the connection pool to the single upstream — the Dashboard, API, and real-time channel then `504` together "after some time", while `curl http://localhost:2785/api/health/ready` keeps returning `200`. Front it with Traefik on a shared network and **expose** the port internally instead of **publishing** it:
+**1. Let Traefik reach the container over the Docker network — don't _also_ publish the host port.** This is the most common cause of intermittent `504`s on Coolify/Traefik. If FloorLingo publishes its port to the host (`ports: ["2785:2785"]`) **and** Traefik also routes to it, every request additionally traverses Docker's userland `docker-proxy`. FloorLingo holds a long-lived Socket.IO connection per client (HTTP long-poll → WebSocket upgrade), so those held-open connections accumulate across both hops and gradually exhaust the connection pool to the single upstream — the Dashboard, API, and real-time channel then `504` together "after some time", while `curl http://localhost:2785/api/health/ready` keeps returning `200`. Front it with Traefik on a shared network and **expose** the port internally instead of **publishing** it:
 
 ```yaml
 services:
@@ -906,7 +906,7 @@ entryPoints:
         idleTimeout: 600s
 ```
 
-Remember OpenWA-Lab is **single-port**: the Dashboard, REST API, and Socket.IO all share `:2785` behind one router, so a choked upstream takes all three down at once. A Dashboard stuck on "Connecting…" while `localhost` is healthy is the proxy hop, not the app.
+Remember FloorLingo is **single-port**: the Dashboard, REST API, and Socket.IO all share `:2785` behind one router, so a choked upstream takes all three down at once. A Dashboard stuck on "Connecting…" while `localhost` is healthy is the proxy hop, not the app.
 
 **Q: How to backup sessions automatically?**
 ```bash
@@ -1028,7 +1028,7 @@ When creating GitHub issue, include:
 
 ```markdown
 ## Environment
-- OpenWA-Lab version: x.x.x
+- FloorLingo version: x.x.x
 - Docker version: x.x.x
 - OS: Ubuntu 22.04 / macOS / Windows
 - Database: SQLite / PostgreSQL
@@ -1061,8 +1061,8 @@ When creating GitHub issue, include:
 
 ### Community Resources
 
-- **GitHub Issues**: [github.com/JaplinChen/OpenWA-Lab/issues](https://github.com/JaplinChen/OpenWA-Lab/issues)
-- **Discussions**: [github.com/JaplinChen/OpenWA-Lab/discussions](https://github.com/JaplinChen/OpenWA-Lab/discussions)
+- **GitHub Issues**: [github.com/JaplinChen/FloorLingo/issues](https://github.com/JaplinChen/FloorLingo/issues)
+- **Discussions**: [github.com/JaplinChen/FloorLingo/discussions](https://github.com/JaplinChen/FloorLingo/discussions)
 - **Discord**: [discord.gg/openwa](https://discord.gg/openwa) (if available)
 - **Stack Overflow**: Tag with `openwa`
 ---

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OpenWA\Resources;
+namespace FloorLingo\Resources;
 
-use OpenWA\Http\HttpExecutor;
+use FloorLingo\Http\HttpExecutor;
 
 /**
  * Chats resource — chat-list operations (read/unread/delete/typing state).

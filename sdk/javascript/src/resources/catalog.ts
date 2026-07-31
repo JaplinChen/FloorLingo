@@ -10,7 +10,7 @@
  */
 
 import { encodeSegment } from '../http.js';
-import type { OpenWAClient } from '../client.js';
+import type { FloorLingoClient } from '../client.js';
 import type {
   CatalogInfo,
   CatalogProduct,
@@ -22,7 +22,7 @@ import type {
 } from '../types.js';
 
 export class CatalogResource {
-  constructor(private readonly client: OpenWAClient) {}
+  constructor(private readonly client: FloorLingoClient) {}
 
   /** Get the business catalog info. */
   info(sessionId: string): Promise<CatalogInfo> {

@@ -610,8 +610,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/JaplinChen/OpenWA-Lab.git
-cd OpenWA-Lab
+git clone https://github.com/JaplinChen/FloorLingo.git
+cd FloorLingo
 
 # 2. Install dependencies (also installs dashboard dependencies)
 npm install
@@ -674,7 +674,7 @@ docker compose --profile full up -d
 
 ### Environment Variables
 
-OpenWA-Lab supports multiple infrastructure configurations. Choose based on your needs:
+FloorLingo supports multiple infrastructure configurations. Choose based on your needs:
 
 #### Minimal Profile (Development / Single Session)
 
@@ -697,7 +697,7 @@ STORAGE_LOCAL_PATH=./data/media
 REDIS_ENABLED=false
 QUEUE_ENABLED=false
 
-# Optional: seed a known admin key. If omitted, OpenWA-Lab generates a random key and writes data/.api-key.
+# Optional: seed a known admin key. If omitted, FloorLingo generates a random key and writes data/.api-key.
 API_MASTER_KEY=
 
 # Session

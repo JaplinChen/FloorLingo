@@ -1,13 +1,13 @@
-# @rmyndharis/openwa
+# floorlingo-sdk
 
-Official JavaScript/TypeScript SDK for the [OpenWA-Lab](https://github.com/JaplinChen/OpenWA-Lab) WhatsApp API Gateway.
+Official JavaScript/TypeScript SDK for the [FloorLingo](https://github.com/JaplinChen/FloorLingo) WhatsApp API Gateway.
 
 Ships dual CJS + ESM builds with bundled type declarations.
 
 ## Install
 
 ```bash
-npm install @rmyndharis/openwa
+npm install floorlingo-sdk
 ```
 
 Requires Node.js >= 18 (relies on the global `fetch`).
@@ -15,9 +15,9 @@ Requires Node.js >= 18 (relies on the global `fetch`).
 ## Usage
 
 ```typescript
-import { OpenWAClient } from '@rmyndharis/openwa';
+import { FloorLingoClient } from 'floorlingo-sdk';
 
-const client = new OpenWAClient({
+const client = new FloorLingoClient({
   baseUrl: 'https://your-gateway.example.com',
   apiKey: 'owa_k1_…',
 });
@@ -26,12 +26,12 @@ await client.sessions.start('my-session');
 
 const result = await client.messages.sendText('my-session', {
   chatId: '628123456789@c.us',
-  text: 'Hello from the OpenWA-Lab SDK!',
+  text: 'Hello from the FloorLingo SDK!',
 });
 console.log(result.messageId);
 ```
 
-CommonJS consumers use `require('@rmyndharis/openwa')` identically.
+CommonJS consumers use `require('floorlingo-sdk')` identically.
 
 ## Messaging
 
@@ -39,11 +39,11 @@ CommonJS consumers use `require('@rmyndharis/openwa')` identically.
 
 ## Errors
 
-Non-2xx responses throw a typed `OpenWAApiError` subclass
-(`OpenWAAuthError`, `OpenWAForbiddenError`, `OpenWANotFoundError`,
-`OpenWAConflictError`, `OpenWARateLimitError`, `OpenWANotImplementedError`),
+Non-2xx responses throw a typed `FloorLingoApiError` subclass
+(`FloorLingoAuthError`, `FloorLingoForbiddenError`, `FloorLingoNotFoundError`,
+`FloorLingoConflictError`, `FloorLingoRateLimitError`, `FloorLingoNotImplementedError`),
 each carrying `.status` and the parsed `.body`. Timeouts throw
-`OpenWATimeoutError`. The SDK does **not** retry — wrap calls with your own
+`FloorLingoTimeoutError`. The SDK does **not** retry — wrap calls with your own
 backoff if needed.
 
 ## License
