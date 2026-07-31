@@ -51,6 +51,23 @@
   color: var(--primary-text);
 }
 
+.settings-layout .settings-nav-advanced {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  text-align: start;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  border-radius: var(--radius);
+}
+
+.settings-layout .settings-nav-advanced:hover {
+  background: var(--bg-light);
+  color: var(--text-primary);
+}
+
 .settings-layout .settings-content {
   flex: 1;
   min-width: 0;

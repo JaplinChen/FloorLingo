@@ -124,7 +124,9 @@
     "messageTester": "訊息測試器",
     "infrastructure": "基礎架構",
     "plugins": "外掛",
-    "logs": "記錄"
+    "logs": "記錄",
+    "showAdvanced": "顯示進階設定",
+    "hideAdvanced": "隱藏進階設定"
   },
   "chats": {
     "media": {

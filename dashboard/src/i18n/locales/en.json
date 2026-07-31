@@ -124,7 +124,9 @@
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
     "logs": "Logs",
-    "settings": "Settings"
+    "settings": "Settings",
+    "showAdvanced": "Show advanced",
+    "hideAdvanced": "Hide advanced"
   },
   "chats": {
     "media": {

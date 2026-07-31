@@ -124,7 +124,9 @@
     "messageTester": "Kiểm tra tin nhắn",
     "infrastructure": "Hạ tầng",
     "plugins": "Plugin",
-    "logs": "Nhật ký"
+    "logs": "Nhật ký",
+    "showAdvanced": "Hiện cài đặt nâng cao",
+    "hideAdvanced": "Ẩn cài đặt nâng cao"
   },
   "chats": {
     "media": {

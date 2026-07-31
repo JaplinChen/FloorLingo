@@ -86,7 +86,9 @@
     "glossary": "용어집",
     "settings": "설정",
     "senders": "Senders",
-    "llm": "LLM Settings"
+    "llm": "LLM Settings",
+    "showAdvanced": "고급 설정 표시",
+    "hideAdvanced": "고급 설정 숨기기"
   },
   "chats": {
     "media": {

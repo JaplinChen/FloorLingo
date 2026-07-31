@@ -86,7 +86,9 @@
     "glossary": "مسرد المصطلحات",
     "settings": "الإعدادات",
     "senders": "Senders",
-    "llm": "LLM Settings"
+    "llm": "LLM Settings",
+    "showAdvanced": "إظهار الإعدادات المتقدمة",
+    "hideAdvanced": "إخفاء الإعدادات المتقدمة"
   },
   "chats": {
     "media": {
