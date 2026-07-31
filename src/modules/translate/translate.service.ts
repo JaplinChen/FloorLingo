@@ -482,7 +482,7 @@ export class TranslateService implements OnModuleInit {
    * Platform-agnostic translate decision: given inbound text and a chat key (rate-limit bucket),
    * return the bot reply (BOT_MARKER + translation) or null to stay silent. Serialized on the shared
    * queue so a single-request Ollama isn't hit concurrently. Shared by the WhatsApp hook and any other
-   * adapter (e.g. Teams) injecting this same service — glossary/sender/memory/config all shared.
+   * platform adapter injecting this same service — glossary/sender/memory/config all shared.
    */
   async translateInbound(
     text: string,
@@ -517,7 +517,7 @@ export class TranslateService implements OnModuleInit {
       }
       const reply = BOT_MARKER + translated;
       // In-queue send keeps sends serialized behind translations (race-free pacing). Adapters that
-      // don't need in-queue delivery (e.g. Teams) omit send and dispatch the returned reply themselves.
+      // don't need in-queue delivery omit send and dispatch the returned reply themselves.
       if (send) await send(reply);
       return reply;
     });
