@@ -6,11 +6,11 @@
  */
 
 import { encodeSegment } from '../http.js';
-import type { OpenWAClient } from '../client.js';
+import type { FloorLingoClient } from '../client.js';
 import type { CreateWebhookRequest, UpdateWebhookRequest, WebhookResponse, WebhookTestResult } from '../types.js';
 
 export class WebhooksResource {
-  constructor(private readonly client: OpenWAClient) {}
+  constructor(private readonly client: FloorLingoClient) {}
 
   /** List all webhooks for a session. */
   list(sessionId: string): Promise<WebhookResponse[]> {

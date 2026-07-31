@@ -1,7 +1,7 @@
 {
-    "name": "@rmyndharis/openwa",
+    "name": "floorlingo-sdk",
     "version": "0.1.0",
-    "description": "Official JavaScript/TypeScript SDK for OpenWA WhatsApp API Gateway",
+    "description": "Official JavaScript/TypeScript SDK for FloorLingo WhatsApp API Gateway",
     "type": "module",
     "main": "./dist/cjs/index.js",
     "module": "./dist/esm/index.js",
@@ -31,15 +31,19 @@
         "whatsapp",
         "api",
         "sdk",
-        "openwa",
+        "floorlingo",
         "gateway"
     ],
-    "author": "OpenWA Contributors",
+    "author": "FloorLingo Contributors",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/rmyndharis/OpenWA",
+        "url": "https://github.com/JaplinChen/FloorLingo",
         "directory": "sdk/javascript"
+    },
+    "homepage": "https://github.com/JaplinChen/FloorLingo",
+    "bugs": {
+        "url": "https://github.com/JaplinChen/FloorLingo/issues"
     },
     "engines": {
         "node": ">=18"

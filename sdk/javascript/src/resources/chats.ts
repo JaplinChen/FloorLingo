@@ -9,7 +9,7 @@
  */
 
 import { encodeSegment } from '../http.js';
-import type { OpenWAClient } from '../client.js';
+import type { FloorLingoClient } from '../client.js';
 import type { ChatSummary, DeleteChatRequest, MarkChatRequest, SendChatStateRequest, SuccessResult } from '../types.js';
 
 export interface ListChatsQuery {
@@ -18,7 +18,7 @@ export interface ListChatsQuery {
 }
 
 export class ChatsResource {
-  constructor(private readonly client: OpenWAClient) {}
+  constructor(private readonly client: FloorLingoClient) {}
 
   /** List active chats, most recent first. */
   list(sessionId: string, query?: ListChatsQuery): Promise<ChatSummary[]> {

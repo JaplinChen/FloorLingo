@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { OpenWAClient } from '../src';
+import { FloorLingoClient } from '../src';
 import { MockTransport } from './helpers';
 
-function client(t: MockTransport): OpenWAClient {
-  return new OpenWAClient({ baseUrl: 'http://x', apiKey: 'k', fetch: t.asFetch() });
+function client(t: MockTransport): FloorLingoClient {
+  return new FloorLingoClient({ baseUrl: 'http://x', apiKey: 'k', fetch: t.asFetch() });
 }
 
 describe('GroupsResource — exact paths and bodies', () => {

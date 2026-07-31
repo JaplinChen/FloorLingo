@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { OpenWAClient } from '../src';
+import { FloorLingoClient } from '../src';
 import { MockTransport } from './helpers';
 
-function client(t: MockTransport): OpenWAClient {
-  return new OpenWAClient({ baseUrl: 'http://x', apiKey: 'k', fetch: t.asFetch() });
+function client(t: MockTransport): FloorLingoClient {
+  return new FloorLingoClient({ baseUrl: 'http://x', apiKey: 'k', fetch: t.asFetch() });
 }
 
 describe('MessagesResource — exact paths', () => {
@@ -21,7 +21,7 @@ describe('MessagesResource — exact paths', () => {
   });
 
   it('sendVideo / sendAudio / sendDocument / sendSticker use correct segments', async () => {
-    const cases: Array<[string, (c: OpenWAClient) => Promise<unknown>]> = [
+    const cases: Array<[string, (c: FloorLingoClient) => Promise<unknown>]> = [
       ['send-video', c => c.messages.sendVideo('s', { chatId: 'a@c.us', url: 'u' })],
       ['send-audio', c => c.messages.sendAudio('s', { chatId: 'a@c.us', url: 'u' })],
       ['send-document', c => c.messages.sendDocument('s', { chatId: 'a@c.us', filename: 'f.pdf' })],
