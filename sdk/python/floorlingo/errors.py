@@ -1,6 +1,6 @@
-"""Typed error hierarchy for the OpenWA Python SDK.
+"""Typed error hierarchy for the FloorLingo Python SDK.
 
-The OpenWA API returns NestJS-default errors of the shape::
+The FloorLingo API returns NestJS-default errors of the shape::
 
     {"statusCode": int, "message": str | list[str], "error": str}
 
@@ -13,11 +13,11 @@ from __future__ import annotations
 from typing import Any
 
 
-class OpenWAError(Exception):
+class FloorLingoError(Exception):
     """Base class for every error raised by the SDK."""
 
 
-class OpenWAApiError(OpenWAError):
+class FloorLingoApiError(FloorLingoError):
     """Raised when the API responds with a non-2xx status.
 
     Attributes:
@@ -33,7 +33,7 @@ class OpenWAApiError(OpenWAError):
         self.error_kind = error_kind
 
     @classmethod
-    def from_response(cls, status_code: int, text: str, context: str) -> "OpenWAApiError":
+    def from_response(cls, status_code: int, text: str, context: str) -> "FloorLingoApiError":
         import json
 
         body: Any = None
@@ -50,35 +50,35 @@ class OpenWAApiError(OpenWAError):
             message_text = raw_message
         else:
             message_text = str(raw_message)
-        message = f"OpenWA API {status_code} — {context}: {message_text}"
+        message = f"FloorLingo API {status_code} — {context}: {message_text}"
         return classify(status_code, message, body, envelope.get("error") if envelope else None)
 
 
-class OpenWAAuthError(OpenWAApiError):
+class FloorLingoAuthError(FloorLingoApiError):
     """401 Unauthorized — missing or invalid API key."""
 
 
-class OpenWAForbiddenError(OpenWAApiError):
+class FloorLingoForbiddenError(FloorLingoApiError):
     """403 Forbidden — insufficient role."""
 
 
-class OpenWANotFoundError(OpenWAApiError):
+class FloorLingoNotFoundError(FloorLingoApiError):
     """404 Not Found."""
 
 
-class OpenWAConflictError(OpenWAApiError):
+class FloorLingoConflictError(FloorLingoApiError):
     """409 Conflict — typically an engine-not-ready condition."""
 
 
-class OpenWARateLimitError(OpenWAApiError):
+class FloorLingoRateLimitError(FloorLingoApiError):
     """429 Too Many Requests."""
 
 
-class OpenWANotImplementedError(OpenWAApiError):
+class FloorLingoNotImplementedError(FloorLingoApiError):
     """501 Not Implemented — the active engine does not support this operation."""
 
 
-class OpenWATimeoutError(OpenWAError):
+class FloorLingoTimeoutError(FloorLingoError):
     """Raised when a request exceeds the configured timeout."""
 
     def __init__(self, timeout: float) -> None:
@@ -86,14 +86,14 @@ class OpenWATimeoutError(OpenWAError):
         self.timeout = timeout
 
 
-def classify(status: int, message: str, body: Any, error_kind: str | None) -> OpenWAApiError:
-    """Pick the most specific :class:`OpenWAApiError` subclass for a status."""
+def classify(status: int, message: str, body: Any, error_kind: str | None) -> FloorLingoApiError:
+    """Pick the most specific :class:`FloorLingoApiError` subclass for a status."""
     cls = {
-        401: OpenWAAuthError,
-        403: OpenWAForbiddenError,
-        404: OpenWANotFoundError,
-        409: OpenWAConflictError,
-        429: OpenWARateLimitError,
-        501: OpenWANotImplementedError,
-    }.get(status, OpenWAApiError)
+        401: FloorLingoAuthError,
+        403: FloorLingoForbiddenError,
+        404: FloorLingoNotFoundError,
+        409: FloorLingoConflictError,
+        429: FloorLingoRateLimitError,
+        501: FloorLingoNotImplementedError,
+    }.get(status, FloorLingoApiError)
     return cls(message, status, body, error_kind)

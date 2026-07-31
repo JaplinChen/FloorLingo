@@ -1,13 +1,13 @@
 """
-OpenWA Python SDK.
+FloorLingo Python SDK.
 
-Official client library for the OpenWA WhatsApp API Gateway.
+Official client library for the FloorLingo WhatsApp API Gateway.
 
 Example usage::
 
-    from openwa import OpenWAClient
+    from floorlingo import FloorLingoClient
 
-    client = OpenWAClient(
+    client = FloorLingoClient(
         base_url="http://localhost:2785",
         api_key="owa_k1_…",
     )
@@ -15,35 +15,35 @@ Example usage::
     client.sessions.start("my-session")
     result = client.messages.send_text("my-session", {
         "chatId": "628123456789@c.us",
-        "text": "Hello from the OpenWA Python SDK!",
+        "text": "Hello from the FloorLingo Python SDK!",
     })
     print(result["messageId"])
 """
 
 from __future__ import annotations
 
-from .client import OpenWAClient
+from .client import FloorLingoClient
 from .errors import (
-    OpenWAApiError,
-    OpenWAAuthError,
-    OpenWAConflictError,
-    OpenWAError,
-    OpenWAForbiddenError,
-    OpenWANotFoundError,
-    OpenWANotImplementedError,
-    OpenWARateLimitError,
-    OpenWATimeoutError,
+    FloorLingoApiError,
+    FloorLingoAuthError,
+    FloorLingoConflictError,
+    FloorLingoError,
+    FloorLingoForbiddenError,
+    FloorLingoNotFoundError,
+    FloorLingoNotImplementedError,
+    FloorLingoRateLimitError,
+    FloorLingoTimeoutError,
 )
 
 __all__ = [
-    "OpenWAClient",
-    "OpenWAError",
-    "OpenWAApiError",
-    "OpenWAAuthError",
-    "OpenWAForbiddenError",
-    "OpenWANotFoundError",
-    "OpenWAConflictError",
-    "OpenWARateLimitError",
-    "OpenWANotImplementedError",
-    "OpenWATimeoutError",
+    "FloorLingoClient",
+    "FloorLingoError",
+    "FloorLingoApiError",
+    "FloorLingoAuthError",
+    "FloorLingoForbiddenError",
+    "FloorLingoNotFoundError",
+    "FloorLingoConflictError",
+    "FloorLingoRateLimitError",
+    "FloorLingoNotImplementedError",
+    "FloorLingoTimeoutError",
 ]

@@ -76,6 +76,6 @@ class MockBackend:
 
 
 def make_client(backend: MockBackend, base_url: str = "http://localhost:2785", api_key: str = "owa_k1_test"):
-    from openwa import OpenWAClient
+    from floorlingo import FloorLingoClient
 
-    return OpenWAClient(base_url=base_url, api_key=api_key, transport=backend.as_transport())
+    return FloorLingoClient(base_url=base_url, api_key=api_key, transport=backend.as_transport())

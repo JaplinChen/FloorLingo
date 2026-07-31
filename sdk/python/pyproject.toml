@@ -3,16 +3,16 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rmyndharis-openwa"
+name = "floorlingo"
 version = "0.1.0"
-description = "Official Python SDK for OpenWA WhatsApp API Gateway"
+description = "Official Python SDK for FloorLingo WhatsApp API Gateway"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
 authors = [
-    { name = "OpenWA Contributors" }
+    { name = "FloorLingo Contributors" }
 ]
-keywords = ["whatsapp", "api", "sdk", "openwa", "gateway"]
+keywords = ["whatsapp", "api", "sdk", "floorlingo", "gateway"]
 
 dependencies = [
     "httpx>=0.25.0,<1.0",
@@ -25,16 +25,16 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rmyndharis/OpenWA"
-Repository = "https://github.com/rmyndharis/OpenWA"
+Homepage = "https://github.com/JaplinChen/FloorLingo"
+Repository = "https://github.com/JaplinChen/FloorLingo"
 
 [tool.setuptools.packages.find]
-include = ["openwa*"]
+include = ["floorlingo*"]
 
 # Ship type information (PEP 561) so consumers get the bundled type hints.
 [tool.setuptools.package-data]
-openwa = ["py.typed"]
-"openwa.resources" = ["py.typed"]
+floorlingo = ["py.typed"]
+"floorlingo.resources" = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

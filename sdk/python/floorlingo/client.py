@@ -1,12 +1,12 @@
-"""OpenWA Python SDK — client core.
+"""FloorLingo Python SDK — client core.
 
-The :class:`OpenWAClient` is the single entry point. It owns an
+The :class:`FloorLingoClient` is the single entry point. It owns an
 :class:`HttpExecutor` (which wraps :class:`httpx.Client` with an injectable
 transport) and exposes domain resources as properties::
 
-    from openwa import OpenWAClient
+    from floorlingo import FloorLingoClient
 
-    client = OpenWAClient(
+    client = FloorLingoClient(
         base_url="http://localhost:2785",
         api_key="owa_k1_…",
     )
@@ -14,7 +14,7 @@ transport) and exposes domain resources as properties::
     client.sessions.start("my-session")
     client.messages.send_text("my-session", {
         "chatId": "628123456789@c.us",
-        "text": "Hello from the OpenWA SDK!",
+        "text": "Hello from the FloorLingo SDK!",
     })
 
 Pass ``transport=httpx.MockTransport(handler)`` for testability — no global
@@ -64,7 +64,7 @@ def _warn_if_insecure_http(url: str) -> None:
         host = (parsed.hostname or "").strip("[]")
         if parsed.scheme == "http" and host not in _LOCALHOST_HOSTS:
             warnings.warn(
-                f"OpenWAClient: base_url uses an insecure http:// URL (host: {host}). "
+                f"FloorLingoClient: base_url uses an insecure http:// URL (host: {host}). "
                 "The API key will be sent in cleartext. Use https:// in production.",
                 stacklevel=3,
             )
@@ -72,7 +72,7 @@ def _warn_if_insecure_http(url: str) -> None:
         pass
 
 
-class OpenWAClient:
+class FloorLingoClient:
     def __init__(
         self,
         base_url: str,
@@ -83,9 +83,9 @@ class OpenWAClient:
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not base_url:
-            raise ValueError("OpenWAClient: base_url is required")
+            raise ValueError("FloorLingoClient: base_url is required")
         if not api_key:
-            raise ValueError("OpenWAClient: api_key is required")
+            raise ValueError("FloorLingoClient: api_key is required")
         _warn_if_insecure_http(base_url)
         self._http = HttpExecutor(
             base_url=base_url,
@@ -172,7 +172,7 @@ class OpenWAClient:
     def close(self) -> None:
         self._http.close()
 
-    def __enter__(self) -> "OpenWAClient":
+    def __enter__(self) -> "FloorLingoClient":
         return self
 
     def __exit__(self, *exc: Any) -> None:

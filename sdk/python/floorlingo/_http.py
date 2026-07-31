@@ -1,4 +1,4 @@
-"""HTTP transport wrapper for the OpenWA Python SDK.
+"""HTTP transport wrapper for the FloorLingo Python SDK.
 
 The client never builds a bare :class:`httpx.Client` with a hard-coded
 transport. Instead it accepts an optional ``transport`` (an ``httpx.BaseTransport``)
@@ -14,7 +14,7 @@ from urllib.parse import quote
 
 import httpx
 
-from .errors import OpenWAApiError, OpenWATimeoutError, classify
+from .errors import FloorLingoApiError, FloorLingoTimeoutError, classify
 
 HttpMethod = str  # "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
@@ -53,7 +53,7 @@ def build_url(base_url: str, path: str, query: Mapping[str, Any] | None = None) 
 class HttpExecutor:
     """Owns the :class:`httpx.Client` and performs JSON requests.
 
-    Constructed once per :class:`OpenWAClient`; the transport is taken from
+    Constructed once per :class:`FloorLingoClient`; the transport is taken from
     the client config so all requests share one connection pool.
     """
 
@@ -101,13 +101,13 @@ class HttpExecutor:
         try:
             res = self._client.request(method, url, json=body if body is not None else None)
         except httpx.TimeoutException as e:
-            raise OpenWATimeoutError(self._timeout) from e
+            raise FloorLingoTimeoutError(self._timeout) from e
         # Treat any non-2xx as an error, including 3xx: redirects are deliberately not followed
         # (so the API key is never re-sent to the target), which makes an unfollowed 3xx unusable
         # rather than a success. Matches the JS transport's `!res.ok`.
         if res.status_code >= 300:
             context = f"{method} {path}"
-            raise OpenWAApiError.from_response(res.status_code, res.text, context)
+            raise FloorLingoApiError.from_response(res.status_code, res.text, context)
         if res.status_code == 204 or not res.content:
             return None
         try:
