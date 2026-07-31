@@ -6,6 +6,7 @@ import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interfa
 import { createLogger } from '../../common/services/logger.service';
 import { Glossary } from './translate-glossary';
 import { SenderDirectory } from './translate-senders';
+import { ShorthandTable } from './translate-shorthand';
 import { WatchwordStore } from './translate-watchwords';
 import { FeedbackStore } from './translate-feedback';
 import { CategoryStore } from './translate-categories';
@@ -18,6 +19,7 @@ import {
   Pair,
   speechSourceRule,
   ZH_TO_VI,
+  VI_DOMAIN_RULE,
   detectPair,
   buildPrompt,
   fixViCasing,
@@ -79,6 +81,9 @@ export class TranslateService implements OnModuleInit {
   // Manual @mention JID->name overrides applied to the body before translation.
   private senders!: SenderDirectory;
   private sendersPath = 'data/senders.json';
+  // Vietnamese factory shorthand expanded in the source text before the prompt (vi->zh only).
+  private shorthand!: ShorthandTable;
+  private shorthandPath = 'data/shorthand.json';
   // Per-user keyword alerts: DM the watcher when a group message contains their keyword.
   private watchwords!: WatchwordStore;
   private watchwordsPath = 'data/watchwords.json';
@@ -175,6 +180,10 @@ export class TranslateService implements OnModuleInit {
     this.senders = new SenderDirectory(this.sendersPath);
     const senderCount = this.senders.load();
     if (senderCount > 0) this.logger.log(`Senders loaded: ${senderCount} override(s) from ${this.sendersPath}`);
+
+    this.shorthandPath = process.env.TRANSLATE_SHORTHAND_PATH || this.shorthandPath;
+    this.shorthand = new ShorthandTable(this.shorthandPath);
+    this.logger.log(`Shorthand loaded: ${this.shorthand.load()} Vietnamese abbreviation(s)`);
 
     this.watchwordsPath = process.env.TRANSLATE_WATCHWORDS_PATH || this.watchwordsPath;
     this.watchwords = new WatchwordStore(this.watchwordsPath);
@@ -659,9 +668,24 @@ export class TranslateService implements OnModuleInit {
     return run;
   }
 
-  private async translate(text: string, pair: Pair, fromSpeech = false): Promise<string> {
-    // Resolve unknown @mention JIDs to names.
+  /**
+   * Resolve unknown @mention JIDs to names, then expand Vietnamese factory shorthand — vi source
+   * only, since a zh message never carries it and expanding would corrupt an ASCII word. Shared by
+   * the live path and preview so the two can't drift.
+   */
+  private prepareSource(text: string, pair: Pair): string {
     const applied = this.senders.apply(text);
+    if (pair.key === ZH_TO_VI.key) return applied;
+    return this.shorthand.expand(applied, s => this.glossary.hasSource(pair.key, s));
+  }
+
+  /** Glossary terms used by this message, plus the vi->zh domain rule (see VI_DOMAIN_RULE). */
+  private promptExtras(pair: Pair, applied: string): string {
+    return this.glossary.section(pair.key, applied) + (pair.key === ZH_TO_VI.key ? '' : VI_DOMAIN_RULE);
+  }
+
+  private async translate(text: string, pair: Pair, fromSpeech = false): Promise<string> {
+    const applied = this.prepareSource(text, pair);
 
     // Whole-message exact glossary hit (short conversational phrases like 明白/好/收到): answer
     // directly and skip the LLM, which weak models otherwise reply to conversationally ("請提供
@@ -672,8 +696,7 @@ export class TranslateService implements OnModuleInit {
     // Inject only the glossary terms that actually appear in this message (see Glossary.section).
     // A speech-sourced message rides in on the same slot, so buildPrompt and any custom template that
     // already honours {glossary} pick it up with no extra placeholder to keep in sync.
-    const extras =
-      this.glossary.section(pair.key, applied) + (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
+    const extras = this.promptExtras(pair, applied) + (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
     const prompt = buildPrompt(applied, pair, extras, this.cfg.llmPromptTemplate);
 
     // Try the primary model, then each fallback in order — covers "model not loaded"/timeout on a
@@ -772,8 +795,8 @@ export class TranslateService implements OnModuleInit {
 
   // Single-engine translate (no fallback loop) — used by preview to test one provider deterministically.
   private async translateWith(text: string, pair: Pair, params: LlmParams): Promise<string> {
-    const applied = this.senders.apply(text);
-    const prompt = buildPrompt(applied, pair, this.glossary.section(pair.key, applied), this.cfg.llmPromptTemplate);
+    const applied = this.prepareSource(text, pair);
+    const prompt = buildPrompt(applied, pair, this.promptExtras(pair, applied), this.cfg.llmPromptTemplate);
     const out = await llm.callLlm(params, prompt);
     return pair.key === ZH_TO_VI.key ? fixViCasing(out) : out;
   }
