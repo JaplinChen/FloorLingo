@@ -259,7 +259,7 @@ async function bootstrap() {
   const port = process.env.PORT || 2785;
   await app.listen(port);
 
-  console.log(`🚀 OpenWA is running on: http://localhost:${port}`);
+  console.log(`🚀 FloorLingo is running on: http://localhost:${port}`);
   if (swaggerEnabled) {
     console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
   }

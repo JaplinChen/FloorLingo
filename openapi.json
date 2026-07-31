@@ -5944,12 +5944,12 @@
     }
   },
   "info": {
-    "title": "OpenWA-Lab API",
-    "description": "Open Source WhatsApp API Gateway - Free, Self-Hosted HTTP API",
+    "title": "FloorLingo API",
+    "description": "Self-hosted WhatsApp HTTP API with zh <-> vi shop-floor translation",
     "version": "0.8.17",
     "contact": {
-      "name": "OpenWA-Lab",
-      "url": "https://github.com/JaplinChen/OpenWA-Lab",
+      "name": "FloorLingo",
+      "url": "https://github.com/JaplinChen/FloorLingo",
       "email": "yudhi@rmyndharis.com"
     }
   },
