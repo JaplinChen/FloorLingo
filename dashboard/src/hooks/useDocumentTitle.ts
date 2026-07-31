@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 
 /**
  * Custom hook to set document title dynamically.
- * Automatically appends " | OpenWA-Lab" suffix.
+ * Automatically appends " | FloorLingo" suffix.
  */
 export function useDocumentTitle(title: string) {
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = `${title} | OpenWA-Lab`;
+    document.title = `${title} | FloorLingo`;
 
     return () => {
       document.title = previousTitle;

@@ -247,7 +247,7 @@ export function saveConfig(ctx: InfraConfigCtx, config: SaveConfigDto): SaveConf
       .sort()
       .map(key => `${key}=${merged[key]}`);
     const contents = [
-      '# OpenWA Configuration',
+      '# FloorLingo Configuration',
       `# Generated at ${new Date().toISOString()}`,
       '# Managed via Dashboard > Infrastructure. Values in process env or project .env take precedence.',
       '',

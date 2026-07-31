@@ -113,7 +113,7 @@ export function InstallModal({ onClose, refetchAll }: InstallModalProps) {
               <p className="install-hint">
                 {t(
                   'plugins.installModal.catalogHint',
-                  'Install directly from the OpenWA-Lab plugin catalog. The .zip is fetched server-side through the SSRF guard, then validated and sandboxed.',
+                  'Install directly from the FloorLingo plugin catalog. The .zip is fetched server-side through the SSRF guard, then validated and sandboxed.',
                 )}
               </p>
               {catalogLoading ? (

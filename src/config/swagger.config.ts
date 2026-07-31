@@ -39,7 +39,7 @@ export function exemptPublicOperations(document: OpenAPIObject): OpenAPIObject {
 }
 
 /**
- * Builds the OpenAPI document configuration for the OpenWA-Lab API.
+ * Builds the OpenAPI document configuration for the FloorLingo API.
  */
 export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   // Source the API version from package.json so it tracks releases automatically — no manual bump, no drift.
@@ -47,14 +47,14 @@ export function createSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   const { version } = require('../../package.json') as { version: string };
   return (
     new DocumentBuilder()
-      .setTitle('OpenWA-Lab API')
-      .setDescription('Open Source WhatsApp API Gateway - Free, Self-Hosted HTTP API')
+      .setTitle('FloorLingo API')
+      .setDescription('Self-hosted WhatsApp HTTP API with zh <-> vi shop-floor translation')
       .setVersion(version)
       .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, API_KEY_SECURITY_SCHEME)
       // Apply the scheme globally so Swagger UI sends the key with every request
       // (mirrors the global ApiKeyGuard). Without this, "Authorize" is cosmetic.
       .addSecurityRequirements(API_KEY_SECURITY_SCHEME)
-      .setContact('OpenWA-Lab', 'https://github.com/JaplinChen/OpenWA-Lab', 'yudhi@rmyndharis.com')
+      .setContact('FloorLingo', 'https://github.com/JaplinChen/FloorLingo', 'yudhi@rmyndharis.com')
       .addTag('sessions', 'WhatsApp session management')
       .addTag('messages', 'Send and manage messages')
       .addTag('webhooks', 'Webhook configuration')

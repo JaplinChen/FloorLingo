@@ -46,7 +46,7 @@ export function printWelcomeBanner(logger: BannerLogger, opts: { displayKey: str
   logger.log('');
   logger.log(rule);
   logger.log('');
-  logger.log('  🟢 Welcome to OpenWA - WhatsApp API Gateway');
+  logger.log('  🟢 Welcome to FloorLingo - WhatsApp API Gateway');
   logger.log('');
   logger.log(`  📊 Dashboard: ${dashboardUrl}`);
   logger.log(`  📚 API Docs:  ${apiBaseUrl}/api/docs`);
