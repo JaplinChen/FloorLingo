@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/logo/openwa_logo.webp" alt="OpenWA-Lab Logo" width="200"/>
+  <img src="docs/logo/openwa_logo.webp" alt="FloorLingo Logo" width="200"/>
 </p>
 
-<h1 align="center">OpenWA-Lab</h1>
+<h1 align="center">FloorLingo</h1>
 <p align="center">
-  <strong>OpenWA fork — 中越（zh ↔ vi）自動翻譯與儀表板擴充</strong>
+  <strong>工廠現場的中越（zh ↔ vi）即時翻譯與詞彙治理，架在自架的 WhatsApp Gateway 上</strong>
 </p>
 
 > **這是 [rmyndharis/OpenWA](https://github.com/rmyndharis/OpenWA) 的 fork。**
@@ -13,11 +13,11 @@
 > [ℹ️ About](https://github.com/rmyndharis/OpenWA) ·
 > [🏷️ Releases](https://github.com/rmyndharis/OpenWA/releases)
 >
-> 本 README **只記錄這個 fork 在上游之上新增的變更。**
+> 本 README **只記錄 FloorLingo 在上游之上新增的變更。**
 
 ---
 
-## 這個 fork 新增了什麼
+## FloorLingo 新增了什麼
 
 ### 中越自動翻譯（zh ↔ vi）
 - **自動翻譯外掛**：只對選定的 WhatsApp 群組翻譯訊息（繁體中文 ↔ 越南文）。
@@ -80,13 +80,14 @@
   兩個限制：只對清單內的誤聽有效，未知的辨識錯誤（如 `bioti`）仍會原樣通過；且允許模型重新解讀有代價——實測曾出現修好 `bot` 的同時把 `tốc độ`（速度）誤譯為「大小」。若附帶損傷頻繁，應退回不做校正，改在轉錄層處理。
 
 ### 更名
-- 專案 **OpenWA → OpenWA-Lab** 全面更名：docker/infra、swagger、套件名、i18n、儀表板、文件。
+- 專案 **OpenWA → OpenWA-Lab → FloorLingo**。
+- FloorLingo 一輪只換品牌面（套件名、README、compose 標題）。docker 容器名、`openwa-lab-network`、`openwa_*` volume 與 `com.openwa-lab.*` label 一律不動——這些字串在 `src/modules/docker/*` 被逐字比對，改了會孤兒化既有 volume 並打斷編排。
 
 ---
 
 ## 快速開始
 
-與上游相同——完整設定請見 [上游 README](https://github.com/rmyndharis/OpenWA/blob/main/README.md)。複製本 fork：
+與上游相同——完整設定請見 [上游 README](https://github.com/rmyndharis/OpenWA/blob/main/README.md)。複製 FloorLingo：
 
 ```bash
 git clone https://github.com/JaplinChen/OpenWA-Lab.git

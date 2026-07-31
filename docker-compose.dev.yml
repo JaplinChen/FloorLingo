@@ -1,4 +1,4 @@
-# OpenWA - Local smoke / quick-start compose
+# FloorLingo - Local smoke / quick-start compose
 #
 # This builds and runs the PRODUCTION image (same Dockerfile) against a local SQLite DB
 # with a bind-mounted ./data — it is a single-container local smoke test, NOT a
