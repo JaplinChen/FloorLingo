@@ -219,6 +219,18 @@ export class TranslateController {
     return this.translateService.glossaryOverrides();
   }
 
+  @Delete('glossary/overrides')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: "Drop one group's override so the shared glossary term applies again" })
+  @ApiResponse({ status: 200, description: 'Refreshed overrides' })
+  removeGlossaryOverride(@Query('group') group: string, @Query('term') term: string) {
+    const g = (group ?? '').trim();
+    const t = (term ?? '').trim();
+    if (!g || !t) throw new BadRequestException('group and term are required');
+    this.translateService.removeGlossaryOverride(g, t);
+    return this.translateService.glossaryOverrides();
+  }
+
   @Get('memory/phrases/preview-bulk')
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'Candidates a bulk approval at this threshold would move (confirm step)' })

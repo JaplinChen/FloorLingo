@@ -965,7 +965,13 @@
       "addButton": "新增類別",
       "deleteButton": "刪除",
       "empty": "尚無自訂類別"
-    }
+    },
+    "overridesTitle": "群組專用譯法",
+    "overridesHint": "某個群刻意跟共用詞彙表不同的詞。其餘一律共用。",
+    "overridesGlobalIs": "共用：{{target}}",
+    "overridesRevert": "改回共用",
+    "overridesReverted": "已移除覆蓋，恢復使用共用譯法",
+    "overridesOrphans": "這些群組已不在設定中，但仍留有覆蓋：{{groups}}。重新加回該群會讓它們復活。"
   },
   "keyproxy": {
     "title": "LLM 金鑰",

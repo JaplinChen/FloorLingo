@@ -529,6 +529,17 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     return { entries: layer.all(), counts: layer.counts(), orphans: layer.orphans(this.cfg.groupIds) };
   }
 
+  /**
+   * Drop one group's override so the shared term applies again. Deliberately dashboard-only: over
+   * WhatsApp a member can create an exception for their own group, but undoing one is a decision
+   * about which translation the group gets, and the operator is the one who can see all of them.
+   */
+  removeGlossaryOverride(groupId: string, term: string): boolean {
+    const removed = this.glossary.removeOverride(groupId, term);
+    if (removed) this.logger.log(`[glossary] override removed group=${groupId} term=${term}`);
+    return removed;
+  }
+
   /** Candidates a bulk approval at this threshold would move — the confirm step shows these rows. */
   previewBulkApproval(minCount: number): Promise<PhraseCandidate[]> {
     return this.phrases.pendingAbove(minCount);

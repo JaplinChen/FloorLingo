@@ -2717,6 +2717,36 @@
         "tags": [
           "translate"
         ]
+      },
+      "delete": {
+        "operationId": "TranslateController_removeGlossaryOverride",
+        "parameters": [
+          {
+            "name": "group",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "term",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refreshed overrides"
+          }
+        },
+        "summary": "Drop one group's override so the shared glossary term applies again",
+        "tags": [
+          "translate"
+        ]
       }
     },
     "/api/translate/memory/phrases/preview-bulk": {

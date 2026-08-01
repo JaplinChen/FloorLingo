@@ -228,6 +228,21 @@ export interface PhraseStats {
   glossarySize: number;
 }
 
+/** 群組專屬覆蓋：只有「同一個詞、不同群要不同譯法」的衝突詞會在這裡。 */
+export interface GlossaryOverride {
+  group: string;
+  pairKey: string;
+  source: string;
+  target: string;
+}
+
+export interface GlossaryOverrides {
+  entries: GlossaryOverride[];
+  counts: Record<string, number>;
+  /** 已不在 TRANSLATE_GROUP_IDS 的群組層——重新加回該群會復活這些覆蓋。 */
+  orphans: string[];
+}
+
 export interface SenderEntry {
   jid: string; // @mention 的號碼 (digits)
   name: string; // 顯示名稱
@@ -370,6 +385,12 @@ export const translateApi = {
     request<TranslationCandidate[]>(`/translate/memory/${id}`, { method: 'DELETE' }),
   getPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases'),
   getPhraseStats: () => request<PhraseStats>('/translate/memory/phrases/stats'),
+  getGlossaryOverrides: () => request<GlossaryOverrides>('/translate/glossary/overrides'),
+  removeGlossaryOverride: (group: string, term: string) =>
+    request<GlossaryOverrides>(
+      `/translate/glossary/overrides?group=${encodeURIComponent(group)}&term=${encodeURIComponent(term)}`,
+      { method: 'DELETE' },
+    ),
   previewBulkApproval: (minCount: number) =>
     request<PhraseCandidate[]>(`/translate/memory/phrases/preview-bulk?minCount=${minCount}`),
   approvePhrasesBulk: (minCount: number) =>
