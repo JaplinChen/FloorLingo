@@ -6,7 +6,9 @@ import { memoryDbPath } from './translate-memory';
 // for dashboard approval into the glossary. Kept in a separate table from translation_memory so the
 // whole-sentence candidates and the word-level candidates never mix (different count semantics).
 interface SqliteDb {
-  run(sql: string, params: unknown[], cb?: (err: Error | null) => void): void;
+  // `this.changes` inside the callback is how node-sqlite3 reports rows actually affected — the only
+  // way to tell "I approved it" from "someone else already had". Needs a `function` callback, not an arrow.
+  run(sql: string, params: unknown[], cb?: (this: { changes: number }, err: Error | null) => void): void;
   all<T>(sql: string, params: unknown[], cb: (err: Error | null, rows: T[]) => void): void;
   get<T>(sql: string, params: unknown[], cb: (err: Error | null, row?: T) => void): void;
   serialize(): void;
@@ -146,24 +148,18 @@ export class PhraseCandidates {
     });
   }
 
-  private get(id: number): Promise<PhraseCandidate | null> {
+  /** Conditional on status='new'; resolves with the number of rows actually moved (0 = someone beat us). */
+  private setStatus(ids: number[], status: 'approved' | 'dismissed', origin: PhraseOrigin): Promise<number> {
     return new Promise(resolve => {
-      if (!this.db) return resolve(null);
-      this.db.get<PhraseRow>(
-        `SELECT id, phrase, translated, count, updated_at FROM phrase_candidates WHERE id = ?`,
-        [id],
-        (err, r) => resolve(err || !r ? null : toCandidate(r)),
-      );
-    });
-  }
-
-  private setStatus(id: number, status: 'approved' | 'dismissed', origin: PhraseOrigin): Promise<void> {
-    return new Promise(resolve => {
-      if (!this.db) return resolve();
+      if (!this.db || !ids.length) return resolve(0);
+      const holes = ids.map(() => '?').join(',');
       this.db.run(
-        `UPDATE phrase_candidates SET status = ?, origin = ?, reviewed_at = ? WHERE id = ?`,
-        [status, origin, new Date().toISOString(), id],
-        () => resolve(),
+        `UPDATE phrase_candidates SET status = ?, origin = ?, reviewed_at = ?
+           WHERE id IN (${holes}) AND status = 'new'`,
+        [status, origin, new Date().toISOString(), ...ids],
+        function (err) {
+          resolve(err ? 0 : this.changes);
+        },
       );
     });
   }
@@ -180,19 +176,56 @@ export class PhraseCandidates {
     });
   }
 
-  /** Mark approved and return the row so the caller can add it to the glossary. */
-  async takeForApproval(id: number, origin: PhraseOrigin = 'human'): Promise<PhraseCandidate | null> {
-    const row = await this.get(id);
-    if (!row) return null;
-    await this.setStatus(id, 'approved', origin);
-    await this.logEvent(row.phrase, 'approved', origin);
-    return row;
+  /** An unreviewed candidate, or null when it is already curated. Read-only — the caller writes first. */
+  peek(id: number): Promise<PhraseCandidate | null> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve(null);
+      this.db.get<PhraseRow>(
+        `SELECT id, phrase, translated, count, updated_at FROM phrase_candidates WHERE id = ? AND status = 'new'`,
+        [id],
+        (err, r) => resolve(err || !r ? null : toCandidate(r)),
+      );
+    });
+  }
+
+  /** Unreviewed candidates at or above `minCount`, highest first. Feeds both the bulk preview and the apply. */
+  pendingAbove(minCount: number, limit = 200): Promise<PhraseCandidate[]> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve([]);
+      this.db.all<PhraseRow>(
+        `SELECT id, phrase, translated, count, updated_at FROM phrase_candidates
+           WHERE status = 'new' AND count >= ? ORDER BY count DESC, updated_at DESC LIMIT ?`,
+        [Math.max(1, minCount), Math.max(1, Math.min(200, limit))],
+        (err, rows) => resolve(err || !rows ? [] : rows.map(toCandidate)),
+      );
+    });
+  }
+
+  /**
+   * Mark rows approved AFTER their glossary write landed, and return how many actually moved. Called
+   * second on purpose: if the process dies between the glossary write and this, the row stays 'new'
+   * and simply comes back for review — approving it again is idempotent. The reverse order would lose
+   * it permanently, because upsert()'s `WHERE status='new'` guard never revives a curated row.
+   */
+  async markApproved(rows: PhraseCandidate[], origin: PhraseOrigin): Promise<number> {
+    let moved = 0;
+    // Row at a time so an event is logged only for rows this call actually moved. A single IN-list
+    // UPDATE is one statement but can't say WHICH rows it took, and over-logging inflates approved30d
+    // — the denominator of the revocation rate. These are indexed UPDATEs, not file writes; the
+    // expensive part (serializing the glossary) is already batched into one.
+    for (const r of rows) {
+      if (await this.setStatus([r.id], 'approved', origin)) {
+        moved++;
+        await this.logEvent(r.phrase, 'approved', origin);
+      }
+    }
+    return moved;
   }
 
   async dismiss(id: number): Promise<void> {
-    const row = await this.get(id);
-    await this.setStatus(id, 'dismissed', 'human');
-    if (row) await this.logEvent(row.phrase, 'dismissed', 'human');
+    const row = await this.peek(id);
+    const moved = await this.setStatus([id], 'dismissed', 'human');
+    if (moved && row) await this.logEvent(row.phrase, 'dismissed', 'human');
   }
 
   /**

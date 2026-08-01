@@ -18,7 +18,7 @@ describe('PhraseCandidates', () => {
     expect((await pc.list()).map(c => c.phrase)).toEqual(['出貨', '客戶']);
 
     const [top] = await pc.list();
-    await pc.takeForApproval(top.id);
+    await pc.markApproved([top], 'human');
     await pc.upsert('出貨', 'giao hàng khác', 20); // a later scan re-mines the same phrase
     const remaining = await pc.list();
     expect(remaining.map(c => c.phrase)).toEqual(['客戶']); // approved row stays out of the queue
@@ -28,7 +28,7 @@ describe('PhraseCandidates', () => {
     const pc = store();
     await pc.upsert('客戶', 'khách hàng', 5);
     const [row] = await pc.list();
-    await pc.takeForApproval(row.id, 'bulk');
+    await pc.markApproved([row], 'bulk');
     await pc.recordRevoke('客戶');
 
     const s = await pc.stats();
@@ -52,7 +52,7 @@ describe('PhraseCandidates', () => {
     await pc.upsert('出貨', 'giao hàng', 5);
     await pc.upsert('品質', 'chất lượng', 5);
     const list = await pc.list();
-    await pc.takeForApproval(list[0].id);
+    await pc.markApproved([list[0]], 'human');
     await pc.dismiss(list[1].id);
 
     const s = await pc.stats();
@@ -76,6 +76,53 @@ describe('PhraseCandidates', () => {
     });
   });
 
+  it('selects by threshold, highest first, and never past the 200 cap', async () => {
+    const pc = store();
+    await pc.upsert('出貨', 'giao hàng', 9);
+    await pc.upsert('客戶', 'khách hàng', 5);
+    await pc.upsert('品質', 'chất lượng', 2);
+
+    expect((await pc.pendingAbove(5)).map(r => r.phrase)).toEqual(['出貨', '客戶']);
+    expect((await pc.pendingAbove(1)).length).toBe(3);
+    expect((await pc.pendingAbove(1, 1)).map(r => r.phrase)).toEqual(['出貨']);
+    expect((await pc.pendingAbove(1, 9999)).length).toBe(3); // limit clamps, doesn't blow up
+  });
+
+  it('approves a batch once and refuses to approve the same row twice', async () => {
+    const pc = store();
+    await pc.upsert('出貨', 'giao hàng', 9);
+    await pc.upsert('客戶', 'khách hàng', 5);
+    const rows = await pc.pendingAbove(5);
+
+    expect(await pc.markApproved(rows, 'bulk')).toBe(2);
+    // Second pass: rows are no longer 'new', so nothing moves and no extra events are logged.
+    expect(await pc.markApproved(rows, 'bulk')).toBe(0);
+
+    const s = await pc.stats();
+    expect(s.pending).toBe(0);
+    expect(s.approved).toBe(2);
+    expect(s.approved30d).toBe(2); // NOT 4 — a double approve must not inflate the rate's denominator
+  });
+
+  it('leaves a row reviewable when only part of a batch is still new', async () => {
+    const pc = store();
+    await pc.upsert('出貨', 'giao hàng', 9);
+    await pc.upsert('客戶', 'khách hàng', 5);
+    const rows = await pc.pendingAbove(5);
+
+    await pc.markApproved([rows[0]], 'human'); // another admin got there first
+    expect(await pc.markApproved(rows, 'bulk')).toBe(1); // "1 of 2", not 2
+  });
+
+  it('peek returns only unreviewed rows', async () => {
+    const pc = store();
+    await pc.upsert('出貨', 'giao hàng', 9);
+    const [row] = await pc.list();
+    expect(await pc.peek(row.id)).toMatchObject({ phrase: '出貨' });
+    await pc.markApproved([row], 'human');
+    expect(await pc.peek(row.id)).toBeNull();
+  });
+
   it('reports the latest scan, and tells "never ran" apart from "found nothing"', async () => {
     const pc = store();
     expect((await pc.stats()).lastScan).toBeNull(); // never ran
@@ -94,7 +141,7 @@ describe('PhraseCandidates', () => {
     first.init();
     await first.upsert('客戶', 'khách hàng', 5);
     const [row] = await first.list();
-    await first.takeForApproval(row.id, 'bulk');
+    await first.markApproved([row], 'bulk');
 
     const second = new PhraseCandidates(file);
     second.init();

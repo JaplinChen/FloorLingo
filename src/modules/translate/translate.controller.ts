@@ -28,6 +28,7 @@ import { GlossaryTermDto } from './dto/glossary-term.dto';
 import { SenderEntryDto } from './dto/sender-entry.dto';
 import { ImportSendersDto } from './dto/import-senders.dto';
 import { CategoryDto } from './dto/category.dto';
+import { ApproveBulkDto } from './dto/approve-bulk.dto';
 
 type GlossaryEntry = { source: string; target: string; count?: number; category?: string };
 type SenderEntry = { jid: string; name: string };
@@ -208,6 +209,22 @@ export class TranslateController {
   @ApiResponse({ status: 200, description: 'Queue statistics' })
   getPhraseStats(): Promise<PhraseStats & { glossarySize: number }> {
     return this.translateService.phraseStats();
+  }
+
+  @Get('memory/phrases/preview-bulk')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Candidates a bulk approval at this threshold would move (confirm step)' })
+  @ApiResponse({ status: 200, description: 'Candidates that would be approved' })
+  previewBulkApproval(@Query() dto: ApproveBulkDto): Promise<PhraseCandidate[]> {
+    return this.translateService.previewBulkApproval(dto.minCount);
+  }
+
+  @Post('memory/phrases/approve-bulk')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Approve every candidate at or above a frequency threshold (max 200)' })
+  @ApiResponse({ status: 201, description: 'How many moved, out of how many matched' })
+  approvePhrasesBulk(@Body() dto: ApproveBulkDto): Promise<{ approved: number; total: number }> {
+    return this.translateService.approvePhrasesBulk(dto.minCount);
   }
 
   @Post('memory/phrases/:id/approve')

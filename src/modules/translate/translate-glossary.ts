@@ -135,6 +135,10 @@ export class Glossary {
   setOrigin(zh: string, origin: string): void {
     if (origin) this.origins[zh] = origin;
     else delete this.origins[zh];
+    this.writeOrigins();
+  }
+
+  private writeOrigins(): void {
     try {
       atomicWriteJson(this.originPath, this.origins);
     } catch {
@@ -160,12 +164,37 @@ export class Glossary {
    * `category` positionally, so an options object in slot 3 would silently break them.
    */
   add(zh: string, vi: string, category?: string, origin?: string): void {
-    [zh, vi] = Glossary.orient(zh, vi);
-    (this.data['zh-tw:vi'] ??= {})[zh] = vi;
-    (this.data['vi:zh-tw'] ??= {})[vi] = zh;
+    this.addMany([{ zh, vi, category, origin }]);
+  }
+
+  /**
+   * Add many terms with ONE write per file. `add()` routes through here so both paths share one
+   * implementation: approving in bulk via N× add() would re-serialize the whole glossary (and both
+   * sidecars) per term, and atomicWriteJson falls back to a non-atomic in-place write on EBUSY/EXDEV
+   * — the bind-mount case — so a restart mid-loop could truncate the file.
+   */
+  addMany(pairs: { zh: string; vi: string; category?: string; origin?: string }[]): void {
+    if (!pairs.length) return;
+    let categoryChanged = false;
+    let originChanged = false;
+    for (const pair of pairs) {
+      const [zh, vi] = Glossary.orient(pair.zh, pair.vi);
+      (this.data['zh-tw:vi'] ??= {})[zh] = vi;
+      (this.data['vi:zh-tw'] ??= {})[vi] = zh;
+      if (pair.category !== undefined) {
+        if (pair.category) this.categories[zh] = pair.category;
+        else delete this.categories[zh];
+        categoryChanged = true;
+      }
+      if (pair.origin !== undefined) {
+        if (pair.origin) this.origins[zh] = pair.origin;
+        else delete this.origins[zh];
+        originChanged = true;
+      }
+    }
     this.save();
-    if (category !== undefined) this.setCategory(zh, category);
-    if (origin !== undefined) this.setOrigin(zh, origin);
+    if (categoryChanged) atomicWriteJson(this.categoryPath, this.categories);
+    if (originChanged) this.writeOrigins();
   }
 
   /** Remove any pairing where `term` appears on either side; returns whether anything was removed. */

@@ -2704,6 +2704,46 @@
         ]
       }
     },
+    "/api/translate/memory/phrases/preview-bulk": {
+      "get": {
+        "operationId": "TranslateController_previewBulkApproval",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Candidates that would be approved"
+          }
+        },
+        "summary": "Candidates a bulk approval at this threshold would move (confirm step)",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/memory/phrases/approve-bulk": {
+      "post": {
+        "operationId": "TranslateController_approvePhrasesBulk",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBulkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "How many moved, out of how many matched"
+          }
+        },
+        "summary": "Approve every candidate at or above a frequency threshold (max 200)",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/memory/phrases/{id}/approve": {
       "post": {
         "operationId": "TranslateController_approvePhraseCandidate",
@@ -7340,6 +7380,10 @@
         "properties": {}
       },
       "GlossaryTermDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ApproveBulkDto": {
         "type": "object",
         "properties": {}
       },

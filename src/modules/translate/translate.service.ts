@@ -373,12 +373,36 @@ export class TranslateService implements OnModuleInit {
     }
   }
 
-  /** Promote a phrase candidate into the glossary. */
+  /** Promote a phrase candidate into the glossary. Glossary write first — see markApproved's note. */
   async approvePhraseCandidate(id: number): Promise<PhraseCandidate[]> {
-    const row = await this.phrases.takeForApproval(id);
-    // Tag the entry so the terms list can show what arrived via the review queue rather than by hand.
-    if (row && row.translated) this.glossary.add(row.phrase, row.translated, undefined, 'human');
+    const row = await this.phrases.peek(id);
+    if (row) {
+      // Tag the entry so the terms list can show what arrived via the review queue rather than by hand.
+      if (row.translated) this.glossary.add(row.phrase, row.translated, undefined, 'human');
+      await this.phrases.markApproved([row], 'human');
+    }
     return this.phrases.list();
+  }
+
+  /** Candidates a bulk approval at this threshold would move — the confirm step shows these rows. */
+  previewBulkApproval(minCount: number): Promise<PhraseCandidate[]> {
+    return this.phrases.pendingAbove(minCount);
+  }
+
+  /**
+   * Approve every unreviewed candidate at or above `minCount`, capped at 200 per call. One glossary
+   * write for the whole batch. `approved` can be lower than `total` when another admin (or a single
+   * approve) got there first — the caller reports "N of M" rather than claiming all of them.
+   */
+  async approvePhrasesBulk(minCount: number): Promise<{ approved: number; total: number }> {
+    const rows = await this.phrases.pendingAbove(minCount);
+    if (!rows.length) return { approved: 0, total: 0 };
+    this.glossary.addMany(
+      rows.filter(r => r.translated).map(r => ({ zh: r.phrase, vi: r.translated, origin: 'bulk' })),
+    );
+    const approved = await this.phrases.markApproved(rows, 'bulk');
+    this.logger.log(`[translate:phrase-review] bulk approve minCount=${minCount}: ${approved}/${rows.length}`);
+    return { approved, total: rows.length };
   }
 
   async dismissPhraseCandidate(id: number): Promise<PhraseCandidate[]> {

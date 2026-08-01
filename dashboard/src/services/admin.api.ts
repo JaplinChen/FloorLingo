@@ -370,6 +370,13 @@ export const translateApi = {
     request<TranslationCandidate[]>(`/translate/memory/${id}`, { method: 'DELETE' }),
   getPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases'),
   getPhraseStats: () => request<PhraseStats>('/translate/memory/phrases/stats'),
+  previewBulkApproval: (minCount: number) =>
+    request<PhraseCandidate[]>(`/translate/memory/phrases/preview-bulk?minCount=${minCount}`),
+  approvePhrasesBulk: (minCount: number) =>
+    request<{ approved: number; total: number }>('/translate/memory/phrases/approve-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ minCount }),
+    }),
   scanPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases/scan', { method: 'POST' }),
   approvePhraseCandidate: (id: number) =>
     request<PhraseCandidate[]>(`/translate/memory/phrases/${id}/approve`, { method: 'POST' }),
