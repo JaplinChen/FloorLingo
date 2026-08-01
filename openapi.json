@@ -2704,6 +2704,21 @@
         ]
       }
     },
+    "/api/translate/glossary/overrides": {
+      "get": {
+        "operationId": "TranslateController_getGlossaryOverrides",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Overrides grouped by scope"
+          }
+        },
+        "summary": "Per-group glossary overrides, their counts, and orphaned layers",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/memory/phrases/preview-bulk": {
       "get": {
         "operationId": "TranslateController_previewBulkApproval",

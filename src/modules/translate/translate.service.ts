@@ -5,6 +5,7 @@ import { ContactService } from '../contact/contact.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
 import { Glossary } from './translate-glossary';
+import type { OverrideLayer } from './translate-glossary-overrides';
 import { SenderDirectory, jidDigits } from './translate-senders';
 import {
   formatReviewDm,
@@ -511,6 +512,21 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     if (!writeDigestState(this.reviewDmStatePath, date)) {
       this.logger.warn('[translate:phrase-review] could not persist digest date — today may be sent twice');
     }
+  }
+
+  /**
+   * Per-group glossary overrides. Read-only and shipped BEFORE any write path: a member-writable
+   * store that nobody can inspect means the first bad entry is found by a user complaint.
+   * `orphans` are layers whose group is no longer in TRANSLATE_GROUP_IDS — re-adding that group
+   * would resurrect them, so they are surfaced rather than left silent.
+   */
+  glossaryOverrides(): {
+    entries: ReturnType<OverrideLayer['all']>;
+    counts: Record<string, number>;
+    orphans: string[];
+  } {
+    const layer = this.glossary.overrideLayer;
+    return { entries: layer.all(), counts: layer.counts(), orphans: layer.orphans(this.cfg.groupIds) };
   }
 
   /** Candidates a bulk approval at this threshold would move — the confirm step shows these rows. */

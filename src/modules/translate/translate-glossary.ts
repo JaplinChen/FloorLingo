@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import { atomicWriteJson } from './translate-fs';
+import { OverrideLayer } from './translate-glossary-overrides';
 
 /**
  * zh<->vi term overrides, persisted as JSON keyed by pair (e.g. "zh-tw:vi") -> { source: target }.
@@ -23,6 +24,9 @@ export class Glossary {
   private readonly usagePath: string;
   private readonly categoryPath: string;
   private readonly originPath: string;
+  // Per-group conflict overrides. Its own file and class: the global glossary format stays
+  // WA-Translate compatible and this file stays readable.
+  private readonly overrides: OverrideLayer;
 
   constructor(
     private readonly filePath: string,
@@ -32,6 +36,9 @@ export class Glossary {
     this.usagePath = filePath.replace(/\.json$/, '-usage.json');
     this.categoryPath = filePath.replace(/\.json$/, '-category.json');
     this.originPath = filePath.replace(/\.json$/, '-origin.json');
+    this.overrides = new OverrideLayer(
+      process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH || filePath.replace(/\.json$/, '-overrides.json'),
+    );
   }
 
   private static readonly CJK = /[一-鿿]/;
@@ -63,6 +70,7 @@ export class Glossary {
     } catch {
       this.origins = {};
     }
+    this.overrides.load();
     try {
       this.data = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as Record<string, Record<string, string>>;
       this.migrateReversed();
@@ -269,6 +277,12 @@ export class Glossary {
    * Used for short conversational phrases (明白/好/收到) that weak models otherwise reply to
    * conversationally instead of translating. Substring matches are intentionally NOT handled here —
    * that stays with section()'s prompt injection, so a term inside a longer sentence still goes to the LLM.
+   *
+   * GLOBAL LAYER ONLY, on purpose. This is the one path that returns a reply without calling the LLM
+   * at all, and the reply is indistinguishable from a real translation. Letting a group override
+   * reach it would let any member permanently bind arbitrary output to a whole message for their
+   * whole group, with no model in the loop. Overrides exist to disambiguate a term inside a
+   * sentence, which is section()'s job, so they lose nothing by being excluded here.
    */
   exact(pairKey: string, text = ''): string | null {
     const target = (this.data[pairKey] || {})[text.trim()];
@@ -282,11 +296,53 @@ export class Glossary {
    * Injecting the whole table (hundreds of entries) bloats the prompt and makes weak models echo the
    * term list back as their "translation" — so filter to what this message really uses.
    */
-  section(pairKey: string, text = ''): string {
-    const entries = Object.entries(this.data[pairKey] || {}).filter(([source]) => text.includes(source));
+  section(pairKey: string, text = '', groupId?: string): string {
+    const hit = (map: Record<string, string>): [string, string][] =>
+      Object.entries(map).filter(([source]) => text.includes(source));
+
+    // Global first, then this group's overrides on top: a Map keyed by source means an override
+    // silently replaces the global entry for the same term instead of injecting both, which would
+    // hand the model two contradictory instructions in one mandatory-use list.
+    const merged = new Map(hit(this.data[pairKey] || {}));
+    if (groupId)
+      for (const [s, t] of hit(Object.fromEntries(this.overrides.entriesFor(groupId, pairKey)))) merged.set(s, t);
+
+    const entries = [...merged];
     if (!entries.length) return '';
     for (const [s, t] of entries) this.bump(pairKey.startsWith('vi') ? t : s);
     return ['', '術語表（必須使用以下對照翻譯）：', ...entries.map(([s, t]) => `- ${s} → ${t}`), ''].join('\n');
+  }
+
+  /** Read-only view of the override layer for the service, commands and the dashboard API. */
+  get overrideLayer(): OverrideLayer {
+    return this.overrides;
+  }
+
+  /**
+   * What a `/g 詞 = 譯法` in a group means, given the global layer. This is the whole permission
+   * model in one function:
+   *   'new'      global doesn't know the term  -> propose it (pending queue, admin approves).
+   *                                               Writing the SHARED asset needs review.
+   *   'same'     global already says this      -> no-op.
+   *   'conflict' global says something else    -> this group's override. Only affects them, so a
+   *                                               member may do it without review.
+   */
+  classifyWrite(zh: string, vi: string): 'new' | 'same' | 'conflict' {
+    const [z, v] = Glossary.orient(zh, vi);
+    const current = (this.data['zh-tw:vi'] || {})[z];
+    if (current === undefined) return 'new';
+    return current === v ? 'same' : 'conflict';
+  }
+
+  /** Write a group override, orienting first so callers can pass either side. */
+  setOverride(groupId: string, zh: string, vi: string): void {
+    const [z, v] = Glossary.orient(zh, vi);
+    this.overrides.set(groupId, z, v);
+  }
+
+  /** Remove a group override by either side. Never reaches the global layer — see OverrideLayer.remove. */
+  removeOverride(groupId: string, term: string): boolean {
+    return this.overrides.remove(groupId, term);
   }
 
   /**
