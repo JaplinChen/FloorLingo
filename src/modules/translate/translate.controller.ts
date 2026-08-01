@@ -211,6 +211,14 @@ export class TranslateController {
     return this.translateService.phraseStats();
   }
 
+  @Get('glossary/overrides')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Per-group glossary overrides, their counts, and orphaned layers' })
+  @ApiResponse({ status: 200, description: 'Overrides grouped by scope' })
+  getGlossaryOverrides() {
+    return this.translateService.glossaryOverrides();
+  }
+
   @Get('memory/phrases/preview-bulk')
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'Candidates a bulk approval at this threshold would move (confirm step)' })

@@ -241,3 +241,84 @@ describe('Glossary.addMany', () => {
     expect(fs.existsSync(file)).toBe(false); // nothing written at all
   });
 });
+
+describe('Glossary group overrides', () => {
+  const make = (): Glossary => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gl-ovr-'));
+    process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH = path.join(dir, 'ov.json');
+    const g = new Glossary(path.join(dir, 'glossary.json'));
+    g.load();
+    g.add('出貨', 'giao hàng');
+    return g;
+  };
+
+  afterEach(() => delete process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH);
+
+  it('classifies the three write outcomes', () => {
+    const g = make();
+    expect(g.classifyWrite('出貨', 'giao hàng')).toBe('same');
+    expect(g.classifyWrite('出貨', 'xuất kho')).toBe('conflict');
+    expect(g.classifyWrite('客戶', 'khách hàng')).toBe('new');
+    // Either side may be typed first; orient() decides which is the zh key.
+    expect(g.classifyWrite('giao hàng', '出貨')).toBe('same');
+  });
+
+  it('section(): the override replaces the global term for that group only', () => {
+    const g = make();
+    g.setOverride('A@g.us', '出貨', 'xuất kho');
+
+    const inA = g.section('zh-tw:vi', '今天出貨', 'A@g.us');
+    expect(inA).toContain('出貨 → xuất kho');
+    expect(inA).not.toContain('giao hàng'); // not both — the model would get contradictory orders
+
+    expect(g.section('zh-tw:vi', '今天出貨', 'B@g.us')).toContain('出貨 → giao hàng');
+    expect(g.section('zh-tw:vi', '今天出貨')).toContain('出貨 → giao hàng'); // no group = global
+  });
+
+  it('section(): a group override never leaks into another group', () => {
+    const g = make();
+    g.setOverride('A@g.us', '模具', 'khuôn riêng');
+    expect(g.section('zh-tw:vi', '換模具', 'A@g.us')).toContain('khuôn riêng');
+    expect(g.section('zh-tw:vi', '換模具', 'B@g.us')).toBe(''); // 模具 isn't global at all
+  });
+
+  it('exact(): overrides are deliberately excluded, in both directions', () => {
+    const g = make();
+    g.setOverride('A@g.us', '出貨', 'xuất kho');
+    // Whole-message match still answers from the GLOBAL layer even inside the overriding group:
+    // exact() is the one path that skips the LLM entirely, so a member must not be able to bind it.
+    expect(g.exact('zh-tw:vi', '出貨')).toBe('giao hàng');
+    expect(g.exact('vi:zh-tw', 'xuất kho')).toBeNull();
+  });
+
+  it('applies to vi->zh for the overriding group', () => {
+    const g = make();
+    g.setOverride('A@g.us', '出貨', 'xuất kho');
+    expect(g.section('vi:zh-tw', 'hôm nay xuất kho', 'A@g.us')).toContain('xuất kho → 出貨');
+    // The global reverse mapping is untouched and still correct — it just isn't what A produces.
+    expect(g.section('vi:zh-tw', 'hôm nay giao hàng', 'A@g.us')).toContain('giao hàng → 出貨');
+  });
+
+  it('removing an override restores the global term and leaves it intact', () => {
+    const g = make();
+    g.setOverride('A@g.us', '出貨', 'xuất kho');
+    expect(g.removeOverride('A@g.us', '出貨')).toBe(true);
+    expect(g.section('zh-tw:vi', '今天出貨', 'A@g.us')).toContain('giao hàng');
+    expect(g.entries().find(e => e.source === '出貨')?.target).toBe('giao hàng');
+  });
+
+  it('survives a reload with the overrides on disk', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gl-ovr2-'));
+    process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH = path.join(dir, 'ov.json');
+    const file = path.join(dir, 'glossary.json');
+    const first = new Glossary(file);
+    first.load();
+    first.add('出貨', 'giao hàng');
+    first.setOverride('A@g.us', '出貨', 'xuất kho');
+
+    const second = new Glossary(file);
+    second.load();
+    expect(second.section('zh-tw:vi', '今天出貨', 'A@g.us')).toContain('xuất kho');
+    expect(second.overrideLayer.count()).toBe(1);
+  });
+});
