@@ -962,7 +962,8 @@
     "overridesGlobalIs": "shared: {{target}}",
     "overridesRevert": "Use shared",
     "overridesReverted": "Override removed — the shared term applies again",
-    "overridesOrphans": "Overrides for groups that are no longer configured: {{groups}}. Re-adding such a group would bring them back."
+    "overridesOrphans": "Overrides for groups that are no longer configured: {{groups}}. Re-adding such a group would bring them back.",
+    "overridesEmpty": "No group-specific translations. Terms only diverge when a group sets one with /g in that group."
   },
   "keyproxy": {
     "title": "LLM Keys",

@@ -748,3 +748,11 @@
   font-size: 0.8rem;
   color: var(--warning, #b45309);
 }
+
+/* Explanatory line above a list. Distinct from .etable-empty, which centres its text and reserves
+   empty-state height — using that for a hint leaves a large hole above real content. */
+.etable-page .etable-hint{
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}

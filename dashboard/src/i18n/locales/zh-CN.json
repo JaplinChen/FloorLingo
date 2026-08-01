@@ -971,7 +971,8 @@
     "overridesGlobalIs": "共用：{{target}}",
     "overridesRevert": "改回共用",
     "overridesReverted": "已移除覆盖，恢复使用共用译法",
-    "overridesOrphans": "这些群组已不在设置中，但仍留有覆盖：{{groups}}。重新加回该群会让它们复活。"
+    "overridesOrphans": "这些群组已不在设置中，但仍留有覆盖：{{groups}}。重新加回该群会让它们复活。",
+    "overridesEmpty": "目前没有群组专用译法。要有差异，得在该群用 /g 设一个跟共用不同的译法。"
   },
   "keyproxy": {
     "title": "LLM 密钥",

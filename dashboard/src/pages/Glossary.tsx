@@ -46,7 +46,7 @@ export function Glossary() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [tab, setTab] = useState<'candidates' | 'phrases' | 'terms' | 'categories'>('candidates');
+  const [tab, setTab] = useState<'candidates' | 'phrases' | 'terms' | 'overrides' | 'categories'>('candidates');
   const [showDups, setShowDups] = useState(false);
 
   // Group by 越南文: source keys are unique, so the only real "duplicate" is many 中文 sharing one target.
@@ -388,6 +388,15 @@ export function Glossary() {
         </button>
         <button
           role="tab"
+          aria-selected={tab === 'overrides'}
+          className={`etable-tab ${tab === 'overrides' ? 'active' : ''}`}
+          onClick={() => setTab('overrides')}
+        >
+          {t('glossary.overridesTitle')}
+          <span className="etable-count">{overrides?.entries.length ?? 0}</span>
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === 'categories'}
           className={`etable-tab ${tab === 'categories' ? 'active' : ''}`}
           onClick={() => setTab('categories')}
@@ -554,46 +563,6 @@ export function Glossary() {
             onReject={reject}
           />
 
-          {/* Own panel rather than extra rows in the terms table: the table keys rows by source, and
-              an override shares its source with the global term it replaces. */}
-          {overrides && (overrides.entries.length > 0 || overrides.orphans.length > 0) && (
-            <section className="etable-panel etable-panel--dup">
-              <h2 className="etable-panel-title">
-                {t('glossary.overridesTitle')}
-                <span className="etable-count">{overrides.entries.length}</span>
-              </h2>
-              <p className="etable-empty">{t('glossary.overridesHint')}</p>
-              {overrides.orphans.length > 0 && (
-                <p className="override-orphans">
-                  {t('glossary.overridesOrphans', { groups: overrides.orphans.join(', ') })}
-                </p>
-              )}
-              <ul className="override-list">
-                {overrides.entries.map(o => (
-                  <li key={`${o.group}|${o.source}`} className="override-row">
-                    <span className="override-scope">{o.group}</span>
-                    <span className="override-term">
-                      {o.source} → {o.target}
-                    </span>
-                    {/* Shows what the group is deviating FROM, which is the whole point of the row. */}
-                    <span className="override-global">
-                      {t('glossary.overridesGlobalIs', { target: globalTargets.get(o.source) ?? '—' })}
-                    </span>
-                    {canWrite && (
-                      <button
-                        className="etable-del"
-                        disabled={busy}
-                        onClick={() => removeOverride(o.group, o.source)}
-                      >
-                        <Trash2 size={14} />
-                        {t('glossary.overridesRevert')}
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
 
           <section className="etable-panel etable-panel--dup">
             <button className="etable-add" onClick={() => setShowDups(v => !v)}>
@@ -665,6 +634,40 @@ export function Glossary() {
         </>
       )}
 
+
+      {tab === 'overrides' && (
+        <section className="etable-panel">
+          {/* Its own tab, not a block inside 詞條: an override is a distinct thing to look at, and
+              burying it under another tab meant the person who just created one could not find it. */}
+          <p className="etable-hint">{t('glossary.overridesHint')}</p>
+          {overrides && overrides.orphans.length > 0 && (
+            <p className="override-orphans">{t('glossary.overridesOrphans', { groups: overrides.orphans.join(', ') })}</p>
+          )}
+          {!overrides || overrides.entries.length === 0 ? (
+            <div className="etable-empty">{t('glossary.overridesEmpty')}</div>
+          ) : (
+            <ul className="override-list">
+              {overrides.entries.map(o => (
+                <li key={`${o.group}|${o.source}`} className="override-row">
+                  <span className="override-scope">{o.group}</span>
+                  <span className="override-term">
+                    {o.source} → {o.target}
+                  </span>
+                  <span className="override-global">
+                    {t('glossary.overridesGlobalIs', { target: globalTargets.get(o.source) ?? '—' })}
+                  </span>
+                  {canWrite && (
+                    <button className="etable-del" disabled={busy} onClick={() => removeOverride(o.group, o.source)}>
+                      <Trash2 size={14} />
+                      {t('glossary.overridesRevert')}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {tab === 'categories' && (
         <section className="etable-panel">
           <h3 className="etable-panel-title">{t('glossary.category.manageTitle')}</h3>
