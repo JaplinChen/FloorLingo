@@ -2,6 +2,16 @@ import * as fs from 'node:fs';
 import { atomicWriteJson } from './translate-fs';
 
 /**
+ * A JID's user part. WhatsApp hands the same person out under several suffixes (`@c.us`,
+ * `@s.whatsapp.net`, `@lid`) and in 1:1 chats only `from` is populated, so comparing raw JIDs is
+ * how identity checks silently stop matching. Compare digits.
+ */
+export function jidDigits(jid: string): string {
+  const m = jid.match(/\d+/);
+  return m ? m[0] : jid.trim();
+}
+
+/**
  * Manual `@mention` overrides: JID user-part (digits) -> display name, persisted as flat JSON.
  * Fills the gap when the session store can't resolve a mentioned JID (unsaved contact, no pushName)
  * and the translated message would otherwise show a raw `@200859128434777` instead of a name.
@@ -37,8 +47,7 @@ export class SenderDirectory {
 
   /** Accept "200859...@c.us", "@200859...", or bare digits — store just the digits. */
   private normalize(jid: string): string {
-    const m = jid.match(/\d+/);
-    return m ? m[0] : jid.trim();
+    return jidDigits(jid);
   }
 
   entries(): { jid: string; name: string; count: number }[] {
