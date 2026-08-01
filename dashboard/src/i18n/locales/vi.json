@@ -962,7 +962,8 @@
     "overridesGlobalIs": "chung: {{target}}",
     "overridesRevert": "Dùng bản chung",
     "overridesReverted": "Đã bỏ bản riêng, quay lại dùng bản chung",
-    "overridesOrphans": "Có bản riêng của các nhóm không còn được cấu hình: {{groups}}. Thêm lại nhóm đó sẽ khôi phục chúng."
+    "overridesOrphans": "Có bản riêng của các nhóm không còn được cấu hình: {{groups}}. Thêm lại nhóm đó sẽ khôi phục chúng.",
+    "overridesEmpty": "Chưa có bản dịch riêng cho nhóm nào. Chỉ khi một nhóm đặt bản khác bằng /g thì mới xuất hiện ở đây."
   },
   "keyproxy": {
     "title": "Khóa LLM",
