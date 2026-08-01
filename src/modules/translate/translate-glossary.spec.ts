@@ -175,3 +175,30 @@ describe('Glossary', () => {
     expect(g.pending()).toHaveLength(1);
   });
 });
+
+describe('Glossary origin sidecar', () => {
+  const tmp = () => path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gl-origin-')), 'glossary.json');
+
+  it('tags pipeline-added terms, omits the field for hand-added ones, and clears on remove', () => {
+    const file = tmp();
+    const g = new Glossary(file);
+    g.load();
+    g.add('出貨', 'giao hàng', undefined, 'human');
+    g.add('客戶', 'khách hàng'); // typed by hand — no marker
+
+    const bySource = Object.fromEntries(g.entries().map(e => [e.source, e]));
+    expect(bySource['出貨'].origin).toBe('human');
+    expect('origin' in bySource['客戶']).toBe(false);
+
+    // Survives a reload: the sidecar is on disk, not in memory.
+    const reopened = new Glossary(file);
+    reopened.load();
+    expect(reopened.entries().find(e => e.source === '出貨')?.origin).toBe('human');
+
+    reopened.remove('出貨');
+    const after = new Glossary(file);
+    after.load();
+    after.add('出貨', 'giao hàng'); // re-added by hand — must not inherit the old origin
+    expect('origin' in after.entries().find(e => e.source === '出貨')!).toBe(false);
+  });
+});

@@ -72,7 +72,19 @@ describe('PhraseCandidates', () => {
       revoked30d: 0,
       revocationRate30d: 0,
       reviewLatencyHours: null,
+      lastScan: null,
     });
+  });
+
+  it('reports the latest scan, and tells "never ran" apart from "found nothing"', async () => {
+    const pc = store();
+    expect((await pc.stats()).lastScan).toBeNull(); // never ran
+
+    await pc.recordScan(30, 0); // ran, kept nothing — must NOT read as "never ran"
+    expect(await pc.stats().then(s => s.lastScan)).toMatchObject({ mined: 30, upserted: 0 });
+
+    await pc.recordScan(12, 5);
+    expect(await pc.stats().then(s => s.lastScan)).toMatchObject({ mined: 12, upserted: 5 });
   });
 
   it('survives a reopen — provenance is on disk, not in memory', async () => {

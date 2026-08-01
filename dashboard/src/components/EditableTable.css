@@ -615,3 +615,22 @@
   font-size: 0.75rem;
   opacity: 0.65;
 }
+
+.etable-page .phrase-scan-line{
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* Narrow container: the lead stat's divider and padding are decoration, and its intrinsic width is
+   what pushes the strip past its parent. Drop both and let it wrap like the rest. */
+@media (max-width: 640px){
+  .etable-page .phrase-stats{ gap: 1rem; }
+  .etable-page .phrase-stat-lead{
+    flex: 1 1 100%;
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border, #e2e2e2);
+    padding-bottom: 0.6rem;
+  }
+}
