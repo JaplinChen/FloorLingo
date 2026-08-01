@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import { EditableKeyValueTable } from '../components/EditableKeyValueTable';
 import { GlossaryPending } from './GlossaryPending';
 import { MemoryCandidates } from './MemoryCandidates';
+import { ConfirmModal } from '../components/sessions/ConfirmModal';
 import { pageWindow } from '../utils/pageWindow';
 import '../components/EditableTable.css';
 
@@ -35,6 +36,10 @@ export function Glossary() {
   const [candPage, setCandPage] = useState(1);
   const [phrases, setPhrases] = useState<PhraseCandidate[]>([]);
   const [stats, setStats] = useState<PhraseStats | null>(null);
+  const [bulkMin, setBulkMin] = useState(3);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  // Non-null = the confirm step is open, holding exactly the rows the approval would move.
+  const [bulkPreview, setBulkPreview] = useState<PhraseCandidate[] | null>(null);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [catInput, setCatInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -102,6 +107,41 @@ export function Glossary() {
       fail(err);
     } finally {
       setScanning(false);
+    }
+  };
+
+  // Preview before applying: the confirm step shows the actual rows, not just how many. Approving
+  // 30+ terms at once has no per-row undo, so "核准 37 筆" alone is not enough to decide on.
+  const openBulkPreview = async () => {
+    setBulkLoading(true);
+    try {
+      setBulkPreview(await translateApi.previewBulkApproval(bulkMin));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const confirmBulkApproval = async () => {
+    setBulkPreview(null);
+    setBusy(true);
+    try {
+      const { approved, total } = await translateApi.approvePhrasesBulk(bulkMin);
+      setPhrases(await translateApi.getPhraseCandidates());
+      setTerms(await translateApi.getGlossary());
+      await refreshStats();
+      // Another admin (or a single approve) can take rows between preview and apply — say so rather
+      // than reporting the full count as if everything moved.
+      toast.success(
+        approved === total
+          ? t('glossary.bulkApproved', { count: approved })
+          : t('glossary.bulkApprovedPartial', { approved, total }),
+      );
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -419,10 +459,28 @@ export function Glossary() {
             )}
             <p className="etable-empty">{t('glossary.phrasesHint')}</p>
             {canWrite && (
-              <button className="etable-add" onClick={scanPhrases} disabled={scanning}>
-                {scanning ? <Loader2 className="animate-spin" size={16} /> : null}
-                {t('glossary.phrasesScan')}
-              </button>
+              <div className="phrase-actions">
+                <button className="etable-add" onClick={scanPhrases} disabled={scanning}>
+                  {scanning ? <Loader2 className="animate-spin" size={16} /> : null}
+                  {t('glossary.phrasesScan')}
+                </button>
+                {/* Batch operation, kept clear of the per-row approve buttons below it. */}
+                <div className="phrase-bulk">
+                  <label htmlFor="bulk-min">{t('glossary.bulkThreshold')}</label>
+                  <input
+                    id="bulk-min"
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={bulkMin}
+                    onChange={e => setBulkMin(Math.max(1, Number(e.target.value) || 1))}
+                  />
+                  <button className="btn-secondary" onClick={openBulkPreview} disabled={busy || bulkLoading}>
+                    {bulkLoading ? <Loader2 className="animate-spin" size={16} /> : null}
+                    {t('glossary.bulkApprove')}
+                  </button>
+                </div>
+              </div>
             )}
           </section>
           {/* Reuse the memory-candidate row UI: phrase maps onto the source column. */}
@@ -433,6 +491,36 @@ export function Glossary() {
             onApprove={approvePhrase}
             onDismiss={dismissPhrase}
           />
+          {bulkPreview !== null && (
+            <ConfirmModal
+              title={t('glossary.bulkConfirmTitle')}
+              message={
+                bulkPreview.length ? (
+                  <span className="bulk-preview">
+                    <span className="bulk-preview-lead">
+                      {t('glossary.bulkConfirmBody', { count: bulkPreview.length, minCount: bulkMin })}
+                    </span>
+                    {/* Spans, not list elements: ConfirmModal renders `message` inside a <p>. */}
+                    {bulkPreview.map(p => (
+                      <span key={p.id} className="bulk-preview-row">
+                        {p.phrase} → {p.translated} <span className="bulk-preview-count">×{p.count}</span>
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  t('glossary.bulkConfirmEmpty', { minCount: bulkMin })
+                )
+              }
+              warning={bulkPreview.length ? t('glossary.bulkConfirmWarning') : ''}
+              // Nothing to approve: the primary action is a dismissal, so don't dress it up as
+              // "Approve 0" on a danger button.
+              confirmLabel={
+                bulkPreview.length ? t('glossary.bulkConfirmAction', { count: bulkPreview.length }) : t('common.close')
+              }
+              onConfirm={bulkPreview.length ? confirmBulkApproval : () => setBulkPreview(null)}
+              onCancel={() => setBulkPreview(null)}
+            />
+          )}
         </>
       )}
 

@@ -634,3 +634,72 @@
     padding-bottom: 0.6rem;
   }
 }
+
+.etable-page .phrase-actions{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+}
+
+/* Batch operation, held apart from the per-row approve buttons so the two don't read as the same
+   control at a glance. */
+.etable-page .phrase-bulk{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--border, #e2e2e2);
+  font-size: 0.85rem;
+}
+
+.etable-page .phrase-bulk input{
+  width: 5rem;
+  height: 36px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 8px;
+  background: var(--bg-white);
+  color: inherit;
+}
+
+.etable-page .phrase-bulk button{
+  height: 36px;
+  padding: 0 0.9rem;
+}
+
+@media (max-width: 640px){
+  .etable-page .phrase-bulk{
+    padding-left: 0;
+    border-left: none;
+    flex: 1 1 100%;
+  }
+}
+
+/* Confirm-step row list. Spans (ConfirmModal puts `message` in a <p>) forced to block. */
+.bulk-preview,
+.bulk-preview-lead,
+.bulk-preview-row{
+  display: block;
+}
+
+.bulk-preview-lead{
+  margin-bottom: 0.6rem;
+}
+
+.bulk-preview{
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.bulk-preview-row{
+  padding: 0.2rem 0;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+}
+
+.bulk-preview-count{
+  display: inline;
+  opacity: 0.6;
+  font-size: 0.8rem;
+}

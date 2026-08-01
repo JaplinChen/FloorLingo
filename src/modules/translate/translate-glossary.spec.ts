@@ -202,3 +202,42 @@ describe('Glossary origin sidecar', () => {
     expect('origin' in after.entries().find(e => e.source === '出貨')!).toBe(false);
   });
 });
+
+describe('Glossary.addMany', () => {
+  it('writes the glossary file once for the whole batch', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gl-many-')), 'glossary.json');
+    const g = new Glossary(file);
+    g.load();
+
+    // save() is what serializes the whole glossary map to disk. Counting it is the point of the
+    // test: N terms must cost 1 serialization, not N (see F6 — atomicWriteJson degrades to a
+    // non-atomic in-place write on a bind mount, so a restart mid-loop could truncate the file).
+    const saves = jest.spyOn(g as unknown as { save: () => void }, 'save');
+
+    g.addMany([
+      { zh: '出貨', vi: 'giao hàng', origin: 'bulk' },
+      { zh: '客戶', vi: 'khách hàng', origin: 'bulk' },
+      { zh: '品質', vi: 'chất lượng', origin: 'bulk' },
+    ]);
+    expect(saves).toHaveBeenCalledTimes(1);
+
+    // And a single add() must not have regressed into something more expensive.
+    saves.mockClear();
+    g.add('交期', 'thời hạn giao');
+    expect(saves).toHaveBeenCalledTimes(1);
+    saves.mockRestore();
+
+    const reopened = new Glossary(file);
+    reopened.load();
+    expect(reopened.entries().length).toBe(4);
+    expect(reopened.entries().filter(e => e.origin === 'bulk').length).toBe(3);
+  });
+
+  it('is a no-op on an empty batch', () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'gl-empty-')), 'glossary.json');
+    const g = new Glossary(file);
+    g.load();
+    g.addMany([]);
+    expect(fs.existsSync(file)).toBe(false); // nothing written at all
+  });
+});
