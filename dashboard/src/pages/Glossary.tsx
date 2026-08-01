@@ -11,6 +11,7 @@ import { GlossaryPending } from './GlossaryPending';
 import { MemoryCandidates } from './MemoryCandidates';
 import { ConfirmModal } from '../components/sessions/ConfirmModal';
 import { pageWindow } from '../utils/pageWindow';
+import { useSessionsQuery, useSessionGroupsQuery } from '../hooks/queries';
 import '../components/EditableTable.css';
 
 const CANDIDATES_PAGE_SIZE = 20;
@@ -99,6 +100,19 @@ export function Glossary() {
       active = false;
     };
   }, []);
+
+  // Group names for the override rows. A bare JID tells nobody which of the five groups it is.
+  // Reuses the same queries the translate page uses; both are cached, so this costs one shared fetch.
+  // First session, not a picker: a lookup miss just falls back to the JID, so a multi-session setup
+  // degrades to what this showed before rather than to something wrong.
+  const { data: sessions = [] } = useSessionsQuery();
+  const sessionId = sessions[0]?.id ?? '';
+  const { data: waGroups = [] } = useSessionGroupsQuery(sessionId, !!sessionId);
+  const groupNames = useMemo(() => {
+    // Override keys have the @g.us suffix stripped, so index on the local part from both sides.
+    const local = (id: string) => id.split('@')[0].toLowerCase();
+    return new Map(waGroups.map(g => [local(g.id), g.name || g.id]));
+  }, [waGroups]);
 
   // What the shared glossary says for each source, so an override row can show what it deviates from.
   const globalTargets = useMemo(() => new Map(terms.map(t2 => [t2.source, t2.target])), [terms]);
@@ -649,7 +663,7 @@ export function Glossary() {
             <ul className="override-list">
               {overrides.entries.map(o => (
                 <li key={`${o.group}|${o.source}`} className="override-row">
-                  <span className="override-scope">{o.group}</span>
+                  <span className="override-scope">{groupNames.get(o.group.toLowerCase()) ?? o.group}</span>
                   <span className="override-term">
                     {o.source} → {o.target}
                   </span>

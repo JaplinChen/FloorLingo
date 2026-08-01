@@ -724,7 +724,14 @@
 }
 
 .etable-page .override-scope{
-  flex: 0 0 auto;
+  /* Shrinkable and truncating: this holds a group NAME when one resolves, and a long name would
+     otherwise push the term and its shared-value note off the row. */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   background: var(--bg-subtle, rgba(0, 0, 0, 0.05));
