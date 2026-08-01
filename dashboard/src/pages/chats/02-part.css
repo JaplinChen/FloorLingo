@@ -62,7 +62,7 @@
 }
 
 .chats-page .scroll-to-bottom-btn:hover{
-  background: var(--bg-hover, var(--bg-light));
+  background: var(--bg-light);
 }
 
 .chats-page .room-header{
