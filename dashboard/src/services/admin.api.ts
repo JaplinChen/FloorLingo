@@ -224,6 +224,8 @@ export interface PhraseStats {
   revoked30d: number;
   revocationRate30d: number;
   reviewLatencyHours: number | null;
+  lastScan: { at: string; mined: number; upserted: number } | null;
+  glossarySize: number;
 }
 
 export interface SenderEntry {

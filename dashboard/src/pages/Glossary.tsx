@@ -399,7 +399,23 @@ export function Glossary() {
                   <dt>{t('glossary.statsLatency')}</dt>
                   <dd>{stats.reviewLatencyHours === null ? '—' : `${stats.reviewLatencyHours.toFixed(1)}h`}</dd>
                 </div>
+                <div className="phrase-stat">
+                  <dt>{t('glossary.statsGlossarySize')}</dt>
+                  <dd>{stats.glossarySize}</dd>
+                </div>
               </dl>
+            )}
+            {/* "Never scanned" and "scanned, found nothing" leave the queue looking identical — say which. */}
+            {stats && (
+              <p className="phrase-scan-line">
+                {stats.lastScan
+                  ? t('glossary.statsLastScan', {
+                      at: new Date(stats.lastScan.at).toLocaleString(),
+                      mined: stats.lastScan.mined,
+                      upserted: stats.lastScan.upserted,
+                    })
+                  : t('glossary.statsNeverScanned')}
+              </p>
             )}
             <p className="etable-empty">{t('glossary.phrasesHint')}</p>
             {canWrite && (

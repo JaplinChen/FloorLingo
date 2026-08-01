@@ -206,7 +206,7 @@ export class TranslateController {
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'Phrase review queue health: backlog, latency, 30-day revocation rate' })
   @ApiResponse({ status: 200, description: 'Queue statistics' })
-  getPhraseStats(): Promise<PhraseStats> {
+  getPhraseStats(): Promise<PhraseStats & { glossarySize: number }> {
     return this.translateService.phraseStats();
   }
 

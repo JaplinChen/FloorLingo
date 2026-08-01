@@ -297,9 +297,13 @@ export class TranslateService implements OnModuleInit {
     return this.phrases.list(limit);
   }
 
-  /** Queue health for the dashboard — pending backlog, review latency, and the revocation rate. */
-  phraseStats(): Promise<PhraseStats> {
-    return this.phrases.stats();
+  /**
+   * Queue health for the dashboard — pending backlog, review latency, revocation rate, last scan.
+   * `glossarySize` rides along because bulk approval grows the glossary and `Glossary.section()` is an
+   * O(entries) scan on every translated message: the throughput win has a hot-path cost worth watching.
+   */
+  async phraseStats(): Promise<PhraseStats & { glossarySize: number }> {
+    return { ...(await this.phrases.stats()), glossarySize: this.glossary.entries().length };
   }
 
   /**
@@ -327,13 +331,20 @@ export class TranslateService implements OnModuleInit {
     const exclude = new Set(this.glossary.entries().map(e => e.source));
     const minCount = Math.max(1, Number(process.env.TRANSLATE_PHRASE_MIN_COUNT) || 3);
     const mined = minePhrases(sources, { minCount, limit: 30, exclude });
+    let upserted = 0;
     if (mined.length) {
       const translations = await this.translatePhrases(mined.map(m => m.phrase));
       for (const m of mined) {
         const vi = (translations[m.phrase] || '').trim();
-        if (vi) await this.phrases.upsert(m.phrase, vi, m.count);
+        if (vi) {
+          await this.phrases.upsert(m.phrase, vi, m.count);
+          upserted++;
+        }
       }
     }
+    // Logged even when nothing survives: "mined 30, kept 0" and "never ran" look identical otherwise.
+    await this.phrases.recordScan(mined.length, upserted);
+    this.logger.log(`[translate:phrase-review] scan: mined ${mined.length}, upserted ${upserted}`);
     return this.phrases.list();
   }
 
@@ -365,7 +376,8 @@ export class TranslateService implements OnModuleInit {
   /** Promote a phrase candidate into the glossary. */
   async approvePhraseCandidate(id: number): Promise<PhraseCandidate[]> {
     const row = await this.phrases.takeForApproval(id);
-    if (row && row.translated) this.glossary.add(row.phrase, row.translated);
+    // Tag the entry so the terms list can show what arrived via the review queue rather than by hand.
+    if (row && row.translated) this.glossary.add(row.phrase, row.translated, undefined, 'human');
     return this.phrases.list();
   }
 

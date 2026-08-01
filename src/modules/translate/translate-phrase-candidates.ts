@@ -44,6 +44,8 @@ export interface PhraseStats {
   revocationRate30d: number;
   /** Mean hours between a candidate first appearing and being reviewed; null when nothing is reviewed. */
   reviewLatencyHours: number | null;
+  /** Last mining run. null before the first scan — which is itself the answer to "is mining running?". */
+  lastScan: { at: string; mined: number; upserted: number } | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -100,6 +102,17 @@ export class PhraseCandidates {
       [],
     );
     db.run(`CREATE INDEX IF NOT EXISTS idx_pe_at ON phrase_events(at)`, []);
+    // One row per mining run. Without it the dashboard cannot distinguish "mining found nothing new"
+    // from "mining has not run since the last restart" — they look identical (an unchanged queue).
+    db.run(
+      `CREATE TABLE IF NOT EXISTS phrase_scans (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         at TEXT NOT NULL,
+         mined INTEGER NOT NULL,
+         upserted INTEGER NOT NULL
+       )`,
+      [],
+    );
     this.db = db;
   }
 
@@ -204,6 +217,18 @@ export class PhraseCandidates {
     });
   }
 
+  /** Record a completed mining run. `mined` is what the miner proposed, `upserted` what survived the LLM. */
+  recordScan(mined: number, upserted: number): Promise<void> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve();
+      this.db.run(
+        `INSERT INTO phrase_scans (at, mined, upserted) VALUES (?, ?, ?)`,
+        [new Date().toISOString(), mined, upserted],
+        () => resolve(),
+      );
+    });
+  }
+
   /** Queue health for the dashboard: is review keeping up, and is what we approve staying approved? */
   async stats(): Promise<PhraseStats> {
     const empty: PhraseStats = {
@@ -214,6 +239,7 @@ export class PhraseCandidates {
       revoked30d: 0,
       revocationRate30d: 0,
       reviewLatencyHours: null,
+      lastScan: null,
     };
     if (!this.db) return empty;
     const cutoff = new Date(Date.now() - 30 * DAY_MS).toISOString();
@@ -230,6 +256,10 @@ export class PhraseCandidates {
          FROM phrase_candidates WHERE reviewed_at IS NOT NULL`,
       [],
     );
+    const scans = await this.rows<{ at: string; mined: number; upserted: number }>(
+      `SELECT at, mined, upserted FROM phrase_scans ORDER BY id DESC LIMIT 1`,
+      [],
+    );
     const status = (k: string) => byStatus.find(r => r.status === k)?.n ?? 0;
     const kind = (k: string) => byKind.find(r => r.kind === k)?.n ?? 0;
     const approved30d = kind('approved');
@@ -242,6 +272,7 @@ export class PhraseCandidates {
       revoked30d,
       revocationRate30d: approved30d ? revoked30d / approved30d : 0,
       reviewLatencyHours: latency[0]?.h ?? null,
+      lastScan: scans[0] ?? null,
     };
   }
 
