@@ -703,3 +703,48 @@
   opacity: 0.6;
   font-size: 0.8rem;
 }
+
+/* Group-specific glossary overrides. Its own list rather than rows in the terms table: an override
+   shares its source term with the global entry it replaces, and that table keys rows by source. */
+.etable-page .override-list{
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.etable-page .override-row{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border, #e2e2e2);
+}
+
+.etable-page .override-scope{
+  flex: 0 0 auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-subtle, rgba(0, 0, 0, 0.05));
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.etable-page .override-term{
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.etable-page .override-global{
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.etable-page .override-orphans{
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--warning, #b45309);
+}

@@ -956,7 +956,13 @@
       "addButton": "Thêm phân loại",
       "deleteButton": "Xóa",
       "empty": "Chưa có phân loại tùy chỉnh"
-    }
+    },
+    "overridesTitle": "Bản dịch riêng của nhóm",
+    "overridesHint": "Những từ mà một nhóm cố ý dùng khác với từ điển chung. Còn lại đều dùng chung.",
+    "overridesGlobalIs": "chung: {{target}}",
+    "overridesRevert": "Dùng bản chung",
+    "overridesReverted": "Đã bỏ bản riêng, quay lại dùng bản chung",
+    "overridesOrphans": "Có bản riêng của các nhóm không còn được cấu hình: {{groups}}. Thêm lại nhóm đó sẽ khôi phục chúng."
   },
   "keyproxy": {
     "title": "Khóa LLM",

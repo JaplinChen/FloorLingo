@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, BookMarked, Plus, Trash2 } from 'lucide-react';
-import { translateApi, type GlossaryTerm, type PendingGlossaryTerm, type TranslationCandidate, type PhraseCandidate, type PhraseStats } from '../services/api';
+import { translateApi, type GlossaryTerm, type PendingGlossaryTerm, type TranslationCandidate, type PhraseCandidate, type PhraseStats, type GlossaryOverrides } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import { useToast } from '../components/Toast';
@@ -36,6 +36,7 @@ export function Glossary() {
   const [candPage, setCandPage] = useState(1);
   const [phrases, setPhrases] = useState<PhraseCandidate[]>([]);
   const [stats, setStats] = useState<PhraseStats | null>(null);
+  const [overrides, setOverrides] = useState<GlossaryOverrides | null>(null);
   const [bulkMin, setBulkMin] = useState(3);
   const [bulkLoading, setBulkLoading] = useState(false);
   // Non-null = the confirm step is open, holding exactly the rows the approval would move.
@@ -87,6 +88,10 @@ export function Glossary() {
       .then(s => active && setStats(s))
       .catch(() => active && setStats(null));
     translateApi
+      .getGlossaryOverrides()
+      .then(o => active && setOverrides(o))
+      .catch(() => active && setOverrides(null));
+    translateApi
       .getCategories()
       .then(list => active && setCustomCategories(list.filter(c => !BUILTIN_CATEGORIES.includes(c))))
       .catch(err => active && fail(err));
@@ -94,6 +99,21 @@ export function Glossary() {
       active = false;
     };
   }, []);
+
+  // What the shared glossary says for each source, so an override row can show what it deviates from.
+  const globalTargets = useMemo(() => new Map(terms.map(t2 => [t2.source, t2.target])), [terms]);
+
+  const removeOverride = async (group: string, term: string) => {
+    setBusy(true);
+    try {
+      setOverrides(await translateApi.removeGlossaryOverride(group, term));
+      toast.success(t('glossary.overridesReverted'));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Stats are advisory: a failure here must not surface as an error toast over a working queue.
   const refreshStats = () => translateApi.getPhraseStats().then(setStats).catch(() => setStats(null));
@@ -533,6 +553,47 @@ export function Glossary() {
             onApprove={approve}
             onReject={reject}
           />
+
+          {/* Own panel rather than extra rows in the terms table: the table keys rows by source, and
+              an override shares its source with the global term it replaces. */}
+          {overrides && (overrides.entries.length > 0 || overrides.orphans.length > 0) && (
+            <section className="etable-panel etable-panel--dup">
+              <h2 className="etable-panel-title">
+                {t('glossary.overridesTitle')}
+                <span className="etable-count">{overrides.entries.length}</span>
+              </h2>
+              <p className="etable-empty">{t('glossary.overridesHint')}</p>
+              {overrides.orphans.length > 0 && (
+                <p className="override-orphans">
+                  {t('glossary.overridesOrphans', { groups: overrides.orphans.join(', ') })}
+                </p>
+              )}
+              <ul className="override-list">
+                {overrides.entries.map(o => (
+                  <li key={`${o.group}|${o.source}`} className="override-row">
+                    <span className="override-scope">{o.group}</span>
+                    <span className="override-term">
+                      {o.source} → {o.target}
+                    </span>
+                    {/* Shows what the group is deviating FROM, which is the whole point of the row. */}
+                    <span className="override-global">
+                      {t('glossary.overridesGlobalIs', { target: globalTargets.get(o.source) ?? '—' })}
+                    </span>
+                    {canWrite && (
+                      <button
+                        className="etable-del"
+                        disabled={busy}
+                        onClick={() => removeOverride(o.group, o.source)}
+                      >
+                        <Trash2 size={14} />
+                        {t('glossary.overridesRevert')}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="etable-panel etable-panel--dup">
             <button className="etable-add" onClick={() => setShowDups(v => !v)}>
