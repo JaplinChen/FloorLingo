@@ -6,6 +6,9 @@ import { WatchwordStore } from './translate-watchwords';
 import { FeedbackStore } from './translate-feedback';
 import { BOT_MARKER } from './translate-lang';
 
+// Cap on lines processed from one pasted /g message — see handleGlossaryCommand.
+const GLOSSARY_BATCH_MAX = 20;
+
 /** Stores/services every chat command may need; the caller wires the shared singletons in. */
 export interface CommandDeps extends GlossaryCommandDeps {
   watchwords: WatchwordStore;
@@ -65,7 +68,12 @@ export function parseCommand(trimmed: string): { spec: CommandSpec; rest: string
 
 export const HELP_TEXT = [
   '指令一覽：',
-  '建議詞彙：/g 詞 = nghĩa（管理員=直接新增）',
+  '建議詞彙：/g 詞 = nghĩa',
+  '  新詞 → 送出建議待管理員審核',
+  '  全域已有相同譯法 → 不變更',
+  '  全域譯法不同 → 設為本群專用（只影響本群）',
+  '全域新增：/g global 詞 = nghĩa（管理員）',
+  '全域刪除：/g gdel 詞（管理員）',
   '列出詞彙：/g',
   '待審清單：/g pending（管理員）',
   '核准建議：/g ok 編號（管理員）',
@@ -116,14 +124,58 @@ export async function handleGlossaryCommand(
   const rest = lines[0] ?? '';
   const author = msg.author || msg.from;
   const canMutate = isGlossaryAdmin(deps.adminIds, author);
-  const batch = lines.length > 1 ? lines.filter(l => l !== '') : lines;
-  const reply = batch.map(l => deps.glossary.command(l, canMutate, author)).join('\n');
+  // A pasted batch can hold many lines; cap it so one message can't create dozens of overrides and
+  // dozens of notifications in one go.
+  const batch = (lines.length > 1 ? lines.filter(l => l !== '') : lines).slice(0, GLOSSARY_BATCH_MAX);
+  const groupId = msg.isGroup ? msg.chatId : undefined;
+  const before = deps.glossary.overrideLayer.count();
+  const reply = batch.map(l => deps.glossary.command(l, { canMutate, sender: author, groupId })).join('\n');
   // ponytail: long lists (full glossary / pending queue) DM the author so they don't flood the
   // group; short results (add/suggest/ok/no/del acks, usage) reply in place.
   const isList = batch.length === 1 && (rest === '' || /^pending(?=\s|$)/i.test(rest));
   const target = msg.isGroup && isList ? author : msg.chatId;
   if (!target) return;
   await deps.messageService.sendText(sessionId, { chatId: target, text: BOT_MARKER + reply });
+
+  const written = deps.glossary.overrideLayer.count() - before;
+  if (written > 0 && groupId) {
+    console.log(`[glossary] override group=${groupId} author=${author} written=${written}`);
+    // Once per command, not once per line: a pasted batch would otherwise DM every admin N times.
+    await notifyAgreedOverrides(deps, sessionId, batch);
+  }
+}
+
+/**
+ * When a second group independently lands on the same override, that is no longer a local exception
+ * — it is evidence the shared term is wrong. Push it to the admins rather than leaving it for
+ * someone to notice on a dashboard: the people who can act are factory staff with day jobs, and
+ * unprompted maintenance work does not happen.
+ */
+async function notifyAgreedOverrides(deps: GlossaryCommandDeps, sessionId: string, batch: string[]): Promise<void> {
+  const seen = new Set<string>();
+  const notices: string[] = [];
+  for (const line of batch) {
+    const m = line.match(/^(.+?)\s*(?:=|→|->)\s*(.+)$/);
+    if (!m) continue;
+    const [zh, vi] = [m[1].trim(), m[2].trim()];
+    const groups = deps.glossary.overrideLayer.groupsAgreeingOn(zh, vi);
+    if (groups.length < 2 || seen.has(zh)) continue;
+    seen.add(zh);
+    notices.push(`${groups.length} 個群都把「${zh}」改成「${vi}」，要改成全域嗎？回覆 /g global ${zh} = ${vi}`);
+  }
+  if (!notices.length) return;
+  if (!deps.adminIds.size) {
+    // Degrades to a log rather than silently doing nothing — the same empty-admin-list footgun that
+    // already bit this module once.
+
+    console.warn(`[glossary] ${notices.length} override(s) agreed across groups but TRANSLATE_ADMIN_IDS is empty`);
+    return;
+  }
+  const text = BOT_MARKER + notices.join('\n');
+  for (const admin of deps.adminIds) {
+    // Best-effort: a failed admin DM must not roll back an override the group already saw acked.
+    await deps.messageService.sendText(sessionId, { chatId: admin, text }).catch(() => undefined);
+  }
 }
 
 // Keyword alerts are per-user (each manages their own list), so no admin gate. The ack replies in the

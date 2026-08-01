@@ -354,7 +354,41 @@ export class Glossary {
    *   /glossary suggest 中文 = vi       queue a suggestion (anyone; `sender` is recorded)
    *   /glossary pending|approve|reject  admin review of queued suggestions
    */
-  command(rest: string, canMutate: boolean, sender = ''): string {
+  command(
+    rest: string,
+    opts: { canMutate: boolean; sender?: string; groupId?: string } | boolean,
+    legacySender = '',
+  ): string {
+    // Accepts the old positional form so existing callers/tests keep working.
+    const o = typeof opts === 'boolean' ? { canMutate: opts, sender: legacySender, groupId: undefined } : opts;
+    const canMutate = o.canMutate;
+    const sender = o.sender ?? '';
+    const groupId = o.groupId;
+
+    // Admin-only explicit global verbs. Without these an admin can never touch the shared glossary
+    // from WhatsApp: DMs return before command dispatch, so every /g arrives with a groupId, and the
+    // bare form would turn an admin's global correction into a group override.
+    const globalSet = rest.match(/^global\s+(.+?)\s*(?:=|→|->)\s*(.+)$/i);
+    if (globalSet) {
+      if (!canMutate) return '此指令僅限管理員使用。/ Chỉ quản trị viên.';
+      const [zh, vi] = [globalSet[1].trim(), globalSet[2].trim()];
+      if (!zh || !vi) return '格式錯誤：/g global 中文 = tiếng Việt';
+      this.add(zh, vi);
+      return `已更新全域術語 / Đã cập nhật từ điển chung：${zh} ⇄ ${vi}`;
+    }
+    const globalDel = rest.match(/^gdel\s+(.+)$/i);
+    if (globalDel) {
+      if (!canMutate) return '此指令僅限管理員使用。/ Chỉ quản trị viên.';
+      const term = globalDel[1].trim();
+      return this.remove(term)
+        ? `已從全域移除 / Đã xoá khỏi từ điển chung：${term}`
+        : `全域找不到此術語 / Không tìm thấy：${term}`;
+    }
+
+    return this.commandRest(rest, canMutate, sender, groupId);
+  }
+
+  private commandRest(rest: string, canMutate: boolean, sender: string, groupId?: string): string {
     if (!rest || /^list$/i.test(rest)) {
       const lines: string[] = [];
       for (const [key, terms] of Object.entries(this.data)) {
@@ -382,13 +416,28 @@ export class Glossary {
       const zh = bare[1].trim();
       const vi = bare[2].trim();
       if (zh && vi) {
+        // Three outcomes, and the reply has to make clear WHICH one happened — they have very
+        // different consequences and the audience is bilingual.
+        const outcome = this.classifyWrite(zh, vi);
+        if (outcome === 'same') return `已存在，未變更 / Đã có sẵn：${zh} ⇄ ${vi}`;
+
+        if (outcome === 'conflict' && groupId) {
+          // The shared glossary says something else. Scoping the disagreement to this group affects
+          // only this group, so a member may do it without review — and the reply is posted in the
+          // group, which is what makes it socially visible.
+          const current = (this.data['zh-tw:vi'] || {})[Glossary.orient(zh, vi)[0]];
+          this.setOverride(groupId, zh, vi);
+          return `已設為本群專用譯法 / Đã đặt riêng cho nhóm này：${zh} → ${vi}\n（全域仍為 / Từ điển chung vẫn là：${current}）`;
+        }
+
         if (canMutate) {
           this.add(zh, vi);
-          return `已新增術語：${zh} ⇄ ${vi}`;
+          return `已新增術語 / Đã thêm：${zh} ⇄ ${vi}`;
         }
+        // Writing the SHARED glossary needs review, whatever the sender's group role.
         const id = this.suggest(zh, vi, sender);
         if (id === null) return `此術語已存在或已在待審清單：${zh} ⇄ ${vi}`;
-        return `已收到建議 #${id}：${zh} ⇄ ${vi}，待管理員審核。`;
+        return `已收到建議 #${id} / Đã nhận đề xuất：${zh} ⇄ ${vi}，待管理員審核 / chờ duyệt。`;
       }
     }
 
