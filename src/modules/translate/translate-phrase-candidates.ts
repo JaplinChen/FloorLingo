@@ -7,8 +7,8 @@ import { memoryDbPath } from './translate-memory';
 // whole-sentence candidates and the word-level candidates never mix (different count semantics).
 interface SqliteDb {
   run(sql: string, params: unknown[], cb?: (err: Error | null) => void): void;
-  all(sql: string, params: unknown[], cb: (err: Error | null, rows: PhraseRow[]) => void): void;
-  get(sql: string, params: unknown[], cb: (err: Error | null, row?: PhraseRow) => void): void;
+  all<T>(sql: string, params: unknown[], cb: (err: Error | null, rows: T[]) => void): void;
+  get<T>(sql: string, params: unknown[], cb: (err: Error | null, row?: T) => void): void;
   serialize(): void;
 }
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -30,9 +30,31 @@ export interface PhraseCandidate {
   at: string;
 }
 
+/** Where a glossary entry came from. Recorded per event so a later revoke can be attributed. */
+export type PhraseOrigin = 'human' | 'bulk' | 'consensus' | 'cross-model' | 'manual';
+
+export interface PhraseStats {
+  pending: number;
+  approved: number;
+  dismissed: number;
+  /** Approvals and revocations inside the trailing 30-day window (lifetime totals hide current health). */
+  approved30d: number;
+  revoked30d: number;
+  /** revoked30d / approved30d, 0 when nothing was approved. The wave-gating signal. */
+  revocationRate30d: number;
+  /** Mean hours between a candidate first appearing and being reviewed; null when nothing is reviewed. */
+  reviewLatencyHours: number | null;
+}
+
+const DAY_MS = 86_400_000;
+
 /**
  * Phrase-candidate store. Mining upserts fresh phrases (bumping count on repeat, refreshing the LLM
  * translation), leaving approved/dismissed rows untouched so a curated phrase doesn't reappear.
+ *
+ * `phrase_events` is the provenance authority: one append-only row per approve/dismiss/revoke, carrying
+ * the origin. It exists so "was this entry removed because a machine picked it badly, or because a human
+ * fixed a typo?" is answerable — without it the revocation rate cannot gate anything.
  */
 export class PhraseCandidates {
   private db: SqliteDb | null = null;
@@ -43,6 +65,13 @@ export class PhraseCandidates {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     const db = new sqlite3.Database(this.file);
     db.serialize(); // serialized mode — same rationale as TranslationMemory
+    // Two connections (this one and TranslationMemory) share the file: serialize() only orders
+    // statements within a connection, so without these a bulk write hands the other one SQLITE_BUSY.
+    // Callbacks are load-bearing: journal_mode takes a brief write lock, so another process holding
+    // the file makes it fail. WAL is an optimisation — busy_timeout is the actual fix — so a failure
+    // here must not take the connection down with it.
+    db.run(`PRAGMA busy_timeout = 5000`, [], () => {});
+    db.run(`PRAGMA journal_mode = WAL`, [], () => {});
     db.run(
       `CREATE TABLE IF NOT EXISTS phrase_candidates (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,6 +86,20 @@ export class PhraseCandidates {
       [],
     );
     db.run(`CREATE INDEX IF NOT EXISTS idx_pc_status_count ON phrase_candidates(status, count DESC)`, []);
+    // Added after the table shipped; the error on an existing column is the expected no-op.
+    db.run(`ALTER TABLE phrase_candidates ADD COLUMN origin TEXT`, [], () => {});
+    db.run(`ALTER TABLE phrase_candidates ADD COLUMN reviewed_at TEXT`, [], () => {});
+    db.run(
+      `CREATE TABLE IF NOT EXISTS phrase_events (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         phrase TEXT NOT NULL,
+         kind TEXT NOT NULL,
+         origin TEXT NOT NULL,
+         at TEXT NOT NULL
+       )`,
+      [],
+    );
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pe_at ON phrase_events(at)`, []);
     this.db = db;
   }
 
@@ -81,7 +124,7 @@ export class PhraseCandidates {
   list(limit = 50): Promise<PhraseCandidate[]> {
     return new Promise(resolve => {
       if (!this.db) return resolve([]);
-      this.db.all(
+      this.db.all<PhraseRow>(
         `SELECT id, phrase, translated, count, updated_at FROM phrase_candidates
            WHERE status = 'new' ORDER BY count DESC, updated_at DESC LIMIT ?`,
         [Math.max(1, Math.min(500, limit))],
@@ -93,7 +136,7 @@ export class PhraseCandidates {
   private get(id: number): Promise<PhraseCandidate | null> {
     return new Promise(resolve => {
       if (!this.db) return resolve(null);
-      this.db.get(
+      this.db.get<PhraseRow>(
         `SELECT id, phrase, translated, count, updated_at FROM phrase_candidates WHERE id = ?`,
         [id],
         (err, r) => resolve(err || !r ? null : toCandidate(r)),
@@ -101,23 +144,112 @@ export class PhraseCandidates {
     });
   }
 
-  private setStatus(id: number, status: 'approved' | 'dismissed'): Promise<void> {
+  private setStatus(id: number, status: 'approved' | 'dismissed', origin: PhraseOrigin): Promise<void> {
     return new Promise(resolve => {
       if (!this.db) return resolve();
-      this.db.run(`UPDATE phrase_candidates SET status = ? WHERE id = ?`, [status, id], () => resolve());
+      this.db.run(
+        `UPDATE phrase_candidates SET status = ?, origin = ?, reviewed_at = ? WHERE id = ?`,
+        [status, origin, new Date().toISOString(), id],
+        () => resolve(),
+      );
+    });
+  }
+
+  /** Append one provenance row. Best-effort: a failed event must never block the approval itself. */
+  private logEvent(phrase: string, kind: 'approved' | 'dismissed' | 'revoked', origin: PhraseOrigin): Promise<void> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve();
+      this.db.run(
+        `INSERT INTO phrase_events (phrase, kind, origin, at) VALUES (?, ?, ?, ?)`,
+        [phrase, kind, origin, new Date().toISOString()],
+        () => resolve(),
+      );
     });
   }
 
   /** Mark approved and return the row so the caller can add it to the glossary. */
-  async takeForApproval(id: number): Promise<PhraseCandidate | null> {
+  async takeForApproval(id: number, origin: PhraseOrigin = 'human'): Promise<PhraseCandidate | null> {
     const row = await this.get(id);
     if (!row) return null;
-    await this.setStatus(id, 'approved');
+    await this.setStatus(id, 'approved', origin);
+    await this.logEvent(row.phrase, 'approved', origin);
     return row;
   }
 
-  dismiss(id: number): Promise<void> {
-    return this.setStatus(id, 'dismissed');
+  async dismiss(id: number): Promise<void> {
+    const row = await this.get(id);
+    await this.setStatus(id, 'dismissed', 'human');
+    if (row) await this.logEvent(row.phrase, 'dismissed', 'human');
+  }
+
+  /**
+   * Record that a glossary term was removed, attributed to whatever origin last approved it. A term
+   * never approved through this pipeline is `manual` — counting those as revocations would make the
+   * rate meaningless (a human fixing their own typo is not a bad machine suggestion).
+   */
+  async recordRevoke(phrase: string): Promise<void> {
+    const p = phrase.trim();
+    if (!p) return;
+    await this.logEvent(p, 'revoked', await this.lastApprovalOrigin(p));
+  }
+
+  private lastApprovalOrigin(phrase: string): Promise<PhraseOrigin> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve('manual');
+      this.db.get<{ origin?: string }>(
+        `SELECT origin FROM phrase_events WHERE phrase = ? AND kind = 'approved' ORDER BY id DESC LIMIT 1`,
+        [phrase],
+        (err, r) => resolve(err || !r?.origin ? 'manual' : (r.origin as PhraseOrigin)),
+      );
+    });
+  }
+
+  /** Queue health for the dashboard: is review keeping up, and is what we approve staying approved? */
+  async stats(): Promise<PhraseStats> {
+    const empty: PhraseStats = {
+      pending: 0,
+      approved: 0,
+      dismissed: 0,
+      approved30d: 0,
+      revoked30d: 0,
+      revocationRate30d: 0,
+      reviewLatencyHours: null,
+    };
+    if (!this.db) return empty;
+    const cutoff = new Date(Date.now() - 30 * DAY_MS).toISOString();
+    const byStatus = await this.rows<{ status: string; n: number }>(
+      `SELECT status, COUNT(*) AS n FROM phrase_candidates GROUP BY status`,
+      [],
+    );
+    const byKind = await this.rows<{ kind: string; n: number }>(
+      `SELECT kind, COUNT(*) AS n FROM phrase_events WHERE at >= ? AND origin != 'manual' GROUP BY kind`,
+      [cutoff],
+    );
+    const latency = await this.rows<{ h: number | null }>(
+      `SELECT AVG(julianday(reviewed_at) - julianday(created_at)) * 24 AS h
+         FROM phrase_candidates WHERE reviewed_at IS NOT NULL`,
+      [],
+    );
+    const status = (k: string) => byStatus.find(r => r.status === k)?.n ?? 0;
+    const kind = (k: string) => byKind.find(r => r.kind === k)?.n ?? 0;
+    const approved30d = kind('approved');
+    const revoked30d = kind('revoked');
+    return {
+      pending: status('new'),
+      approved: status('approved'),
+      dismissed: status('dismissed'),
+      approved30d,
+      revoked30d,
+      revocationRate30d: approved30d ? revoked30d / approved30d : 0,
+      reviewLatencyHours: latency[0]?.h ?? null,
+    };
+  }
+
+  private rows<T>(sql: string, params: unknown[]): Promise<T[]> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve([]);
+      this.db.all<T>(sql, params, (err, r) => resolve(err || !r ? [] : r));
+    });
   }
 }
 

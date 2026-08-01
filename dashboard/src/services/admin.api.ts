@@ -215,6 +215,17 @@ export interface PhraseCandidate {
   at: string;
 }
 
+/** 審核佇列健康度：撤銷率是判斷「自動收錄值不值得做」的訊號。 */
+export interface PhraseStats {
+  pending: number;
+  approved: number;
+  dismissed: number;
+  approved30d: number;
+  revoked30d: number;
+  revocationRate30d: number;
+  reviewLatencyHours: number | null;
+}
+
 export interface SenderEntry {
   jid: string; // @mention 的號碼 (digits)
   name: string; // 顯示名稱
@@ -356,6 +367,7 @@ export const translateApi = {
   dismissMemoryCandidate: (id: number) =>
     request<TranslationCandidate[]>(`/translate/memory/${id}`, { method: 'DELETE' }),
   getPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases'),
+  getPhraseStats: () => request<PhraseStats>('/translate/memory/phrases/stats'),
   scanPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases/scan', { method: 'POST' }),
   approvePhraseCandidate: (id: number) =>
     request<PhraseCandidate[]>(`/translate/memory/phrases/${id}/approve`, { method: 'POST' }),

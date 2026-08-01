@@ -9,6 +9,13 @@ import { parseCommand, type CommandDeps } from './translate-commands';
 import { ContactService } from '../contact/contact.service';
 import { ConcurrencyLimiter } from '../../common/utils/concurrency-limiter';
 
+// Without this every suite in this file opens the REAL data/translations.sqlite, writing fixture rows
+// into the production memory + candidate tables and racing the other jest workers for its write lock.
+process.env.TRANSLATE_MEMORY_DB_PATH = path.join(
+  fs.mkdtempSync(path.join(os.tmpdir(), 'translate-spec-')),
+  'translations.sqlite',
+);
+
 describe('TranslateService glossary', () => {
   let glossaryPath: string;
   let sendersPath: string;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2, BookMarked, Plus, Trash2 } from 'lucide-react';
-import { translateApi, type GlossaryTerm, type PendingGlossaryTerm, type TranslationCandidate, type PhraseCandidate } from '../services/api';
+import { translateApi, type GlossaryTerm, type PendingGlossaryTerm, type TranslationCandidate, type PhraseCandidate, type PhraseStats } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import { useToast } from '../components/Toast';
@@ -34,6 +34,7 @@ export function Glossary() {
   const [candTotal, setCandTotal] = useState(0);
   const [candPage, setCandPage] = useState(1);
   const [phrases, setPhrases] = useState<PhraseCandidate[]>([]);
+  const [stats, setStats] = useState<PhraseStats | null>(null);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [catInput, setCatInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,10 @@ export function Glossary() {
       .then(list => active && setPhrases(list))
       .catch(err => active && fail(err));
     translateApi
+      .getPhraseStats()
+      .then(s => active && setStats(s))
+      .catch(() => active && setStats(null));
+    translateApi
       .getCategories()
       .then(list => active && setCustomCategories(list.filter(c => !BUILTIN_CATEGORIES.includes(c))))
       .catch(err => active && fail(err));
@@ -85,10 +90,14 @@ export function Glossary() {
     };
   }, []);
 
+  // Stats are advisory: a failure here must not surface as an error toast over a working queue.
+  const refreshStats = () => translateApi.getPhraseStats().then(setStats).catch(() => setStats(null));
+
   const scanPhrases = async () => {
     setScanning(true);
     try {
       setPhrases(await translateApi.scanPhraseCandidates());
+      await refreshStats();
     } catch (err) {
       fail(err);
     } finally {
@@ -101,6 +110,7 @@ export function Glossary() {
     try {
       setPhrases(await translateApi.approvePhraseCandidate(id));
       setTerms(await translateApi.getGlossary());
+      await refreshStats();
       toast.success(t('glossary.candidateApproved'));
     } catch (err) {
       fail(err);
@@ -113,6 +123,7 @@ export function Glossary() {
     setBusy(true);
     try {
       setPhrases(await translateApi.dismissPhraseCandidate(id));
+      await refreshStats();
     } catch (err) {
       fail(err);
     } finally {
@@ -367,6 +378,29 @@ export function Glossary() {
         <>
           <section className="etable-panel">
             {/* No panel title: the glossary tab bar already shows this count. */}
+            {stats && (
+              // Revocation rate gets the emphasis slot: it is the one number that says whether what
+              // we approve stays approved, and it decides whether auto-promotion is worth building.
+              <dl className="phrase-stats">
+                <div className="phrase-stat phrase-stat-lead">
+                  <dt>{t('glossary.statsRevocationRate')}</dt>
+                  <dd>{(stats.revocationRate30d * 100).toFixed(0)}%</dd>
+                  <span>{t('glossary.statsWindow', { approved: stats.approved30d, revoked: stats.revoked30d })}</span>
+                </div>
+                <div className="phrase-stat">
+                  <dt>{t('glossary.statsPending')}</dt>
+                  <dd>{stats.pending}</dd>
+                </div>
+                <div className="phrase-stat">
+                  <dt>{t('glossary.statsReviewed')}</dt>
+                  <dd>{stats.approved + stats.dismissed}</dd>
+                </div>
+                <div className="phrase-stat">
+                  <dt>{t('glossary.statsLatency')}</dt>
+                  <dd>{stats.reviewLatencyHours === null ? '—' : `${stats.reviewLatencyHours.toFixed(1)}h`}</dd>
+                </div>
+              </dl>
+            )}
             <p className="etable-empty">{t('glossary.phrasesHint')}</p>
             {canWrite && (
               <button className="etable-add" onClick={scanPhrases} disabled={scanning}>

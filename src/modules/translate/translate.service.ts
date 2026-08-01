@@ -11,7 +11,7 @@ import { WatchwordStore } from './translate-watchwords';
 import { FeedbackStore } from './translate-feedback';
 import { CategoryStore } from './translate-categories';
 import { TranslationMemory, type Candidate } from './translate-memory';
-import { PhraseCandidates, type PhraseCandidate } from './translate-phrase-candidates';
+import { PhraseCandidates, type PhraseCandidate, type PhraseStats } from './translate-phrase-candidates';
 import { minePhrases } from './translate-phrase-miner';
 import {
   BOT_MARKER,
@@ -295,6 +295,25 @@ export class TranslateService implements OnModuleInit {
   /** Current high-frequency phrase candidates awaiting review. */
   phraseCandidates(limit?: number): Promise<PhraseCandidate[]> {
     return this.phrases.list(limit);
+  }
+
+  /** Queue health for the dashboard — pending backlog, review latency, and the revocation rate. */
+  phraseStats(): Promise<PhraseStats> {
+    return this.phrases.stats();
+  }
+
+  /**
+   * Remove a glossary pairing and record the revocation against whatever origin approved it. Routed
+   * through the service rather than the controller touching `glossaryStore` directly so provenance
+   * stays in one place — the revocation rate is what gates any future auto-promotion.
+   */
+  async removeGlossaryTerm(term: string): Promise<ReturnType<Glossary['entries']>> {
+    const removed = this.glossary.remove(term);
+    if (removed) {
+      await this.phrases.recordRevoke(term);
+      this.logger.log(`[translate:phrase-review] glossary term revoked: ${term}`);
+    }
+    return this.glossary.entries();
   }
 
   /**
