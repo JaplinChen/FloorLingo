@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, X, Search, Plus, Trash2, Pencil } from 'lucide-react';
+import { Check, X, Search, Plus, Trash2, Pencil, SearchX } from 'lucide-react';
 import { useResizableCol } from '../hooks/useResizableCol';
-import { useSortableTable } from '../hooks/useSortableTable';
+import { useSortableTable, PAGE_SIZE } from '../hooks/useSortableTable';
 import { pageWindow } from '../utils/pageWindow';
+import { ConfirmModal } from './sessions/ConfirmModal';
 import './EditableTable.css';
 
 export type TableSortKey = 'key' | 'val' | 'count';
@@ -96,7 +97,9 @@ export function EditableKeyValueTable<T>({
       rows: catRows,
       initialKey: initialSortKey,
       descFirstKeys: ['count'],
-      searchText: r => `${rowKey(r)}\n${rowVal(r)}`,
+      // The category label is a visible column, so it has to be searchable — typing "部門" with it
+      // excluded matched nothing while the word sat on screen.
+      searchText: r => `${rowKey(r)}\n${rowVal(r)}${hasCat ? `\n${catLabelOf(rowCategory!(r))}` : ''}`,
       compare: (a, b, k) =>
         k === 'count' ? rowCount(a) - rowCount(b) : k === 'key' ? compareKey(a, b) : compareVal(a, b),
       tieBreak,
@@ -111,6 +114,15 @@ export function EditableKeyValueTable<T>({
   const [editKey, setEditKey] = useState('');
   const [editVal, setEditVal] = useState('');
   const [editCat, setEditCat] = useState('');
+  // Delete used to fire straight from the row button, one 24px target away from Edit.
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+
+  // Rows exist but a filter hid them all — distinct from "this table has no rows".
+  const narrowed = rows.length > 0 && (!!filter.trim() || catFilter !== '__all__');
+  const resetFilters = () => {
+    setFilter('');
+    setCatFilter('__all__');
+  };
 
   const add = async () => {
     const k = keyInput.trim();
@@ -181,9 +193,11 @@ export function EditableKeyValueTable<T>({
               value={catInput}
               onChange={e => setCatInput(e.target.value)}
             >
+              {/* Same labels as the filter select: this one used to relabel the ''-value option as
+                  "類別" while the filter called it "未設", so one page named the bucket twice. */}
               {categoryOptions!.map(o => (
                 <option key={o.value} value={o.value}>
-                  {o.value === '' ? categoryLabel : o.label}
+                  {o.label}
                 </option>
               ))}
             </select>
@@ -196,28 +210,40 @@ export function EditableKeyValueTable<T>({
       )}
 
       <div className="etable-search">
-        <Search size={16} className="etable-search-icon" />
-        <input
-          type="text"
-          placeholder={t('common.search')}
-          aria-label={t('common.search')}
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-        />
+        <div className="etable-search-field">
+          <Search size={16} className="etable-search-icon" />
+          <input
+            type="text"
+            placeholder={t('common.search')}
+            aria-label={t('common.search')}
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            onKeyDown={e => e.key === 'Escape' && setFilter('')}
+          />
+          {filter && (
+            <button className="etable-search-clear" onClick={() => setFilter('')} title={t('common.clearSearch')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
         {hasCat && (
-          <select
-            className="etable-cat-select etable-cat-filter"
-            aria-label={categoryLabel}
-            value={catFilter}
-            onChange={e => setCatFilter(e.target.value)}
-          >
-            <option value="__all__">{t('common.all')}</option>
-            {categoryOptions!.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          // Labelled, because the bare select sat beside the search box wearing the same border and
+          // background — there was no way to tell which of the two you could type into.
+          <label className="etable-cat-filter-label">
+            {categoryLabel}
+            <select
+              className="etable-cat-select etable-cat-filter"
+              value={catFilter}
+              onChange={e => setCatFilter(e.target.value)}
+            >
+              <option value="__all__">{t('common.all')}</option>
+              {categoryOptions!.map(o => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
 
@@ -247,10 +273,22 @@ export function EditableKeyValueTable<T>({
       )}
       <div className="etable-list">
         {filtered.length === 0 ? (
-          <div className="etable-empty">
-            {emptyIcon}
-            <p>{emptyText}</p>
-          </div>
+          // A search that matches nothing is not an empty glossary. Showing the "no terms yet"
+          // state there reads as data loss and offers no way back.
+          narrowed ? (
+            <div className="etable-empty">
+              <SearchX size={32} strokeWidth={1} />
+              <p>{t('common.noResults', { query: filter || catLabelOf(catFilter) })}</p>
+              <button className="btn-secondary" onClick={resetFilters}>
+                {t('common.clearSearchAction')}
+              </button>
+            </div>
+          ) : (
+            <div className="etable-empty">
+              {emptyIcon}
+              <p>{emptyText}</p>
+            </div>
+          )
         ) : (
           paged.map(row =>
             editing === rowKey(row) ? (
@@ -312,7 +350,11 @@ export function EditableKeyValueTable<T>({
                 <span className="etable-arrow">→</span>
                 <span className="etable-tgt">{rowVal(row)}</span>
                 <span className="etable-usage" title={t('common.usageCount')}>{rowCount(row)}</span>
-                {hasCat && <span className="etable-cat">{catLabelOf(rowCategory!(row))}</span>}
+                {hasCat && (
+                  <span className="etable-cat" title={catLabelOf(rowCategory!(row))}>
+                    {catLabelOf(rowCategory!(row))}
+                  </span>
+                )}
                 {canWrite && (
                   <div className="etable-row-actions">
                     <button
@@ -325,7 +367,7 @@ export function EditableKeyValueTable<T>({
                     </button>
                     <button
                       className="etable-del"
-                      onClick={() => onRemove(rowKey(row))}
+                      onClick={() => setPendingDelete(rowKey(row))}
                       disabled={busy}
                       title={t('common.delete')}
                     >
@@ -338,6 +380,16 @@ export function EditableKeyValueTable<T>({
           )
         )}
       </div>
+
+      {filtered.length > 0 && (
+        <p className="etable-range">
+          {t('common.showingRange', {
+            from: (current - 1) * PAGE_SIZE + 1,
+            to: Math.min(current * PAGE_SIZE, filtered.length),
+            total: filtered.length,
+          })}
+        </p>
+      )}
 
       {totalPages > 1 && (
         <div className="pagination">
@@ -355,6 +407,20 @@ export function EditableKeyValueTable<T>({
             {t('common.next')}
           </button>
         </div>
+      )}
+
+      {pendingDelete !== null && (
+        <ConfirmModal
+          title={t('common.deleteConfirmTitle')}
+          message={t('common.deleteConfirmBody', { name: pendingDelete })}
+          warning={t('common.deleteConfirmWarning')}
+          confirmLabel={t('common.delete')}
+          onConfirm={() => {
+            onRemove(pendingDelete);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </section>
   );

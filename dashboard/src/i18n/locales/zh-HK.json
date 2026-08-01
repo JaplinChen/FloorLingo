@@ -59,7 +59,14 @@
     "retry": "重試",
     "failed": "失敗：{{message}}",
     "saved": "已儲存",
-    "all": "全部"
+    "all": "全部",
+    "clearSearch": "清除搜尋",
+    "noResults": "找不到符合「{{query}}」的項目",
+    "clearSearchAction": "清除搜尋",
+    "showingRange": "顯示第 {{from}}–{{to}} 筆，共 {{total}} 筆",
+    "deleteConfirmTitle": "確定要刪除？",
+    "deleteConfirmBody": "「{{name}}」將被刪除。",
+    "deleteConfirmWarning": "此操作無法復原。"
   },
   "theme": {
     "light": "淺色",

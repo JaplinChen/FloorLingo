@@ -59,7 +59,14 @@
     "retry": "重试",
     "failed": "失败：{{message}}",
     "saved": "已保存",
-    "all": "全部"
+    "all": "全部",
+    "clearSearch": "清除搜索",
+    "noResults": "找不到符合“{{query}}”的项目",
+    "clearSearchAction": "清除搜索",
+    "showingRange": "显示第 {{from}}–{{to}} 条，共 {{total}} 条",
+    "deleteConfirmTitle": "确定要删除？",
+    "deleteConfirmBody": "“{{name}}”将被删除。",
+    "deleteConfirmWarning": "此操作无法恢复。"
   },
   "theme": {
     "light": "浅色",
