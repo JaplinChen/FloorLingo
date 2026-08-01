@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -43,6 +44,7 @@ export const memoryDbPath = (): string => process.env.TRANSLATE_MEMORY_DB_PATH |
  */
 export class TranslationMemory {
   private db: SqliteDb | null = null;
+  private readonly logger = new Logger(TranslationMemory.name);
 
   constructor(private readonly file = memoryDbPath()) {}
 
@@ -50,6 +52,11 @@ export class TranslationMemory {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     const db = new sqlite3.Database(this.file);
     db.serialize(); // serialized mode for the whole connection — see SqliteDb.serialize note
+    // PhraseCandidates opens the same file on a second connection; serialize() only orders statements
+    // within one connection, so a bulk write there would hand this one SQLITE_BUSY without these.
+    // Non-fatal by design — see the matching note in PhraseCandidates.init().
+    db.run(`PRAGMA busy_timeout = 5000`, [], () => {});
+    db.run(`PRAGMA journal_mode = WAL`, [], () => {});
     db.run(
       `CREATE TABLE IF NOT EXISTS translation_memory (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,8 +88,10 @@ export class TranslationMemory {
        VALUES (?, ?, ?, 1, 'new', ?, ?)
        ON CONFLICT(pair_key, source) DO UPDATE SET count = count + 1, translated = excluded.translated, updated_at = excluded.updated_at`,
       [pairKey, s, t, now, now],
-      () => {
-        /* best-effort */
+      err => {
+        // Still best-effort for the translation path, but no longer silent: a swallowed SQLITE_BUSY
+        // here stops the candidate pipeline being fed and looks like "mining found nothing".
+        if (err) this.logger.warn(`[translate:phrase-review] memory record failed: ${err.message}`);
       },
     );
   }

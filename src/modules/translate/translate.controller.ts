@@ -17,7 +17,7 @@ import { TranslateService } from './translate.service';
 import type { TranslateConfig } from './translate.service';
 import type { PendingSuggestion } from './translate-glossary';
 import type { Candidate } from './translate-memory';
-import type { PhraseCandidate } from './translate-phrase-candidates';
+import type { PhraseCandidate, PhraseStats } from './translate-phrase-candidates';
 import { ContactService } from '../contact/contact.service';
 import { GroupService } from '../group/group.service';
 import type { Contact, Group } from '../../engine/interfaces/whatsapp-engine.types';
@@ -118,11 +118,12 @@ export class TranslateController {
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'Remove any glossary pairing where the term appears on either side' })
   @ApiResponse({ status: 200, description: 'Updated glossary terms' })
-  removeGlossary(@Query('term') term: string): GlossaryEntry[] {
+  removeGlossary(@Query('term') term: string): Promise<GlossaryEntry[]> {
     const trimmed = (term ?? '').trim();
     if (!trimmed) throw new BadRequestException('term is required');
-    this.translateService.glossaryStore.remove(trimmed);
-    return this.translateService.glossaryStore.entries();
+    // Via the service, not the store: removal is recorded as a revocation against the origin that
+    // approved the term, which is what the dashboard's revocation rate is computed from.
+    return this.translateService.removeGlossaryTerm(trimmed);
   }
 
   @Get('glossary/pending')
@@ -199,6 +200,14 @@ export class TranslateController {
   @ApiResponse({ status: 200, description: 'Phrase candidates ordered by frequency' })
   getPhraseCandidates(@Query('limit') limit?: string): Promise<PhraseCandidate[]> {
     return this.translateService.phraseCandidates(limit ? Number(limit) : undefined);
+  }
+
+  @Get('memory/phrases/stats')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Phrase review queue health: backlog, latency, 30-day revocation rate' })
+  @ApiResponse({ status: 200, description: 'Queue statistics' })
+  getPhraseStats(): Promise<PhraseStats> {
+    return this.translateService.phraseStats();
   }
 
   @Post('memory/phrases/:id/approve')

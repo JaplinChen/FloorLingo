@@ -2689,6 +2689,21 @@
         ]
       }
     },
+    "/api/translate/memory/phrases/stats": {
+      "get": {
+        "operationId": "TranslateController_getPhraseStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Queue statistics"
+          }
+        },
+        "summary": "Phrase review queue health: backlog, latency, 30-day revocation rate",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/memory/phrases/{id}/approve": {
       "post": {
         "operationId": "TranslateController_approvePhraseCandidate",
