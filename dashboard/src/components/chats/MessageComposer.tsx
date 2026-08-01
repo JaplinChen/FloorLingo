@@ -157,7 +157,7 @@ export function MessageComposer({
             className="btn-send-message"
             aria-label={t('chats.send')}
           >
-            {sending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+            {sending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
           </button>
         </form>
       </footer>

@@ -30,6 +30,7 @@
   justify-content: center;
   width: 44px;
   height: 44px;
+  padding: 0;
   background: var(--primary);
   border: none;
   border-radius: 50%;
@@ -46,8 +47,8 @@
 }
 
 .chats-page .btn-send-message:disabled{
-  background: var(--border);
-  color: var(--text-muted);
+  background: var(--bg-light);
+  color: var(--text-secondary);
   cursor: not-allowed;
   box-shadow: none;
 }

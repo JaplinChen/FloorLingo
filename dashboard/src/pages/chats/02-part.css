@@ -47,19 +47,22 @@
   z-index: 5;
   width: 40px;
   height: 40px;
+  /* Reset the global `button` padding (0.6em 1.2em): with box-sizing:border-box it collapses the
+     chevron to 0px wide and the button renders as an empty circle. Same trap as .room-back. */
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--bg-white);
-  color: var(--text-secondary, #9aa0a6);
+  color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   cursor: pointer;
 }
 
 .chats-page .scroll-to-bottom-btn:hover{
-  color: var(--text-primary, #e8eaed);
+  background: var(--bg-hover, var(--bg-light));
 }
 
 .chats-page .room-header{
