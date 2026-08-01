@@ -49,6 +49,9 @@ describe('TranslateService glossary', () => {
       'translate-config.json',
     );
     sent = [];
+    // The mutating /glossary subcommands are admin-gated and the gate fails CLOSED, so these tests
+    // have to say who the admin is. makeMsg()'s author is u@c.us.
+    process.env.TRANSLATE_ADMIN_IDS = 'u@c.us';
     const messageService = {
       sendText: (_s: string, dto: { chatId: string; text: string }) => {
         sent.push(dto);

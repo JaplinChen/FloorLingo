@@ -1,6 +1,7 @@
 import { MessageService } from '../message/message.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { Glossary } from './translate-glossary';
+import { jidDigits } from './translate-senders';
 import { WatchwordStore } from './translate-watchwords';
 import { FeedbackStore } from './translate-feedback';
 import { BOT_MARKER } from './translate-lang';
@@ -83,8 +84,24 @@ export interface GlossaryCommandDeps {
   messageService: MessageService;
 }
 
-// Marker-prefixed reply so the bot never re-translates its own output. Admin allowlist (if set)
-// gates mutating subcommands; the parsing/persistence lives in Glossary.
+/**
+ * Who may mutate the glossary from WhatsApp. Two properties, both learned the hard way:
+ *
+ *  - **An empty allowlist grants nobody.** It used to grant everybody — every member of every
+ *    translated group could add or delete terms, and a glossary term is injected into every later
+ *    translation as a mandatory-use directive. "Nobody configured admins yet" is not consent.
+ *    Suggestions (`/g 詞 = nghĩa`) are unaffected: anyone may still propose, an admin approves.
+ *  - **Compare JID user parts, not JIDs.** The same person arrives as `@c.us`, `@s.whatsapp.net` or
+ *    `@lid` depending on engine and chat type, so a raw compare silently refuses a configured admin.
+ */
+export function isGlossaryAdmin(adminIds: Set<string>, author: string | undefined): boolean {
+  if (!adminIds.size || !author) return false;
+  const who = jidDigits(author);
+  return [...adminIds].some(id => jidDigits(id) === who);
+}
+
+// Marker-prefixed reply so the bot never re-translates its own output. The admin allowlist gates
+// mutating subcommands; the parsing/persistence lives in Glossary.
 export async function handleGlossaryCommand(
   deps: GlossaryCommandDeps,
   sessionId: string,
@@ -98,7 +115,7 @@ export async function handleGlossaryCommand(
     .filter((l, i) => i === 0 || l !== '');
   const rest = lines[0] ?? '';
   const author = msg.author || msg.from;
-  const canMutate = deps.adminIds.size === 0 || deps.adminIds.has(author);
+  const canMutate = isGlossaryAdmin(deps.adminIds, author);
   const batch = lines.length > 1 ? lines.filter(l => l !== '') : lines;
   const reply = batch.map(l => deps.glossary.command(l, canMutate, author)).join('\n');
   // ponytail: long lists (full glossary / pending queue) DM the author so they don't flood the
