@@ -119,3 +119,81 @@ describe('OverrideLayer', () => {
     expect(l.all()).toEqual([]);
   });
 });
+
+describe('OverrideLayer.pruneRedundant', () => {
+  it('drops an override once the shared glossary adopts its wording', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    l.set('B@g.us', '生產', 'khác hẳn');
+
+    // Admin ran /g global 生產 = sản xuất: A's override no longer deviates, B's still does.
+    expect(l.pruneRedundant([{ zh: '生產', vi: 'sản xuất' }])).toBe(1);
+    expect(l.get('A@g.us', 'zh-tw:vi', '生產')).toBeUndefined();
+    expect(l.get('B@g.us', 'zh-tw:vi', '生產')).toBe('khác hẳn');
+  });
+
+  it('drops the reverse half too, or vi->zh keeps being shadowed', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    l.pruneRedundant([{ zh: '生產', vi: 'sản xuất' }]);
+    expect(l.get('A@g.us', 'vi:zh-tw', 'sản xuất')).toBeUndefined();
+    expect(l.count()).toBe(0);
+  });
+
+  it('leaves overrides that still differ, and reports zero', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    expect(l.pruneRedundant([{ zh: '生產', vi: 'san xuat' }])).toBe(0); // different value
+    expect(l.pruneRedundant([{ zh: '出貨', vi: 'giao hàng' }])).toBe(0); // different term
+    expect(l.count()).toBe(1);
+  });
+
+  it('handles a batch across several groups in one pass', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    l.set('B@g.us', '生產', 'sản xuất');
+    l.set('B@g.us', '出貨', 'xuất kho');
+    expect(
+      l.pruneRedundant([
+        { zh: '生產', vi: 'sản xuất' },
+        { zh: '出貨', vi: 'xuất kho' },
+      ]),
+    ).toBe(3);
+    expect(l.count()).toBe(0);
+  });
+
+  it('persists the pruning', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ovr-prune-'));
+    const file = path.join(dir, 'o.json');
+    const first = new OverrideLayer(file);
+    first.load();
+    first.set('A@g.us', '生產', 'sản xuất');
+    first.pruneRedundant([{ zh: '生產', vi: 'sản xuất' }]);
+
+    const second = new OverrideLayer(file);
+    expect(second.load()).toBe(0);
+  });
+});
+
+describe('OverrideLayer empty-layer cleanup', () => {
+  it('forgets a group once its last override goes, by either path', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    l.set('B@g.us', '出貨', 'xuất kho');
+
+    l.remove('A@g.us', '生產');
+    expect(Object.keys(l.counts())).toEqual(['b']); // no empty shell for A
+
+    l.pruneRedundant([{ zh: '出貨', vi: 'xuất kho' }]);
+    expect(l.counts()).toEqual({});
+    expect(l.all()).toEqual([]);
+  });
+
+  it('keeps a group that still has other overrides', () => {
+    const l = layer();
+    l.set('A@g.us', '生產', 'sản xuất');
+    l.set('A@g.us', '出貨', 'xuất kho');
+    l.remove('A@g.us', '生產');
+    expect(l.counts()).toEqual({ a: 1 });
+  });
+});

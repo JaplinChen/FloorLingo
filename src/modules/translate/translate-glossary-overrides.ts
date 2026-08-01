@@ -132,8 +132,53 @@ export class OverrideLayer {
         }
       }
     }
-    if (removed) this.save();
+    if (removed) {
+      this.dropEmptyLayers();
+      this.save();
+    }
     return removed;
+  }
+
+  /**
+   * Drop overrides that now say exactly what the shared glossary says, and report how many went.
+   *
+   * An override only means something as a deviation. The moment an admin adopts a group's wording
+   * into the shared glossary, that group's override stops overriding anything — it becomes a row
+   * that reads "生產 → sản xuất, shared: sản xuất" and never goes away on its own. Left alone these
+   * accumulate one per adopted suggestion, which is exactly the "duplication has to be self-healing
+   * or it won't heal" failure the design set out to avoid.
+   *
+   * Takes the whole batch and saves once, matching Glossary.addMany's one-write-per-file rule.
+   */
+  pruneRedundant(pairs: { zh: string; vi: string }[]): number {
+    let pruned = 0;
+    for (const layer of Object.values(this.data)) {
+      for (const { zh, vi } of pairs) {
+        if (layer['zh-tw:vi']?.[zh] !== vi) continue;
+        delete layer['zh-tw:vi'][zh];
+        // The reverse entry is the same override seen from the other side; leaving it behind would
+        // keep shadowing vi->zh for that group after the forward half is gone.
+        if (layer['vi:zh-tw']?.[vi] === zh) delete layer['vi:zh-tw'][vi];
+        pruned++;
+      }
+    }
+    if (pruned) {
+      this.dropEmptyLayers();
+      this.save();
+    }
+    return pruned;
+  }
+
+  /**
+   * Forget a group once its last override is gone. Otherwise the empty shell lingers, counts()
+   * reports the group with 0, and it shows up as a group that has overrides when it has none.
+   */
+  private dropEmptyLayers(): void {
+    for (const [group, layer] of Object.entries(this.data)) {
+      if (!Object.keys(layer['zh-tw:vi'] || {}).length && !Object.keys(layer['vi:zh-tw'] || {}).length) {
+        delete this.data[group];
+      }
+    }
   }
 
   /** Groups that override `source` to exactly `target` — drives the "≥2 groups agree" merge prompt. */
