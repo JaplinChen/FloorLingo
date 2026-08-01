@@ -121,7 +121,7 @@ describe('TranslateService glossary', () => {
     expect(saved['zh-tw:vi']['稽核']).toBe('Đánh giá');
     expect(saved['zh-tw:vi']['漏洞']).toBe('Lỗ hổng');
     expect(sent.length).toBe(1);
-    expect(sent[0].text).toContain('已新增術語：資安 ⇄ ATTT');
+    expect(sent[0].text).toContain('已新增術語 / Đã thêm：資安 ⇄ ATTT');
   });
 
   it('detects zh and vi source directions', () => {

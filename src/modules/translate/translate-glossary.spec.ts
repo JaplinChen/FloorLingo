@@ -322,3 +322,83 @@ describe('Glossary group overrides', () => {
     expect(second.overrideLayer.count()).toBe(1);
   });
 });
+
+describe('Glossary /g write dispatch', () => {
+  const make = (): Glossary => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gl-cmd-'));
+    process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH = path.join(dir, 'ov.json');
+    const g = new Glossary(path.join(dir, 'glossary.json'));
+    g.load();
+    g.add('出貨', 'giao hàng');
+    return g;
+  };
+  const member = { canMutate: false, sender: 'u@c.us', groupId: 'A@g.us' };
+  const admin = { canMutate: true, sender: 'a@c.us', groupId: 'A@g.us' };
+
+  afterEach(() => delete process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH);
+
+  it('a new term from a member is a proposal, not a live global write', () => {
+    const g = make();
+    const reply = g.command('客戶 = khách hàng', member);
+    expect(reply).toContain('已收到建議');
+    expect(g.entries().find(e => e.source === '客戶')).toBeUndefined(); // shared asset untouched
+    expect(g.pending()).toHaveLength(1);
+  });
+
+  it('a matching term is a no-op, not a duplicate write', () => {
+    const g = make();
+    expect(g.command('出貨 = giao hàng', member)).toContain('已存在');
+    expect(g.overrideLayer.count()).toBe(0);
+    expect(g.pending()).toHaveLength(0);
+  });
+
+  it('a conflicting term becomes THIS group override, no review needed', () => {
+    const g = make();
+    const reply = g.command('出貨 = xuất kho', member);
+    expect(reply).toContain('本群專用');
+    expect(reply).toContain('giao hàng'); // reply states what global still says
+    expect(g.overrideLayer.get('A@g.us', 'zh-tw:vi', '出貨')).toBe('xuất kho');
+    expect(g.entries().find(e => e.source === '出貨')?.target).toBe('giao hàng'); // global intact
+  });
+
+  it('the three outcomes are distinguishable and bilingual', () => {
+    const g = make();
+    const replies = [
+      g.command('客戶 = khách hàng', member),
+      g.command('出貨 = giao hàng', member),
+      g.command('出貨 = xuất kho', member),
+    ];
+    expect(new Set(replies).size).toBe(3); // a member can tell which one happened
+    for (const r of replies) expect(r).toMatch(/[À-ỹ]/); // each carries Vietnamese too
+  });
+
+  it('/g global writes the shared glossary instead of an override — admin only', () => {
+    const g = make();
+    expect(g.command('global 出貨 = xuất kho', member)).toContain('僅限管理員');
+    expect(g.overrideLayer.count()).toBe(0);
+
+    expect(g.command('global 出貨 = xuất kho', admin)).toContain('已更新全域');
+    expect(g.entries().find(e => e.source === '出貨')?.target).toBe('xuất kho');
+    expect(g.overrideLayer.count()).toBe(0); // admin's global fix did NOT become a group override
+  });
+
+  it('/g gdel removes from the shared glossary — admin only', () => {
+    const g = make();
+    expect(g.command('gdel 出貨', member)).toContain('僅限管理員');
+    expect(g.command('gdel 出貨', admin)).toContain('已從全域移除');
+    expect(g.entries()).toHaveLength(0);
+    expect(g.command('gdel 不存在', admin)).toContain('找不到');
+  });
+
+  it('outside a group a conflicting write is still admin-gated, never an override', () => {
+    const g = make();
+    const noGroup = { canMutate: false, sender: 'u@c.us' };
+    expect(g.command('出貨 = xuất kho', noGroup)).toContain('已收到建議');
+    expect(g.overrideLayer.count()).toBe(0);
+  });
+
+  it('still accepts the old positional call shape', () => {
+    const g = make();
+    expect(g.command('global 客戶 = khách', true)).toContain('已更新全域');
+  });
+});
