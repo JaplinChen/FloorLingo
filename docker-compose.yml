@@ -136,6 +136,13 @@ services:
       # this line the .env value never reaches the container. Dashboard-saved translate-config.json
       # still overrides at runtime.
       - TRANSLATE_INCLUDE_FROM_ME=${TRANSLATE_INCLUDE_FROM_ME:-}
+      # Who may change the SHARED glossary from WhatsApp (/g global, /g gdel, approve/reject).
+      # Forwarded like the vars above. EMPTY GRANTS NOBODY: members can still propose terms and set
+      # their own group's override, but nobody can edit the shared glossary until this is set.
+      - TRANSLATE_ADMIN_IDS=${TRANSLATE_ADMIN_IDS:-}
+      # Daily phrase-review digest DM. Forwarded so the .env value reaches the container; unset = off.
+      - TRANSLATE_REVIEW_DM_HOUR=${TRANSLATE_REVIEW_DM_HOUR:-}
+      - TRANSLATE_REVIEW_DM_TZ=${TRANSLATE_REVIEW_DM_TZ:-}
       # Voice-note transcription. Forwarded like the vars above — without these lines the .env values
       # never reach the container and voice stays silently disabled (STT_URL empty = feature off).
       # Env-only: unlike the LLM settings there is no dashboard page and no translate-config.json entry.

@@ -81,3 +81,4 @@ CLAUDE.md
 _docs/
 .superpowers/
 .gstack/
+.env.bak-*
