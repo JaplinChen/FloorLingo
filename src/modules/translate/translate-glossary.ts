@@ -171,8 +171,8 @@ export class Glossary {
    * origin sidecars. `origin` is a 4th positional param on purpose: several callers already pass
    * `category` positionally, so an options object in slot 3 would silently break them.
    */
-  add(zh: string, vi: string, category?: string, origin?: string): void {
-    this.addMany([{ zh, vi, category, origin }]);
+  add(zh: string, vi: string, category?: string, origin?: string): number {
+    return this.addMany([{ zh, vi, category, origin }]);
   }
 
   /**
@@ -181,12 +181,14 @@ export class Glossary {
    * sidecars) per term, and atomicWriteJson falls back to a non-atomic in-place write on EBUSY/EXDEV
    * — the bind-mount case — so a restart mid-loop could truncate the file.
    */
-  addMany(pairs: { zh: string; vi: string; category?: string; origin?: string }[]): void {
-    if (!pairs.length) return;
+  addMany(pairs: { zh: string; vi: string; category?: string; origin?: string }[]): number {
+    if (!pairs.length) return 0;
     let categoryChanged = false;
     let originChanged = false;
+    const oriented: { zh: string; vi: string }[] = [];
     for (const pair of pairs) {
       const [zh, vi] = Glossary.orient(pair.zh, pair.vi);
+      oriented.push({ zh, vi });
       (this.data['zh-tw:vi'] ??= {})[zh] = vi;
       (this.data['vi:zh-tw'] ??= {})[vi] = zh;
       if (pair.category !== undefined) {
@@ -203,6 +205,10 @@ export class Glossary {
     this.save();
     if (categoryChanged) atomicWriteJson(this.categoryPath, this.categories);
     if (originChanged) this.writeOrigins();
+    // Self-heal: any group override that now matches the shared value has stopped being a deviation.
+    // Done here rather than at each call site so every path into the shared glossary — /g global, a
+    // dashboard edit, approving a suggestion, bulk-approving candidates — cleans up after itself.
+    return this.overrides.pruneRedundant(oriented);
   }
 
   /** Remove any pairing where `term` appears on either side; returns whether anything was removed. */
@@ -373,8 +379,14 @@ export class Glossary {
       if (!canMutate) return '此指令僅限管理員使用。/ Chỉ quản trị viên.';
       const [zh, vi] = [globalSet[1].trim(), globalSet[2].trim()];
       if (!zh || !vi) return '格式錯誤：/g global 中文 = tiếng Việt';
-      this.add(zh, vi);
-      return `已更新全域術語 / Đã cập nhật từ điển chung：${zh} ⇄ ${vi}`;
+      const pruned = this.add(zh, vi);
+      const base = `已更新全域術語 / Đã cập nhật từ điển chung：${zh} ⇄ ${vi}`;
+      // Say it out loud: adopting a group's wording silently deleting that group's override would be
+      // a surprise the next time someone wondered where it went.
+      return pruned
+        ? `${base}
+（已清除 ${pruned} 筆不再有差異的群組專用譯法 / đã xoá ${pruned} bản riêng không còn khác biệt）`
+        : base;
     }
     const globalDel = rest.match(/^gdel\s+(.+)$/i);
     if (globalDel) {

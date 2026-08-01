@@ -402,3 +402,49 @@ describe('Glossary /g write dispatch', () => {
     expect(g.command('global 客戶 = khách', true)).toContain('已更新全域');
   });
 });
+
+describe('Glossary self-heal on shared-glossary writes', () => {
+  const make = (): Glossary => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gl-heal-'));
+    process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH = path.join(dir, 'ov.json');
+    const g = new Glossary(path.join(dir, 'glossary.json'));
+    g.load();
+    g.add('生產', 'San xuat');
+    return g;
+  };
+  const admin = { canMutate: true, sender: 'a@c.us', groupId: 'A@g.us' };
+
+  afterEach(() => delete process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH);
+
+  it('/g global adopting a group wording removes that group override and says so', () => {
+    const g = make();
+    g.command('生產 = sản xuất', { canMutate: false, sender: 'u@c.us', groupId: 'A@g.us' });
+    expect(g.overrideLayer.count()).toBe(1);
+
+    const reply = g.command('global 生產 = sản xuất', admin);
+    expect(reply).toContain('已更新全域術語');
+    expect(reply).toContain('已清除 1 筆');
+    expect(g.overrideLayer.count()).toBe(0);
+    expect(g.entries().find(e => e.source === '生產')?.target).toBe('sản xuất');
+  });
+
+  it('every path into the shared glossary heals, not just /g global', () => {
+    const g = make();
+    g.setOverride('A@g.us', '生產', 'sản xuất');
+    // A dashboard edit / approved suggestion / bulk approval all land in addMany.
+    expect(g.addMany([{ zh: '生產', vi: 'sản xuất' }])).toBe(1);
+    expect(g.overrideLayer.count()).toBe(0);
+  });
+
+  it('a shared write that does not match leaves the override alone', () => {
+    const g = make();
+    g.setOverride('A@g.us', '生產', 'sản xuất');
+    expect(g.add('生產', 'sx khác')).toBe(0);
+    expect(g.overrideLayer.get('A@g.us', 'zh-tw:vi', '生產')).toBe('sản xuất');
+  });
+
+  it('reports nothing extra when there was nothing to prune', () => {
+    const g = make();
+    expect(g.command('global 生產 = sản xuất', admin)).not.toContain('已清除');
+  });
+});
