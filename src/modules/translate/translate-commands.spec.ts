@@ -1,4 +1,4 @@
-import { parseCommand, COMMANDS } from './translate-commands';
+import { parseCommand, COMMANDS, isGlossaryAdmin } from './translate-commands';
 
 describe('parseCommand (dispatch table)', () => {
   it('matches every alias of every registered command', () => {
@@ -25,5 +25,29 @@ describe('parseCommand (dispatch table)', () => {
   it('returns null for non-commands', () => {
     expect(parseCommand('hello')).toBeNull();
     expect(parseCommand('/unknown')).toBeNull();
+  });
+});
+
+describe('isGlossaryAdmin', () => {
+  it('grants nobody when the allowlist is empty', () => {
+    // The old behaviour was the opposite: an unconfigured list let every member of every translated
+    // group rewrite the glossary, and glossary terms are forced onto every later translation.
+    expect(isGlossaryAdmin(new Set(), 'u@c.us')).toBe(false);
+    expect(isGlossaryAdmin(new Set(), '')).toBe(false);
+    expect(isGlossaryAdmin(new Set(), undefined)).toBe(false);
+  });
+
+  it('matches a configured admin across every JID suffix', () => {
+    const admins = new Set(['886912345678@c.us']);
+    expect(isGlossaryAdmin(admins, '886912345678@c.us')).toBe(true);
+    expect(isGlossaryAdmin(admins, '886912345678@s.whatsapp.net')).toBe(true);
+    expect(isGlossaryAdmin(admins, '886912345678@lid')).toBe(true);
+    expect(isGlossaryAdmin(admins, '886912345678')).toBe(true);
+  });
+
+  it('refuses everyone else', () => {
+    const admins = new Set(['886912345678@c.us', '886900000000']);
+    expect(isGlossaryAdmin(admins, '886999999999@c.us')).toBe(false);
+    expect(isGlossaryAdmin(admins, '886900000000@lid')).toBe(true); // bare digits in config still match
   });
 });
