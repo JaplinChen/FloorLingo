@@ -1,11 +1,23 @@
-import { Injectable, OnModuleInit, BadRequestException } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, BadRequestException } from '@nestjs/common';
 import { HookManager, HookContext, HookResult } from '../../core/hooks';
 import { MessageService } from '../message/message.service';
 import { ContactService } from '../contact/contact.service';
 import { IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
 import { Glossary } from './translate-glossary';
-import { SenderDirectory } from './translate-senders';
+import { SenderDirectory, jidDigits } from './translate-senders';
+import {
+  formatReviewDm,
+  isDigestDue,
+  isEmptyReply,
+  localParts,
+  parseDmHour,
+  parseReviewReply,
+  readDigestState,
+  resolveTz,
+  writeDigestState,
+  usageText,
+} from './translate-review-dm';
 import { ShorthandTable } from './translate-shorthand';
 import { WatchwordStore } from './translate-watchwords';
 import { FeedbackStore } from './translate-feedback';
@@ -69,7 +81,7 @@ const MODEL_TRIP_AFTER = 2;
 const MODEL_COOLDOWN_MS = 60_000;
 
 @Injectable()
-export class TranslateService implements OnModuleInit {
+export class TranslateService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = createLogger('TranslateService');
   private readonly configStore = new TranslateConfigStore();
 
@@ -108,6 +120,16 @@ export class TranslateService implements OnModuleInit {
   // Bounded queue, not the default Infinity: every parked task holds its decoded audio buffer alive, so
   // an unbounded park turns a burst into heap. Overflow throws, which the caller logs as a dropped note.
   private voiceLimiter = new ConcurrencyLimiter(this.voice.concurrency, this.voice.concurrency * 4);
+
+  // Daily phrase-review DM. Disabled unless TRANSLATE_REVIEW_DM_HOUR is set to 0-23.
+  private reviewDmHour: number | null = null;
+  private reviewDmTz = 'Asia/Taipei';
+  private reviewDmTimer: NodeJS.Timeout | null = null;
+  private reviewDmStatePath = 'data/review-dm-state.json';
+  // The daily job has no HookContext, so it has no sessionId of its own. Reuse the last one seen on
+  // the receive hook rather than injecting SessionService (which risks a translate<->session cycle).
+  // Empty until the first inbound message: after a restart the digest waits, and says so in the log.
+  private lastSessionId = '';
 
   private nextSendAt = 0;
   // Running count of translations where every model failed — surfaced in logs for observability.
@@ -204,6 +226,7 @@ export class TranslateService implements OnModuleInit {
     this.memory.init();
     this.phrases = new PhraseCandidates();
     this.phrases.init();
+    this.startReviewDm();
 
     // Persisted runtime config takes precedence over .env; .env values seed the file on first run.
     this.loadConfig();
@@ -384,6 +407,112 @@ export class TranslateService implements OnModuleInit {
     return this.phrases.list();
   }
 
+  /**
+   * Handle a direct message. This is a separate, deliberately tiny command surface: it answers the
+   * daily review digest and nothing else. The `/glossary`, `/sender` and `/watch` commands stay
+   * group-only, because in a group the membership IS the authorization boundary and in a DM there
+   * is none.
+   *
+   * Fails CLOSED on an empty admin list. The group path treats "no admins configured" as "anyone in
+   * the group may edit the glossary", which is defensible there. Here it would mean anyone who knows
+   * the bot's number can write glossary entries — and glossary entries are injected into every
+   * later translation as a mandatory-use directive.
+   */
+  private async onReviewDm(sessionId: string, msg: IncomingMessage): Promise<void> {
+    if (!this.adminIds.size) return;
+    // `author` is undefined in a 1:1 chat, and the suffix differs by engine (@c.us / @s.whatsapp.net
+    // / @lid), so compare user parts.
+    const sender = jidDigits(msg.author || msg.from || '');
+    if (!sender || !this.adminDigits().has(sender)) return;
+
+    const reply = parseReviewReply(msg.body || '');
+    if (!reply) return; // not a review reply — stay quiet rather than backtalk every stray DM
+    if (isEmptyReply(reply)) return void this.dm(sessionId, msg.chatId, `無法辨識 / Không hiểu\n\n${usageText()}`);
+
+    const lines: string[] = [];
+    for (const { id, vi } of reply.corrections) lines.push(await this.applyApproval(id, vi));
+    for (const id of reply.approve) lines.push(await this.applyApproval(id));
+    for (const id of reply.reject) {
+      const row = await this.phrases.peek(id);
+      if (!row) {
+        lines.push(`#${id} 已審核或不存在 / đã xử lý hoặc không tồn tại`);
+        continue;
+      }
+      await this.phrases.dismiss(id);
+      lines.push(`#${id} 已略過 / đã bỏ qua  ${row.phrase}`);
+    }
+    this.logger.log(`[translate:phrase-review] DM reply from ${sender}: ${lines.length} action(s)`);
+    await this.dm(sessionId, msg.chatId, lines.join('\n'));
+  }
+
+  /** Approve one candidate by id, optionally overriding the Vietnamese. Echoes the pair back (D2). */
+  private async applyApproval(id: number, vi?: string): Promise<string> {
+    const row = await this.phrases.peek(id);
+    // Never guess a neighbouring row: an id that is gone is reported as gone.
+    if (!row) return `#${id} 已審核或不存在 / đã xử lý hoặc không tồn tại`;
+    const target = (vi || row.translated).trim();
+    if (!target) return `#${id} 沒有譯法可用 / chưa có bản dịch  ${row.phrase}`;
+    this.glossary.add(row.phrase, target, undefined, 'human');
+    await this.phrases.markApproved([row], 'human');
+    return `#${id} 已核准 / đã duyệt  ${row.phrase} → ${target}`;
+  }
+
+  private adminDigits(): Set<string> {
+    return new Set([...this.adminIds].map(jidDigits));
+  }
+
+  private async dm(sessionId: string, chatId: string, text: string): Promise<void> {
+    try {
+      await this.messageService.sendText(sessionId, { chatId, text });
+    } catch (err) {
+      this.logger.warn(`[translate:phrase-review] DM send to ${chatId} failed: ${String(err)}`);
+    }
+  }
+
+  /**
+   * Daily digest tick. Everything is inside the try: an unguarded throw in a timer is how "nobody
+   * got a review DM for a week" gets discovered by accident.
+   */
+  private async reviewDmTick(): Promise<void> {
+    try {
+      if (this.reviewDmHour === null) return;
+      const lastSent = readDigestState(this.reviewDmStatePath);
+      if (!isDigestDue(new Date(), this.reviewDmTz, this.reviewDmHour, lastSent)) return;
+      if (!this.adminIds.size) {
+        return this.logger.warn(
+          '[translate:phrase-review] digest due but TRANSLATE_ADMIN_IDS is empty — nobody to send to',
+        );
+      }
+      if (!this.lastSessionId) {
+        // No session seen since boot. Don't stamp the date: retry on the next tick once traffic starts.
+        return this.logger.warn('[translate:phrase-review] digest due but no session seen yet — retrying next tick');
+      }
+      const rows = await this.phrases.list(5);
+      const today = localParts(new Date(), this.reviewDmTz).date;
+      if (!rows.length) {
+        // Nothing pending: stamp the day and stay silent. A daily "nothing to review" becomes a
+        // notification people learn to ignore, which is the disengagement this loop exists to fix.
+        this.stampDigestDate(today);
+        return this.logger.log('[translate:phrase-review] digest skipped — queue empty');
+      }
+      const text = formatReviewDm(rows);
+      for (const admin of this.adminIds) await this.dm(this.lastSessionId, admin, text);
+      this.stampDigestDate(today);
+      this.logger.log(
+        `[translate:phrase-review] digest sent: ${rows.length} candidate(s) to ${this.adminIds.size} admin(s)`,
+      );
+    } catch (err) {
+      this.logger.error(`[translate:phrase-review] digest tick failed: ${String(err)}`);
+    }
+  }
+
+  private stampDigestDate(date: string): void {
+    // Left unwritten, the next tick re-sends today's digest. Loud, because that is a duplicate DM.
+    if (!writeDigestState(this.reviewDmStatePath, date)) {
+      this.logger.warn('[translate:phrase-review] could not persist digest date — today may be sent twice');
+    }
+  }
+
   /** Candidates a bulk approval at this threshold would move — the confirm step shows these rows. */
   previewBulkApproval(minCount: number): Promise<PhraseCandidate[]> {
     return this.phrases.pendingAbove(minCount);
@@ -427,6 +556,31 @@ export class TranslateService implements OnModuleInit {
     this.sentHookId = null;
   }
 
+  /**
+   * Arm the daily digest. Config problems are reported at boot rather than swallowed at 3am, and the
+   * feature stays off unless the hour is explicitly set to a valid 0-23.
+   */
+  private startReviewDm(): void {
+    const { hour, error } = parseDmHour(process.env.TRANSLATE_REVIEW_DM_HOUR);
+    if (error) this.logger.warn(`[translate:phrase-review] ${error}`);
+    if (hour === null) return;
+    const tz = resolveTz(process.env.TRANSLATE_REVIEW_DM_TZ);
+    if (tz.error) this.logger.warn(`[translate:phrase-review] ${tz.error}`);
+    this.reviewDmHour = hour;
+    this.reviewDmTz = tz.tz;
+    this.reviewDmStatePath = process.env.TRANSLATE_REVIEW_DM_STATE_PATH || this.reviewDmStatePath;
+    // Ticks every 10 minutes and decides from the local clock; isDigestDue keeps it to one send per
+    // day. unref() so the timer never holds a test run (or a shutdown) open.
+    this.reviewDmTimer = setInterval(() => void this.reviewDmTick(), 10 * 60_000);
+    this.reviewDmTimer.unref?.();
+    this.logger.log(`[translate:phrase-review] daily digest armed for ${hour}:00 ${tz.tz}`);
+  }
+
+  onModuleDestroy(): void {
+    if (this.reviewDmTimer) clearInterval(this.reviewDmTimer);
+    this.reviewDmTimer = null;
+  }
+
   private loadConfig(): void {
     const read = this.configStore.read();
     // Missing = first run: seed from .env values. Unreadable/corrupt: keep the file, don't clobber it.
@@ -455,7 +609,14 @@ export class TranslateService implements OnModuleInit {
       if (!TRANSLATABLE_TYPES.has(msg.type) && !isVoice) return pass;
       // received-path fromMe shouldn't occur (adapter routes fromMe to message:sent); guard anyway.
       if (msg.fromMe && !isSentPath) return pass;
-      if (!msg.isGroup || !this.cfg.groupIds.has(msg.chatId)) return pass;
+      // A DM is not a group message and must never fall through into the group pipeline. It has
+      // exactly one job — answering the daily review digest — so it is handled here and returns.
+      if (!msg.isGroup) {
+        if (!isSentPath && ctx.sessionId) void this.onReviewDm(ctx.sessionId, msg);
+        return pass;
+      }
+      if (!this.cfg.groupIds.has(msg.chatId)) return pass;
+      if (ctx.sessionId) this.lastSessionId = ctx.sessionId;
 
       // Passive learn: the sender's JID + name only coexist here (live message). Remember it so a
       // later @mention of this person resolves to a name without any manual entry. Skips known JIDs.

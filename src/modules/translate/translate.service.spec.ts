@@ -209,7 +209,7 @@ describe('TranslateService glossary', () => {
         translate: (t: string, p: { key: string }) => Promise<string>;
       }
     ).translate.bind(service);
-    await translate('報告給@200859128434777以及其他同事', { key: 'zh-tw:vi' } as never);
+    await translate('報告給@200859128434777以及其他同事', { key: 'zh-tw:vi' });
 
     expect(fetchMock).toHaveBeenCalled();
     // Since #96 apply() substitutes the bare name — the @ is dropped for resolved mentions.
@@ -276,7 +276,7 @@ describe('TranslateService glossary', () => {
     const translate = (
       service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
     ).translate.bind(service);
-    expect(await translate('Báo cáo Giám đốc', { key: 'vi:zh-tw' } as never)).toBe('報告總經理，會議已開始');
+    expect(await translate('Báo cáo Giám đốc', { key: 'vi:zh-tw' })).toBe('報告總經理，會議已開始');
   });
 
   it('lists models from the right URL per provider (keeps Groq /openai/v1 prefix)', async () => {
@@ -342,7 +342,7 @@ describe('TranslateService glossary', () => {
         translate: (t: string, p: { key: string }) => Promise<string>;
       }
     ).translate.bind(service);
-    const out = await translate('你好', { key: 'zh-tw:vi' } as never);
+    const out = await translate('你好', { key: 'zh-tw:vi' });
 
     expect(tried).toEqual(['primary', 'backup']);
     expect(out).toBe('Dịch xong');
@@ -369,7 +369,7 @@ describe('TranslateService glossary', () => {
         translate: (t: string, p: { key: string }) => Promise<string>;
       }
     ).translate.bind(service);
-    for (let i = 0; i < 4; i++) await translate(`你好${i}`, { key: 'zh-tw:vi' } as never);
+    for (let i = 0; i < 4; i++) await translate(`你好${i}`, { key: 'zh-tw:vi' });
 
     // Messages 1-2 probe the dead primary; after it trips, 3-4 go straight to the backup.
     expect(tried).toEqual(['primary', 'backup', 'primary', 'backup', 'backup', 'backup']);
@@ -398,7 +398,7 @@ describe('TranslateService glossary', () => {
     const translate = (
       service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
     ).translate.bind(service);
-    const out = await translate('你好', { key: 'vi:zh-tw' } as never);
+    const out = await translate('你好', { key: 'vi:zh-tw' });
     expect(calls).toBe(2);
     expect(out).toBe('dịch xong');
   });
@@ -496,7 +496,7 @@ describe('TranslateService glossary', () => {
     const translate = (
       service as unknown as { translate: (t: string, p: { key: string }) => Promise<string> }
     ).translate.bind(service);
-    const out = await translate('你好', { key: 'zh-tw:vi' } as never);
+    const out = await translate('你好', { key: 'zh-tw:vi' });
     expect(groqAuth).toBe('Bearer qkey'); // used the saved groq key, not the active gemini key
     expect(groqModel).toBe('llama-3.3-70b-versatile');
     expect(out).toBe('Xin chào'); // fixViCasing still applied on the cross-provider output
@@ -520,7 +520,7 @@ describe('TranslateService glossary', () => {
         translate: (t: string, p: { key: string }) => Promise<string>;
       }
     ).translate.bind(service);
-    const out = await translate('你好', { key: 'zh-tw:vi' } as never);
+    const out = await translate('你好', { key: 'zh-tw:vi' });
 
     expect(out).toBe('Xin chào');
     expect(authHeader).toBe('Bearer sk-x');
@@ -651,7 +651,7 @@ describe('TranslateService voice notes', () => {
 
   it('skips a note whose blob was dropped by the inbound media cap', async () => {
     const fetchMock = mockBackends('x', 'y');
-    await run(voiceMsg({ media: { mimetype: 'audio/ogg', omitted: true, sizeBytes: 99 } } as Partial<IncomingMessage>));
+    await run(voiceMsg({ media: { mimetype: 'audio/ogg', omitted: true, sizeBytes: 99 } }));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -793,5 +793,139 @@ describe('TranslateService voice notes', () => {
     }));
     await expect(run(voiceMsg())).resolves.toBeUndefined();
     expect(sent).toHaveLength(0);
+  });
+});
+
+/**
+ * The review DM is a second inbound surface with its own authorization boundary. In a group, group
+ * membership is the boundary; in a 1:1 chat there is none, and a glossary entry becomes a
+ * mandatory-use directive on every later translation — so these tests are about who is refused.
+ */
+describe('TranslateService review DM', () => {
+  let service: TranslateService;
+  let sent: { chatId: string; text: string }[];
+  let dbFile: string;
+
+  const dm = (body: string, from: string): IncomingMessage =>
+    ({ chatId: from, from, body, type: 'text', isGroup: false, fromMe: false }) as IncomingMessage;
+
+  const deliver = async (msg: IncomingMessage): Promise<void> => {
+    await (
+      service as unknown as {
+        onMessage: (c: { data: IncomingMessage; sessionId: string }, s: boolean) => Promise<unknown>;
+      }
+    ).onMessage({ data: msg, sessionId: 's1' }, false);
+    await new Promise(r => setTimeout(r, 30)); // handler is fire-and-forget
+  };
+
+  const store = () => (service as unknown as { phrases: { list: (n?: number) => Promise<{ id: number }[]> } }).phrases;
+  const glossaryTerms = () =>
+    (service as unknown as { glossary: { entries: () => { source: string; target: string }[] } }).glossary.entries();
+
+  const boot = (adminIds: string): void => {
+    process.env.TRANSLATE_ADMIN_IDS = adminIds;
+    process.env.TRANSLATE_GLOSSARY_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dmg-')), 'glossary.json');
+    process.env.TRANSLATE_CONFIG_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dmc-')), 'cfg.json');
+    dbFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dmdb-')), 'translations.sqlite');
+    process.env.TRANSLATE_MEMORY_DB_PATH = dbFile;
+    sent = [];
+    const messageService = {
+      sendText: (_s: string, dto: { chatId: string; text: string }) => {
+        sent.push(dto);
+        return Promise.resolve({} as never);
+      },
+    } as unknown as MessageService;
+    service = new TranslateService(new HookManager(), messageService, {} as unknown as ContactService);
+    service.onModuleInit();
+    Object.assign((service as unknown as { cfg: Record<string, unknown> }).cfg, { enabled: true });
+  };
+
+  const seed = async (): Promise<{ id: number }[]> => {
+    const phrases = service as unknown as { phrases: { upsert: (p: string, v: string, c: number) => Promise<void> } };
+    await phrases.phrases.upsert('出貨', 'giao hàng', 9);
+    await phrases.phrases.upsert('客戶', 'khách hàng', 5);
+    return store().list();
+  };
+
+  afterEach(() => {
+    service.onModuleDestroy();
+    delete process.env.TRANSLATE_ADMIN_IDS;
+  });
+
+  it('refuses every DM when the admin list is empty — fails CLOSED', async () => {
+    boot('');
+    const rows = await seed();
+    await deliver(dm(`ok ${rows[0].id}`, '886900000000@c.us'));
+    expect(sent).toEqual([]); // no ack, no usage line, nothing
+    expect(glossaryTerms()).toEqual([]); // and above all, no glossary write
+    expect((await store().list()).length).toBe(2);
+  });
+
+  it('ignores a DM from someone not on the admin list', async () => {
+    boot('886912345678@c.us');
+    const rows = await seed();
+    await deliver(dm(`ok ${rows[0].id}`, '886999999999@c.us'));
+    expect(sent).toEqual([]);
+    expect(glossaryTerms()).toEqual([]);
+  });
+
+  it('matches an admin across JID suffixes', async () => {
+    boot('886912345678@c.us');
+    const rows = await seed();
+    // Same person, different suffix — a raw JID compare would silently refuse them.
+    await deliver(dm(`ok ${rows[0].id}`, '886912345678@s.whatsapp.net'));
+    expect(glossaryTerms()).toEqual([{ source: '出貨', target: 'giao hàng', count: 0, origin: 'human' }]);
+    expect(sent[0].text).toContain('已核准');
+  });
+
+  it('approves by DB id, so a reordered list cannot approve the wrong row', async () => {
+    boot('886912345678@c.us');
+    const rows = await seed();
+    const second = rows[1]; // '客戶', currently second by count
+    // A rescan bumps the other row's count: positions swap, ids do not.
+    await (
+      service as unknown as { phrases: { upsert: (p: string, v: string, c: number) => Promise<void> } }
+    ).phrases.upsert('出貨', 'giao hàng', 99);
+    await deliver(dm(`ok ${second.id}`, '886912345678@c.us'));
+    expect(glossaryTerms().map(e => e.source)).toEqual(['客戶']);
+  });
+
+  it('takes a corrected translation over the LLM suggestion', async () => {
+    boot('886912345678@c.us');
+    const rows = await seed();
+    await deliver(dm(`ok ${rows[0].id}=giao hàng gấp`, '886912345678@c.us'));
+    expect(glossaryTerms()[0].target).toBe('giao hàng gấp');
+  });
+
+  it('rejects, and reports an id that is already gone instead of guessing a neighbour', async () => {
+    boot('886912345678@c.us');
+    const rows = await seed();
+    await deliver(dm(`no ${rows[0].id}`, '886912345678@c.us'));
+    expect(glossaryTerms()).toEqual([]);
+    expect((await store().list()).length).toBe(1);
+
+    sent = [];
+    await deliver(dm(`ok ${rows[0].id}`, '886912345678@c.us')); // already dismissed
+    expect(sent[0].text).toContain('已審核或不存在');
+    expect(glossaryTerms()).toEqual([]);
+  });
+
+  it('answers an unparseable review reply with usage, and stays silent on unrelated chatter', async () => {
+    boot('886912345678@c.us');
+    await seed();
+    await deliver(dm('ok abc', '886912345678@c.us'));
+    expect(sent[0].text).toContain('ok 41 43');
+
+    sent = [];
+    await deliver(dm('你好', '886912345678@c.us'));
+    expect(sent).toEqual([]);
+  });
+
+  it('does not expose the group command surface over DM', async () => {
+    boot('886912345678@c.us');
+    await seed();
+    await deliver(dm('/glossary add 機密 = bí mật', '886912345678@c.us'));
+    expect(glossaryTerms()).toEqual([]); // DM handles review replies only
+    expect(sent).toEqual([]);
   });
 });
