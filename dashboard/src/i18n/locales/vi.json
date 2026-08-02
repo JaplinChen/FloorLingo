@@ -59,7 +59,14 @@
     "retry": "Thử lại",
     "failed": "Thất bại: {{message}}",
     "saved": "Đã lưu",
-    "all": "Tất cả"
+    "all": "Tất cả",
+    "clearSearch": "Xóa tìm kiếm",
+    "noResults": "Không tìm thấy kết quả cho “{{query}}”",
+    "clearSearchAction": "Xóa tìm kiếm",
+    "showingRange": "Hiển thị {{from}}–{{to}} trên {{total}}",
+    "deleteConfirmTitle": "Xóa mục này?",
+    "deleteConfirmBody": "“{{name}}” sẽ bị xóa.",
+    "deleteConfirmWarning": "Không thể hoàn tác."
   },
   "theme": {
     "light": "Sáng",

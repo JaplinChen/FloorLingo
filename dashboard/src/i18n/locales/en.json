@@ -59,7 +59,14 @@
     "retry": "Retry",
     "failed": "Failed: {{message}}",
     "saved": "Saved",
-    "all": "All"
+    "all": "All",
+    "clearSearch": "Clear search",
+    "noResults": "No matches for “{{query}}”",
+    "clearSearchAction": "Clear search",
+    "showingRange": "Showing {{from}}–{{to}} of {{total}}",
+    "deleteConfirmTitle": "Delete this entry?",
+    "deleteConfirmBody": "“{{name}}” will be removed.",
+    "deleteConfirmWarning": "This cannot be undone."
   },
   "theme": {
     "light": "Light",

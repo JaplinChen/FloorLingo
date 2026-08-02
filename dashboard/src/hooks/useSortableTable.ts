@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-const PAGE_SIZE = 50;
+export const PAGE_SIZE = 50;
 
 interface Options<T, K extends string> {
   rows: T[];

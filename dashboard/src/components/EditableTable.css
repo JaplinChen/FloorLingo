@@ -176,14 +176,27 @@
 }
 
 /* The search box grows; the category filter keeps a fixed width beside it. */
-.etable-page .etable-search input {
+.etable-page .etable-search-field {
+  position: relative;
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* The filter is a labelled control, not a second text field. */
+.etable-page .etable-cat-filter-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 .etable-page .etable-cat-filter {
   flex: 0 0 auto;
-  height: 100%;
 }
 
 .etable-page .etable-search-icon {
@@ -195,10 +208,35 @@
   pointer-events: none;
 }
 
+.etable-page .etable-search-clear {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 24px pointer target (WCAG 2.5.8). */
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.etable-page .etable-search-clear:hover {
+  color: var(--text-primary);
+  background: var(--bg-light);
+}
+
 .etable-page .etable-search input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.6rem 0.75rem 0.6rem 2.2rem;
+  /* Right padding clears the clear-button target so long queries don't run under it. */
+  padding: 0.6rem 2.1rem 0.6rem 2.2rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-light);
@@ -225,10 +263,12 @@
   grid-template-columns: var(--col-key, 1.6fr) 1.25rem var(--col-val, 2fr) var(--col-count, 3.5rem) 3.75rem;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.4rem 0.75rem;
+  /* 13px/6.4px was tight for CJK, which has no x-height cue to lean on when scanning a long list. */
+  padding: 0.55rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .etable-page .etable-item:hover {
@@ -474,6 +514,15 @@
   color: var(--text-muted);
   font-size: 0.8125rem;
   white-space: nowrap;
+}
+
+/* Row count sits above the pager: page numbers alone never said how much there was to page through. */
+.etable-page .etable-range {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Pagination (scoped copy of the logs-page pattern) */
