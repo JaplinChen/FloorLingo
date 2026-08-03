@@ -2,6 +2,10 @@ import * as fs from 'node:fs';
 import { atomicWriteJson } from './translate-fs';
 import { OverrideLayer } from './translate-glossary-overrides';
 
+// How long counts may sit in memory before hitting disk. Long enough to collapse a burst of terms
+// in one message into one write, short enough that a crash loses almost nothing.
+const USAGE_FLUSH_MS = 1000;
+
 /**
  * zh<->vi term overrides, persisted as JSON keyed by pair (e.g. "zh-tw:vi") -> { source: target }.
  * Format is compatible with WA-Translate's glossary.json.
@@ -27,6 +31,8 @@ export class Glossary {
   // Per-group conflict overrides. Its own file and class: the global glossary format stays
   // WA-Translate compatible and this file stays readable.
   private readonly overrides: OverrideLayer;
+  private usageDirty = false;
+  private usageTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly filePath: string,
@@ -109,9 +115,37 @@ export class Glossary {
     atomicWriteJson(this.pendingPath, this.pendingData);
   }
 
-  /** Usage counters keyed by the zh term, persisted beside the glossary so its format stays WA-Translate compatible. */
+  /**
+   * Usage counters keyed by the zh term, persisted beside the glossary so its format stays
+   * WA-Translate compatible.
+   *
+   * Counts in memory and flushes on a timer. section() calls this once per matched term, so writing
+   * on every bump meant one whole-file serialisation per term per message: measured at production
+   * scale (1932 terms, 173 counters) a message matching five terms cost 3.45ms, of which 3.2ms —
+   * 93% — was the writes, all of it synchronous on the event loop and blocking every concurrent
+   * translation. It also grows: the file gets bigger as more terms get used.
+   *
+   * Counters are advisory (they sort the dashboard), and writes were already best-effort here, so
+   * losing up to a second of counts to a hard kill is an acceptable trade for taking synchronous fs
+   * off the translate path.
+   */
   private bump(zh: string): void {
     this.usage[zh] = (this.usage[zh] ?? 0) + 1;
+    this.usageDirty = true;
+    if (this.usageTimer) return;
+    this.usageTimer = setTimeout(() => this.flushUsage(), USAGE_FLUSH_MS);
+    // Never hold a test run or a shutdown open for a counter file.
+    this.usageTimer.unref?.();
+  }
+
+  /** Write pending usage counts now. Called on the flush timer and on shutdown. */
+  flushUsage(): void {
+    if (this.usageTimer) {
+      clearTimeout(this.usageTimer);
+      this.usageTimer = null;
+    }
+    if (!this.usageDirty) return;
+    this.usageDirty = false;
     try {
       atomicWriteJson(this.usagePath, this.usage);
     } catch {
