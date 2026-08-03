@@ -205,7 +205,11 @@ describe('OverrideLayer load cleanup', () => {
     // Exactly what production held: a group emptied before load-time cleanup existed.
     fs.writeFileSync(
       file,
-      JSON.stringify({ __v: 2, '120363428709653157': { 'zh-tw:vi': {}, 'vi:zh-tw': {} }, b: { 'zh-tw:vi': { 出貨: 'xuất kho' } } }),
+      JSON.stringify({
+        __v: 2,
+        '120363428709653157': { 'zh-tw:vi': {}, 'vi:zh-tw': {} },
+        b: { 'zh-tw:vi': { 出貨: 'xuất kho' } },
+      }),
     );
     const l = new OverrideLayer(file);
     expect(l.load()).toBe(1);
