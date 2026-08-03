@@ -197,3 +197,18 @@ describe('OverrideLayer empty-layer cleanup', () => {
     expect(l.counts()).toEqual({ a: 1 });
   });
 });
+
+describe('OverrideLayer load cleanup', () => {
+  it('drops empty group shells left by an older file', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ovr-shell-'));
+    const file = path.join(dir, 'o.json');
+    // Exactly what production held: a group emptied before load-time cleanup existed.
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ __v: 2, '120363428709653157': { 'zh-tw:vi': {}, 'vi:zh-tw': {} }, b: { 'zh-tw:vi': { 出貨: 'xuất kho' } } }),
+    );
+    const l = new OverrideLayer(file);
+    expect(l.load()).toBe(1);
+    expect(l.counts()).toEqual({ b: 1 }); // the shell is gone, the real layer stays
+  });
+});
