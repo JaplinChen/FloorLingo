@@ -54,7 +54,9 @@ export class OverrideLayer {
       this.data = raw as Record<string, GroupLayer>;
       // A file written before empty-layer cleanup existed still carries the shells, and nothing
       // would ever clear them: cleanup only runs on a remove or a prune for that same group.
-      this.dropEmptyLayers();
+      // Write back when it found any, so the FILE heals too — cleaning only memory would leave the
+      // shell on disk to be re-read and re-cleaned on every boot. Same shape as migrateReversed().
+      if (this.dropEmptyLayers()) this.save();
       return this.count();
     } catch {
       this.data = {};
@@ -176,12 +178,15 @@ export class OverrideLayer {
    * Forget a group once its last override is gone. Otherwise the empty shell lingers, counts()
    * reports the group with 0, and it shows up as a group that has overrides when it has none.
    */
-  private dropEmptyLayers(): void {
+  private dropEmptyLayers(): boolean {
+    let dropped = false;
     for (const [group, layer] of Object.entries(this.data)) {
       if (!Object.keys(layer['zh-tw:vi'] || {}).length && !Object.keys(layer['vi:zh-tw'] || {}).length) {
         delete this.data[group];
+        dropped = true;
       }
     }
+    return dropped;
   }
 
   /** Groups that override `source` to exactly `target` — drives the "≥2 groups agree" merge prompt. */

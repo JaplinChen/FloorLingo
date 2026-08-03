@@ -214,5 +214,9 @@ describe('OverrideLayer load cleanup', () => {
     const l = new OverrideLayer(file);
     expect(l.load()).toBe(1);
     expect(l.counts()).toEqual({ b: 1 }); // the shell is gone, the real layer stays
+
+    // And the FILE healed, not just memory — otherwise the shell is re-read and re-cleaned forever.
+    const onDisk = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>;
+    expect(Object.keys(onDisk).sort()).toEqual(['__v', 'b']);
   });
 });
