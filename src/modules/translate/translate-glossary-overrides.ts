@@ -52,6 +52,9 @@ export class OverrideLayer {
       const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as Record<string, unknown>;
       delete raw.__v; // version marker, not a group
       this.data = raw as Record<string, GroupLayer>;
+      // A file written before empty-layer cleanup existed still carries the shells, and nothing
+      // would ever clear them: cleanup only runs on a remove or a prune for that same group.
+      this.dropEmptyLayers();
       return this.count();
     } catch {
       this.data = {};
