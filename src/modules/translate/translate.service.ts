@@ -606,6 +606,8 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy(): void {
     if (this.reviewDmTimer) clearInterval(this.reviewDmTimer);
     this.reviewDmTimer = null;
+    // Usage counts are batched in memory; without this a clean shutdown drops the last second of them.
+    this.glossary?.flushUsage();
   }
 
   private loadConfig(): void {

@@ -34,6 +34,7 @@ describe('Glossary', () => {
     g.section('vi:zh-tw', 'máy tính hỏng rồi');
     g.section('zh-tw:vi', '沒提到術語'); // no match → no bump
     expect(g.entries()).toEqual([{ source: '電腦', target: 'máy tính', count: 2 }]);
+    g.flushUsage(); // counts are batched now; the timer would get there on its own in 1s
     const reloaded = new Glossary(file);
     reloaded.load();
     expect(reloaded.entries()[0].count).toBe(2);
@@ -446,5 +447,57 @@ describe('Glossary self-heal on shared-glossary writes', () => {
   it('reports nothing extra when there was nothing to prune', () => {
     const g = make();
     expect(g.command('global 生產 = sản xuất', admin)).not.toContain('已清除');
+  });
+});
+
+describe('Glossary usage counter writes', () => {
+  const make = (): { g: Glossary; usagePath: string } => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gl-usage-'));
+    process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH = path.join(dir, 'ov.json');
+    const file = path.join(dir, 'glossary.json');
+    const g = new Glossary(file);
+    g.load();
+    g.add('出貨', 'giao hàng');
+    g.add('客戶', 'khách hàng');
+    g.add('品質', 'chất lượng');
+    return { g, usagePath: path.join(dir, 'glossary-usage.json') };
+  };
+
+  afterEach(() => delete process.env.TRANSLATE_GLOSSARY_OVERRIDES_PATH);
+
+  it('does not touch disk while counting — section() used to write once per matched term', () => {
+    const { g, usagePath } = make();
+    g.section('zh-tw:vi', '出貨 客戶 品質 一起處理'); // three matches
+    expect(fs.existsSync(usagePath)).toBe(false); // nothing written yet
+  });
+
+  it('flush persists every pending count in one write', () => {
+    const { g, usagePath } = make();
+    g.section('zh-tw:vi', '出貨 客戶 品質 一起處理');
+    g.exact('zh-tw:vi', '出貨');
+    g.flushUsage();
+
+    const saved = JSON.parse(fs.readFileSync(usagePath, 'utf8')) as Record<string, number>;
+    expect(saved).toEqual({ 出貨: 2, 客戶: 1, 品質: 1 });
+  });
+
+  it('flush is a no-op when nothing is pending', () => {
+    const { g, usagePath } = make();
+    g.flushUsage();
+    expect(fs.existsSync(usagePath)).toBe(false);
+    g.section('zh-tw:vi', '出貨');
+    g.flushUsage();
+    const mtime = fs.statSync(usagePath).mtimeMs;
+    g.flushUsage(); // second flush, still clean
+    expect(fs.statSync(usagePath).mtimeMs).toBe(mtime);
+  });
+
+  it('counts survive a reload once flushed', () => {
+    const { g, usagePath } = make();
+    g.section('zh-tw:vi', '出貨');
+    g.flushUsage();
+    const reopened = new Glossary(usagePath.replace('-usage.json', '.json'));
+    reopened.load();
+    expect(reopened.entries().find(e => e.source === '出貨')?.count).toBe(1);
   });
 });
