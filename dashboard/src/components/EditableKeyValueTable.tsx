@@ -220,9 +220,10 @@ export function EditableKeyValueTable<T>({
             onChange={e => setFilter(e.target.value)}
             onKeyDown={e => e.key === 'Escape' && setFilter('')}
           />
+          {/* 1.5 stroke to match the regular-weight text these icons sit beside. */}
           {filter && (
             <button className="etable-search-clear" onClick={() => setFilter('')} title={t('common.clearSearch')}>
-              <X size={14} />
+              <X size={14} strokeWidth={1.5} />
             </button>
           )}
         </div>
@@ -247,7 +248,11 @@ export function EditableKeyValueTable<T>({
         )}
       </div>
 
-      {filtered.length > 0 && (
+      {/* Inside the scroller, not above it: the header used to sit outside and so was always one
+          scrollbar-width wider than the rows, which threw the fr columns out of alignment. Sticky
+          keeps the labels visible while scrolling. */}
+      <div className="etable-list">
+        {filtered.length > 0 && (
         <div className={`etable-cols${hasCat ? ' etable-cols--cat' : ''}`}>
           <button className="etable-col-sort" data-col="key" onClick={() => toggleSort('key')}>
             {keyLabel}{sortMark('key')}
@@ -270,8 +275,7 @@ export function EditableKeyValueTable<T>({
           )}
           {canWrite && <span className="etable-col-label">{t('common.actions')}</span>}
         </div>
-      )}
-      <div className="etable-list">
+        )}
         {filtered.length === 0 ? (
           // A search that matches nothing is not an empty glossary. Showing the "no terms yet"
           // state there reads as data loss and offers no way back.
@@ -363,7 +367,7 @@ export function EditableKeyValueTable<T>({
                       disabled={busy}
                       title={t('common.edit')}
                     >
-                      <Pencil size={16} />
+                      <Pencil size={16} strokeWidth={1.5} />
                     </button>
                     <button
                       className="etable-del"
@@ -371,7 +375,7 @@ export function EditableKeyValueTable<T>({
                       disabled={busy}
                       title={t('common.delete')}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={16} strokeWidth={1.5} />
                     </button>
                   </div>
                 )}

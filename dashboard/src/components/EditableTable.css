@@ -26,7 +26,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  /* Icon side takes 2px less: with equal padding the glyph reads as pushed away from the label. */
+  padding: 0.6rem 1rem 0.6rem 0.875rem;
   background: var(--primary);
   color: var(--primary-ink);
   border: none;
@@ -34,7 +35,12 @@
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, scale 150ms ease-out;
+}
+
+/* Tactile press. Transition, not keyframes, so releasing mid-press returns smoothly. */
+.etable-page .btn-primary:active:not(:disabled) {
+  scale: 0.96;
 }
 
 .etable-page .btn-primary:hover:not(:disabled){
@@ -101,7 +107,9 @@
   flex-direction: column;
   background: var(--bg-card, var(--bg-light));
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  /* Concentric: outer radius = inner radius + padding. The rows inside carry var(--radius), so a
+     panel at the same radius made the corners read as two unrelated curves. */
+  border-radius: calc(var(--radius) + 1.25rem);
   padding: 1.25rem;
 }
 
@@ -265,14 +273,19 @@
   gap: 0.75rem;
   /* 13px/6.4px was tight for CJK, which has no x-height cue to lean on when scanning a long list. */
   padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border);
+  /* Depth comes from a shadow ring, not a solid border — it holds up on any surface colour. The
+     transparent border stays because the header row offsets the same 1px to keep fr columns aligned. */
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-border);
   border-radius: var(--radius);
   font-size: 0.875rem;
   line-height: 1.5;
+  transition: box-shadow 150ms ease-out, background-color 100ms ease-out;
 }
 
 .etable-page .etable-item:hover {
   background: var(--bg-light);
+  box-shadow: var(--shadow-border-hover);
 }
 
 /* 自訂類別管理列：單一名稱 + 刪除鈕，不套用詞條的多欄 grid */
@@ -342,7 +355,9 @@
 .etable-page .etable-row-actions {
   display: flex;
   align-items: center;
-  gap: 0.125rem;
+  /* Was 2px. Edit and Delete sat close enough that a slip hit the wrong one, and Delete is the
+     destructive half of the pair. */
+  gap: 0.25rem;
 }
 
 .etable-page .etable-del {
@@ -355,9 +370,11 @@
   color: var(--text-secondary);
   border-radius: var(--radius);
   cursor: pointer;
-  /* 24px pointer target (WCAG 2.5.8) without growing the icon. */
-  min-width: 24px;
-  min-height: 24px;
+  /* Grown from 24px. A dense desktop target wants 40px; the pair can't reach that without the two
+     hit areas colliding, so take the largest that still leaves them disjoint: 28 wide (28 + 4px gap
+     = the button pitch) by the full row height. Icons stay 16px. */
+  min-width: 28px;
+  min-height: 34px;
 }
 
 .etable-page .etable-del:disabled {
@@ -404,6 +421,8 @@
   color: var(--text-muted);
   text-align: center;
   padding: 2rem 1rem;
+  /* Short UI copy: keeps a lone word off the last line. */
+  text-wrap: pretty;
 }
 
 .etable-page .etable-panel--pending {
@@ -429,7 +448,12 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.35rem 0.75rem;
-  margin-top: 0.75rem;
+  /* Sticky inside the scroller: same width as the rows, and the labels survive scrolling. Needs an
+     opaque background or rows show through as they pass under it. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-card, var(--bg-light));
   border-bottom: 1px solid var(--border);
   /* Match the rows' 1px side borders so the fr columns resolve to the exact same widths. */
   border-left: 1px solid transparent;
@@ -542,11 +566,15 @@
   border-radius: 6px;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: all 0.2s;
+  transition: background-color 150ms ease-out, color 150ms ease-out, scale 150ms ease-out;
 }
 
 .etable-page .pagination button:hover:not(:disabled){
   background: var(--bg-light);
+}
+
+.etable-page .pagination button:active:not(:disabled){
+  scale: 0.96;
 }
 
 .etable-page .pagination button:disabled{
@@ -562,6 +590,8 @@
 .etable-page .page-numbers button{
   min-width: 36px;
   padding: 0.5rem;
+  /* Page numbers change width as you walk the pager; equal-width digits stop the row shifting. */
+  font-variant-numeric: tabular-nums;
 }
 
 .etable-page .page-numbers button.active{
@@ -811,4 +841,5 @@
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
   opacity: 0.7;
+  text-wrap: pretty;
 }
