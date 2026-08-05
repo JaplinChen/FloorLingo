@@ -34,6 +34,8 @@ const SEED: Record<string, string> = {
   yc: 'yêu cầu',
   cty: 'công ty',
   đc: 'được',
+  sp: 'sản phẩm',
+  k: 'không',
 };
 
 export class ShorthandTable {
