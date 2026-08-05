@@ -132,6 +132,7 @@
     "deleteConfirm": "Supprimer ce message pour tout le monde ?",
     "messageDeleted": "🚫 Ce message a été supprimé",
     "messageMasked": "🔒 Masqué par WhatsApp sur les appareils liés — consultez votre téléphone principal",
+    "messageUnsupported": "❔ Type de message pas encore pris en charge — consultez WhatsApp sur votre téléphone",
     "errors": {
       "loadSessions": "Échec du chargement des sessions",
       "loadChats": "Échec du chargement des discussions",

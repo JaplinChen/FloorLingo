@@ -177,6 +177,7 @@
     "deleteConfirm": "為所有人刪除此訊息？",
     "messageDeleted": "🚫 此訊息已被刪除",
     "messageMasked": "🔒 WhatsApp 已對已連結裝置隱藏此訊息 — 請在主手機上查看",
+    "messageUnsupported": "❔ 尚未支援的訊息類型 — 請在手機 WhatsApp 查看",
     "errors": {
       "loadSessions": "載入工作階段失敗",
       "loadChats": "載入聊天失敗",

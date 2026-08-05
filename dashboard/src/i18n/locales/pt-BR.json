@@ -132,6 +132,7 @@
     "deleteConfirm": "Excluir esta mensagem para todos?",
     "messageDeleted": "🚫 Esta mensagem foi excluída",
     "messageMasked": "🔒 Ocultada pelo WhatsApp em dispositivos vinculados — verifique no seu telefone principal",
+    "messageUnsupported": "❔ Tipo de mensagem ainda não suportado — verifique o WhatsApp no seu telefone",
     "errors": {
       "loadSessions": "Erro ao carregar as sessões",
       "loadChats": "Erro ao carregar os chats",

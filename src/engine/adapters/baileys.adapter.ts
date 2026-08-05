@@ -1038,6 +1038,16 @@ export class BaileysAdapter implements IWhatsAppEngine {
 
       // --- Normal message: enrich + emit ---
       const incoming = await mapMessage(this.mapperCtx, msg, contentType, { skipMediaDownload: opts?.skipMedia });
+      if (incoming.type === 'unknown') {
+        // An unmapped content type reaches clients as a bodyless bubble; name it in the log so the
+        // gap can be closed in mapBaileysMessageType instead of guessed at from a screenshot.
+        this.logger.warn('Unmapped inbound message content type', {
+          action: 'baileys_unknown_type',
+          contentType: contentType ?? 'none',
+          contentKeys: Object.keys(normalizedRoot ?? {}),
+          msgId: msg.key.id,
+        });
+      }
       if (msg.key.fromMe === true) {
         this.callbacks.onMessageCreate?.(incoming);
       } else {
