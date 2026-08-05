@@ -121,6 +121,9 @@ export function MessageBubble({
   const hasReactions = Object.keys(reactions).length > 0;
   const isRevoked = msg.type === 'revoked';
   const isMasked = msg.type === 'masked';
+  // An unmapped WhatsApp content type arrives bodyless and would render as a name+time bubble with
+  // nothing in it. Say so instead of showing a blank.
+  const isUnsupported = msg.type === 'unknown' && !msg.body && !mediaInfo;
 
   return (
     <div
@@ -157,6 +160,8 @@ export function MessageBubble({
             <div className="message-text">{t('chats.messageDeleted')}</div>
           ) : isMasked ? (
             <div className="message-text message-masked">{t('chats.messageMasked')}</div>
+          ) : isUnsupported ? (
+            <div className="message-text message-masked">{t('chats.messageUnsupported')}</div>
           ) : (
             msg.body &&
             (!mediaInfo || msg.body !== mediaInfo.filename) &&

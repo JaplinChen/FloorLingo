@@ -132,6 +132,7 @@
     "deleteConfirm": "모두에게서 이 메시지를 삭제할까요?",
     "messageDeleted": "🚫 삭제된 메시지입니다",
     "messageMasked": "🔒 연결된 기기에서는 WhatsApp이 이 메시지를 가려 표시합니다 — 기본 휴대폰을 확인하세요",
+    "messageUnsupported": "❔ 아직 지원하지 않는 메시지 유형입니다 — 휴대폰 WhatsApp에서 확인하세요",
     "errors": {
       "loadSessions": "세션을 불러오지 못했습니다",
       "loadChats": "채팅을 불러오지 못했습니다",

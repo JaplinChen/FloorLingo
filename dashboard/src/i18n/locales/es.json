@@ -132,6 +132,7 @@
     "deleteConfirm": "¿Eliminar este mensaje para todos?",
     "messageDeleted": "🚫 Este mensaje fue eliminado",
     "messageMasked": "🔒 Ocultado por WhatsApp en dispositivos vinculados — revísalo en tu teléfono principal",
+    "messageUnsupported": "❔ Tipo de mensaje aún no compatible — revísalo en WhatsApp en tu teléfono",
     "errors": {
       "loadSessions": "Error al cargar las sesiones",
       "loadChats": "Error al cargar los chats",

@@ -177,6 +177,7 @@
     "deleteConfirm": "Xóa tin nhắn này cho tất cả mọi người?",
     "messageDeleted": "🚫 Tin nhắn này đã bị xóa",
     "messageMasked": "🔒 Bị WhatsApp ẩn đối với thiết bị liên kết — hãy kiểm tra điện thoại chính của bạn",
+    "messageUnsupported": "❔ Loại tin nhắn chưa được hỗ trợ — hãy xem trên WhatsApp trên điện thoại",
     "errors": {
       "loadSessions": "Không thể tải phiên",
       "loadChats": "Không thể tải cuộc trò chuyện",
