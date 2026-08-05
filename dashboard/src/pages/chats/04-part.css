@@ -141,14 +141,32 @@
   z-index: 5;
 }
 
+/* The menu sits outside the bubble with a gap; crossing that gap drops :hover and the
+   menu disappears before it can be clicked. A transparent pseudo-element bridges it. */
+.chats-page .message-actions-menu::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.5rem;
+}
+
 .chats-page .message-bubble-wrapper.incoming .message-actions-menu{
   left: 100%;
   margin-left: 0.5rem;
 }
 
+.chats-page .message-bubble-wrapper.incoming .message-actions-menu::before{
+  right: 100%;
+}
+
 .chats-page .message-bubble-wrapper.outgoing .message-actions-menu{
   right: 100%;
   margin-right: 0.5rem;
+}
+
+.chats-page .message-bubble-wrapper.outgoing .message-actions-menu::before{
+  left: 100%;
 }
 
 .chats-page .message-bubble-container:hover .message-actions-menu{
