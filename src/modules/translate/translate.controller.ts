@@ -30,6 +30,7 @@ import { ChatProfileDto } from './dto/chat-profile.dto';
 import { ImportSendersDto } from './dto/import-senders.dto';
 import { CategoryDto } from './dto/category.dto';
 import { ApproveBulkDto } from './dto/approve-bulk.dto';
+import { DismissBulkDto } from './dto/dismiss-bulk.dto';
 
 type GlossaryEntry = { source: string; target: string; count?: number; category?: string };
 type SenderEntry = { jid: string; name: string };
@@ -187,6 +188,14 @@ export class TranslateController {
   @ApiResponse({ status: 200, description: 'Remaining candidates' })
   dismissMemoryCandidate(@Param('id', ParseIntPipe) id: number): Promise<Candidate[]> {
     return this.translateService.dismissMemoryCandidate(id);
+  }
+
+  @Post('memory/dismiss-bulk')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Dismiss every sentence candidate at or below a frequency threshold' })
+  @ApiResponse({ status: 201, description: 'How many were dismissed and how many remain' })
+  dismissMemoryCandidatesBulk(@Body() dto: DismissBulkDto): Promise<{ dismissed: number; remaining: number }> {
+    return this.translateService.dismissMemoryCandidatesBulk(dto.maxCount);
   }
 
   @Post('memory/phrases/scan')

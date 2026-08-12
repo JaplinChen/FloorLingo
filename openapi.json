@@ -2650,6 +2650,31 @@
         ]
       }
     },
+    "/api/translate/memory/dismiss-bulk": {
+      "post": {
+        "operationId": "TranslateController_dismissMemoryCandidatesBulk",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissBulkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "How many were dismissed and how many remain"
+          }
+        },
+        "summary": "Dismiss every sentence candidate at or below a frequency threshold",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/memory/phrases/scan": {
       "post": {
         "operationId": "TranslateController_scanPhraseCandidates",
@@ -7485,6 +7510,10 @@
         "properties": {}
       },
       "GlossaryTermDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DismissBulkDto": {
         "type": "object",
         "properties": {}
       },

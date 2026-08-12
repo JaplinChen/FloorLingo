@@ -44,6 +44,18 @@ describe('translate-memory', () => {
     expect(page2.every(c => !ids.has(c.id))).toBe(true);
   });
 
+  it('dismissAllAtOrBelow clears only low-count new rows and reports how many moved', async () => {
+    mem.record('zh-tw:vi', '好', 'Được'); // count 1 → dismissed
+    mem.record('zh-tw:vi', '出貨', 'giao hàng');
+    mem.record('zh-tw:vi', '出貨', 'giao hàng'); // count 2 → kept
+    mem.record('zh-tw:vi', '收到', 'Đã nhận');
+    const approvedId = (await mem.candidates()).find(c => c.source === '收到')!.id;
+    await mem.takeForApproval(approvedId); // approved rows must not be touched
+    expect(await mem.dismissAllAtOrBelow(1)).toBe(1);
+    const left = await mem.candidates();
+    expect(left.map(c => c.source)).toEqual(['出貨']);
+  });
+
   it('dismiss drops it and it stays dismissed even when seen again', async () => {
     mem.record('zh-tw:vi', '好', 'Được');
     const id = (await mem.candidates())[0].id;
