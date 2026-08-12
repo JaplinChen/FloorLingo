@@ -106,6 +106,21 @@ export class TranslationMemory {
     });
   }
 
+  /** Totals for /stats: all recorded rows + rows touched since `sinceIso` (upsert bumps updated_at). */
+  activitySince(sinceIso: string): Promise<{ total: number; recent: number }> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve({ total: 0, recent: 0 });
+      this.db.get(
+        `SELECT COUNT(*) AS total, SUM(updated_at >= ?) AS recent FROM translation_memory`,
+        [sinceIso],
+        (err, row) => {
+          const r = row as { total?: number; recent?: number } | undefined;
+          resolve(err || !r ? { total: 0, recent: 0 } : { total: Number(r.total) || 0, recent: Number(r.recent) || 0 });
+        },
+      );
+    });
+  }
+
   /** Count of unreviewed candidates, for paginating the approval view. */
   candidatesCount(): Promise<number> {
     return new Promise(resolve => {

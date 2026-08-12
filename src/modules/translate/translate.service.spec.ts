@@ -85,6 +85,7 @@ describe('TranslateService glossary', () => {
         messageService: svc.messageService,
         watchwords: svc.watchwords,
         feedback: svc.feedback,
+        stats: () => Promise.resolve(''), // covered by translate-commands.spec.ts
       },
       sessionId: 'sess',
       msg: makeMsg(body),
