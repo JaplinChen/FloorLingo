@@ -1,4 +1,4 @@
-import { parseCommand, COMMANDS, isGlossaryAdmin } from './translate-commands';
+import { parseCommand, COMMANDS, isGlossaryAdmin, handleStatsCommand, CommandContext } from './translate-commands';
 
 describe('parseCommand (dispatch table)', () => {
   it('matches every alias of every registered command', () => {
@@ -25,6 +25,38 @@ describe('parseCommand (dispatch table)', () => {
   it('returns null for non-commands', () => {
     expect(parseCommand('hello')).toBeNull();
     expect(parseCommand('/unknown')).toBeNull();
+  });
+});
+
+describe('handleStatsCommand', () => {
+  const makeCtx = (author: string, adminIds: Set<string>) => {
+    const sent: string[] = [];
+    const ctx = {
+      deps: {
+        adminIds,
+        messageService: { sendText: (_s: string, m: { text: string }) => (sent.push(m.text), Promise.resolve()) },
+        stats: () => Promise.resolve('翻譯統計：\nX'),
+      },
+      sessionId: 's1',
+      msg: { chatId: 'g1@g.us', author, isGroup: true },
+      raw: '/stats',
+      rest: '',
+    } as unknown as CommandContext;
+    return { ctx, sent };
+  };
+
+  it('refuses non-admins', async () => {
+    const { ctx, sent } = makeCtx('886999999999@c.us', new Set(['886912345678@c.us']));
+    await handleStatsCommand(ctx);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain('僅管理員');
+  });
+
+  it('replies with the stats text for an admin (any JID suffix)', async () => {
+    const { ctx, sent } = makeCtx('886912345678@lid', new Set(['886912345678@c.us']));
+    await handleStatsCommand(ctx);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain('翻譯統計');
   });
 });
 

@@ -13,6 +13,7 @@ const GLOSSARY_BATCH_MAX = 20;
 export interface CommandDeps extends GlossaryCommandDeps {
   watchwords: WatchwordStore;
   feedback: FeedbackStore;
+  stats: () => Promise<string>;
 }
 
 /** Everything a command handler needs; built once per command by the caller. */
@@ -50,6 +51,11 @@ export const COMMANDS: CommandSpec[] = [
     handle: ctx => handleBadCommand(ctx),
   },
   {
+    cmd: 'stats',
+    aliases: ['stats'],
+    handle: ctx => handleStatsCommand(ctx),
+  },
+  {
     cmd: 'help',
     aliases: ['help', 'h'],
     handle: ctx => handleHelpCommand(ctx.deps.messageService, ctx.sessionId, ctx.msg),
@@ -83,6 +89,7 @@ export const HELP_TEXT = [
   '列出提醒：/watch',
   '移除提醒：/watch del 關鍵字',
   '回報翻譯：引用譯文後輸入 /bad',
+  '翻譯統計：/stats（管理員）',
   '顯示說明：/help',
 ].join('\n');
 
@@ -203,6 +210,20 @@ export async function handleBadCommand(ctx: CommandContext): Promise<void> {
   const fallback = quoted.body.replace(BOT_MARKER, '').trim();
   const entry = ctx.deps.feedback.report(quoted.id, fallback, reporter);
   await send(`已記錄翻譯回饋，謝謝。原文：${entry.source || '（無法回溯，已記譯文）'}`);
+}
+
+// Admin-only operational snapshot (counts + breaker state). Replies in place — output is short and
+// contains nothing sensitive beyond what admins already see on the dashboard.
+export async function handleStatsCommand(ctx: CommandContext): Promise<void> {
+  if (!ctx.msg.chatId) return;
+  const author = ctx.msg.author || ctx.msg.from;
+  const send = (text: string): Promise<unknown> =>
+    ctx.deps.messageService.sendText(ctx.sessionId, { chatId: ctx.msg.chatId, text: BOT_MARKER + text });
+  if (!isGlossaryAdmin(ctx.deps.adminIds, author)) {
+    await send('僅管理員可查看統計。');
+    return;
+  }
+  await send(await ctx.deps.stats());
 }
 
 export async function handleHelpCommand(

@@ -330,6 +330,26 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     return { ...(await this.phrases.stats()), glossarySize: this.glossary.entries().length };
   }
 
+  /** One-screen operational snapshot for the /stats chat command (admin-gated in the handler). */
+  private async statsText(): Promise<string> {
+    const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
+    const [activity, sentencePending, phraseStats] = await Promise.all([
+      this.memory.activitySince(since),
+      this.memory.candidatesCount(),
+      this.phrases.stats(),
+    ]);
+    const now = Date.now();
+    const tripped = [...this.modelFails.entries()].filter(([, v]) => v.until > now).map(([k]) => k);
+    return [
+      '翻譯統計：',
+      `近24小時翻譯句數（不重複）：${activity.recent}`,
+      `翻譯記錄總數：${activity.total}`,
+      `待審候選：整句 ${sentencePending} / 高頻詞 ${phraseStats.pending}`,
+      `詞彙表條目：${this.glossary.entries().length}`,
+      `模型熔斷中：${tripped.length ? tripped.join('、') : '無'}`,
+    ].join('\n');
+  }
+
   /**
    * Remove a glossary pairing and record the revocation against whatever origin approved it. Routed
    * through the service rather than the controller touching `glossaryStore` directly so provenance
@@ -682,6 +702,7 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
             messageService: this.messageService,
             watchwords: this.watchwords,
             feedback: this.feedback,
+            stats: () => this.statsText(),
           },
           sessionId,
           msg,
