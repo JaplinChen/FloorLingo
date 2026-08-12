@@ -2897,6 +2897,66 @@
         ]
       }
     },
+    "/api/translate/profiles": {
+      "get": {
+        "operationId": "TranslateController_getProfiles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Chat profiles"
+          }
+        },
+        "summary": "List per-chat translation background profiles",
+        "tags": [
+          "translate"
+        ]
+      },
+      "post": {
+        "operationId": "TranslateController_addProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Updated chat profiles"
+          }
+        },
+        "summary": "Add/overwrite a chat background profile",
+        "tags": [
+          "translate"
+        ]
+      },
+      "delete": {
+        "operationId": "TranslateController_removeProfile",
+        "parameters": [
+          {
+            "name": "chatId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated chat profiles"
+          }
+        },
+        "summary": "Remove a chat background profile",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/categories": {
       "get": {
         "operationId": "TranslateController_getCategories",
@@ -7433,6 +7493,10 @@
         "properties": {}
       },
       "SenderEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChatProfileDto": {
         "type": "object",
         "properties": {}
       },

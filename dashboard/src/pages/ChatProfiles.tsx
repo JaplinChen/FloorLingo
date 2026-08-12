@@ -87,14 +87,14 @@ export function ChatProfiles() {
 
   if (loading) {
     return (
-      <div className="etable-page etable-loading">
+      <div className="chat-profiles-page etable-page etable-loading">
         <Loader2 className="animate-spin" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="etable-page">
+    <div className="chat-profiles-page etable-page">
       <PageHeader title={t('profiles.title')} subtitle={t('profiles.subtitle')} />
 
       <section className="etable-panel">
