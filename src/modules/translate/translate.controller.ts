@@ -26,12 +26,14 @@ import { LlmProbeDto } from './dto/llm-probe.dto';
 import { PreviewTranslateDto } from './dto/preview-translate.dto';
 import { GlossaryTermDto } from './dto/glossary-term.dto';
 import { SenderEntryDto } from './dto/sender-entry.dto';
+import { ChatProfileDto } from './dto/chat-profile.dto';
 import { ImportSendersDto } from './dto/import-senders.dto';
 import { CategoryDto } from './dto/category.dto';
 import { ApproveBulkDto } from './dto/approve-bulk.dto';
 
 type GlossaryEntry = { source: string; target: string; count?: number; category?: string };
 type SenderEntry = { jid: string; name: string };
+type ChatProfile = { chatId: string; text: string };
 
 @ApiTags('translate')
 @Controller('translate')
@@ -292,6 +294,37 @@ export class TranslateController {
     if (!trimmed) throw new BadRequestException('jid is required');
     this.translateService.senderStore.remove(trimmed);
     return this.translateService.senderStore.entries();
+  }
+
+  @Get('profiles')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'List per-chat translation background profiles' })
+  @ApiResponse({ status: 200, description: 'Chat profiles' })
+  getProfiles(): ChatProfile[] {
+    return this.translateService.profileStore.entries();
+  }
+
+  @Post('profiles')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Add/overwrite a chat background profile' })
+  @ApiResponse({ status: 201, description: 'Updated chat profiles' })
+  addProfile(@Body() dto: ChatProfileDto): ChatProfile[] {
+    const chatId = dto.chatId.trim();
+    const text = dto.text.trim();
+    if (!chatId || !text) throw new BadRequestException('chatId and text are required');
+    this.translateService.profileStore.set(chatId, text);
+    return this.translateService.profileStore.entries();
+  }
+
+  @Delete('profiles')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Remove a chat background profile' })
+  @ApiResponse({ status: 200, description: 'Updated chat profiles' })
+  removeProfile(@Query('chatId') chatId: string): ChatProfile[] {
+    const trimmed = (chatId ?? '').trim();
+    if (!trimmed) throw new BadRequestException('chatId is required');
+    this.translateService.profileStore.remove(trimmed);
+    return this.translateService.profileStore.entries();
   }
 
   @Get('categories')

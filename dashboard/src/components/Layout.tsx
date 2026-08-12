@@ -7,6 +7,7 @@ import {
   Languages,
   BookMarked,
   AtSign,
+  ScrollText,
   FileText,
   LogOut,
   Settings,
@@ -33,6 +34,7 @@ const allNavItems = [
   { to: '/translate', icon: Languages, key: 'translate' as const, adminOnly: false },
   { to: '/glossary', icon: BookMarked, key: 'glossary' as const, adminOnly: false },
   { to: '/senders', icon: AtSign, key: 'senders' as const, adminOnly: false },
+  { to: '/profiles', icon: ScrollText, key: 'profiles' as const, adminOnly: false },
   { to: '/logs', icon: FileText, key: 'logs' as const, adminOnly: false },
   { to: '/settings', icon: Settings, key: 'settings' as const, adminOnly: false },
 ];

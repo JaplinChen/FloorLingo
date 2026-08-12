@@ -1,0 +1,46 @@
+/* 群組背景：text 是多行欄位，key/value grid 塞不下，改用自己的欄位配置。 */
+.etable-page .profiles-add {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.etable-page .profiles-add textarea,
+.etable-page .profiles-item textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.etable-page .profiles-item textarea {
+  border-color: var(--primary);
+}
+
+.etable-page .profiles-add-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.etable-page .profiles-chars {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.etable-page .etable-item.profiles-item,
+.etable-page .etable-cols.profiles-cols {
+  grid-template-columns: minmax(8rem, 1fr) 2.5fr 3.75rem;
+  align-items: start;
+}
+
+.etable-page .profiles-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
