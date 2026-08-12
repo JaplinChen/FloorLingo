@@ -6,7 +6,7 @@ import * as path from 'node:path';
 // layer, so a standalone DB file with a minimal local typing keeps this self-contained (like the
 // module's glossary/senders JSON sidecars) while giving O(1) upserts + indexed top-N queries.
 interface SqliteDb {
-  run(sql: string, params: unknown[], cb?: (err: Error | null) => void): void;
+  run(sql: string, params: unknown[], cb?: (this: { changes?: number }, err: Error | null) => void): void;
   all(sql: string, params: unknown[], cb: (err: Error | null, rows: MemoryRow[]) => void): void;
   get(sql: string, params: unknown[], cb: (err: Error | null, row?: MemoryRow) => void): void;
   // No-arg serialize() puts the connection in serialized mode for ALL later statements. Required so the
@@ -195,5 +195,23 @@ export class TranslationMemory {
 
   dismiss(id: number): Promise<void> {
     return this.setStatus(id, 'dismissed');
+  }
+
+  /**
+   * Dismiss every unreviewed candidate at or below `maxCount` repeats. Whole-sentence sources are
+   * near-unique (UNIQUE(pair_key, source)), so the review queue silts up with count=1 rows no one
+   * will ever promote; this clears them in one statement. Returns how many rows moved.
+   */
+  dismissAllAtOrBelow(maxCount: number): Promise<number> {
+    return new Promise(resolve => {
+      if (!this.db) return resolve(0);
+      this.db.run(
+        `UPDATE translation_memory SET status = 'dismissed', updated_at = ? WHERE status = 'new' AND count <= ?`,
+        [new Date().toISOString(), maxCount],
+        function (err) {
+          resolve(err ? 0 : (this?.changes ?? 0));
+        },
+      );
+    });
   }
 }

@@ -328,6 +328,12 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     return this.memory.candidates();
   }
 
+  /** Bulk-dismiss low-frequency sentence candidates; returns how many moved and what's left. */
+  async dismissMemoryCandidatesBulk(maxCount: number): Promise<{ dismissed: number; remaining: number }> {
+    const dismissed = await this.memory.dismissAllAtOrBelow(maxCount);
+    return { dismissed, remaining: await this.memory.candidatesCount() };
+  }
+
   /** Current high-frequency phrase candidates awaiting review. */
   phraseCandidates(limit?: number): Promise<PhraseCandidate[]> {
     return this.phrases.list(limit);
