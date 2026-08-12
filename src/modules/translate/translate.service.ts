@@ -7,6 +7,7 @@ import { createLogger } from '../../common/services/logger.service';
 import { Glossary } from './translate-glossary';
 import type { OverrideLayer } from './translate-glossary-overrides';
 import { SenderDirectory, jidDigits } from './translate-senders';
+import { ChatProfileStore } from './translate-profiles';
 import {
   formatReviewDm,
   isDigestDue,
@@ -94,6 +95,9 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
   // Manual @mention JID->name overrides applied to the body before translation.
   private senders!: SenderDirectory;
   private sendersPath = 'data/senders.json';
+  // Per-chat background notes injected into the prompt as context (never echoed in output).
+  private profiles!: ChatProfileStore;
+  private profilesPath = 'data/chat-profiles.json';
   // Vietnamese factory shorthand expanded in the source text before the prompt (vi->zh only).
   private shorthand!: ShorthandTable;
   private shorthandPath = 'data/shorthand.json';
@@ -204,6 +208,11 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     const senderCount = this.senders.load();
     if (senderCount > 0) this.logger.log(`Senders loaded: ${senderCount} override(s) from ${this.sendersPath}`);
 
+    this.profilesPath = process.env.TRANSLATE_PROFILES_PATH || this.profilesPath;
+    this.profiles = new ChatProfileStore(this.profilesPath);
+    const profileCount = this.profiles.load();
+    if (profileCount > 0) this.logger.log(`Chat profiles loaded: ${profileCount} from ${this.profilesPath}`);
+
     this.shorthandPath = process.env.TRANSLATE_SHORTHAND_PATH || this.shorthandPath;
     this.shorthand = new ShorthandTable(this.shorthandPath);
     this.logger.log(`Shorthand loaded: ${this.shorthand.load()} Vietnamese abbreviation(s)`);
@@ -293,6 +302,9 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
   }
   get senderStore(): SenderDirectory {
     return this.senders;
+  }
+  get profileStore(): ChatProfileStore {
+    return this.profiles;
   }
   get categoryStore(): CategoryStore {
     return this.categories;
@@ -773,7 +785,7 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     }
 
     return this.enqueue(async () => {
-      const translated = await this.translate(body, pair, fromSpeech);
+      const translated = await this.translate(body, pair, fromSpeech, chatKey);
       // The model can echo the source when it's not translatable natural language — don't spam a
       // verbatim copy. Only path that discards a successful LLM response, so log it or the bot looks
       // like it randomly stopped translating.
@@ -950,7 +962,7 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     return this.glossary.section(pair.key, applied) + (pair.key === ZH_TO_VI.key ? '' : VI_DOMAIN_RULE);
   }
 
-  private async translate(text: string, pair: Pair, fromSpeech = false): Promise<string> {
+  private async translate(text: string, pair: Pair, fromSpeech = false, chatKey = ''): Promise<string> {
     const applied = this.prepareSource(text, pair);
 
     // Whole-message exact glossary hit (short conversational phrases like 明白/好/收到): answer
@@ -962,7 +974,10 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     // Inject only the glossary terms that actually appear in this message (see Glossary.section).
     // A speech-sourced message rides in on the same slot, so buildPrompt and any custom template that
     // already honours {glossary} pick it up with no extra placeholder to keep in sync.
-    const extras = this.promptExtras(pair, applied) + (fromSpeech ? speechSourceRule(this.voice.confusions) : '');
+    const extras =
+      this.promptExtras(pair, applied) +
+      (fromSpeech ? speechSourceRule(this.voice.confusions) : '') +
+      this.profiles.section(chatKey);
     const prompt = buildPrompt(applied, pair, extras, this.cfg.llmPromptTemplate);
 
     // Try the primary model, then each fallback in order — covers "model not loaded"/timeout on a

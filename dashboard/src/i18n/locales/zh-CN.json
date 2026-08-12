@@ -124,6 +124,7 @@
     "translate": "翻译群组",
     "glossary": "词汇表",
     "senders": "发送者",
+    "profiles": "群组背景",
     "llm": "LLM 设置",
     "keyproxy": "LLM 密钥",
     "translatePrompt": "翻译提示词",
@@ -1020,6 +1021,17 @@
     "noSessions": "没有工作阶段",
     "jid": "JID 或 @号码",
     "name": "显示名称"
+  },
+  "profiles": {
+    "title": "群组背景",
+    "subtitle": "为群组聊天提供背景说明，翻译时会一并提供给模型。",
+    "entries": "背景项目",
+    "add": "新增",
+    "added": "已保存背景",
+    "empty": "尚无群组背景。",
+    "chatId": "群组 JID",
+    "text": "背景文字",
+    "chars": "{{n}}/{{max}}"
   },
   "translate": {
     "title": "翻译",

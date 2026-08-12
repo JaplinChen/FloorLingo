@@ -124,6 +124,7 @@
     "translate": "翻譯群組",
     "glossary": "詞彙表",
     "senders": "發送者",
+    "profiles": "群組背景",
     "llm": "LLM 設定",
     "keyproxy": "LLM 金鑰",
     "translatePrompt": "翻譯提示詞",
@@ -1020,6 +1021,17 @@
     "noSessions": "沒有工作階段",
     "jid": "JID 或 @號碼",
     "name": "顯示名稱"
+  },
+  "profiles": {
+    "title": "群組背景",
+    "subtitle": "為群組聊天提供背景說明，翻譯時會一併提供給模型。",
+    "entries": "背景項目",
+    "add": "新增",
+    "added": "已儲存背景",
+    "empty": "尚無群組背景。",
+    "chatId": "群組 JID",
+    "text": "背景文字",
+    "chars": "{{n}}/{{max}}"
   },
   "translate": {
     "title": "翻譯",

@@ -123,6 +123,7 @@
     "translate": "Translation Groups",
     "glossary": "Glossary",
     "senders": "Senders",
+    "profiles": "Chat Profiles",
     "llm": "LLM Settings",
     "keyproxy": "LLM Keys",
     "translatePrompt": "Translation Prompt",
@@ -1011,6 +1012,17 @@
     "noSessions": "No sessions",
     "jid": "JID or @number",
     "name": "Display name"
+  },
+  "profiles": {
+    "title": "Chat Profiles",
+    "subtitle": "Give a group chat background context that is provided with every translation.",
+    "entries": "Profiles",
+    "add": "Add",
+    "added": "Profile saved",
+    "empty": "No chat profiles yet.",
+    "chatId": "Group JID",
+    "text": "Background text",
+    "chars": "{{n}}/{{max}}"
   },
   "translate": {
     "title": "Translation",

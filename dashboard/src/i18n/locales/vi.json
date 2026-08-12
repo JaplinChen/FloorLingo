@@ -123,6 +123,7 @@
     "translate": "Nhóm dịch",
     "glossary": "Từ điển",
     "senders": "Người gửi",
+    "profiles": "Bối cảnh nhóm",
     "llm": "Cài đặt LLM",
     "keyproxy": "Khóa LLM",
     "translatePrompt": "Prompt dịch",
@@ -1011,6 +1012,17 @@
     "noSessions": "Không có phiên",
     "jid": "JID hoặc @số",
     "name": "Tên hiển thị"
+  },
+  "profiles": {
+    "title": "Bối cảnh nhóm",
+    "subtitle": "Cung cấp bối cảnh cho nhóm chat, được gửi kèm mỗi lần dịch.",
+    "entries": "Mục bối cảnh",
+    "add": "Thêm",
+    "added": "Đã lưu bối cảnh",
+    "empty": "Chưa có bối cảnh nhóm nào.",
+    "chatId": "JID nhóm",
+    "text": "Nội dung bối cảnh",
+    "chars": "{{n}}/{{max}}"
   },
   "translate": {
     "title": "Dịch thuật",

@@ -249,6 +249,12 @@ export interface SenderEntry {
   count?: number; // 翻譯時實際替換次數
 }
 
+export interface ChatProfileEntry {
+  chatId: string; // 群組 JID
+  text: string; // 背景文字
+  count?: number;
+}
+
 // =============================================================================
 // API Key API
 // =============================================================================
@@ -438,6 +444,16 @@ export const translateApi = {
     request<{ filled: number; entries: SenderEntry[] }>('/translate/senders/backfill', {
       method: 'POST',
       body: JSON.stringify({ sessionId }),
+    }),
+  getChatProfiles: () => request<ChatProfileEntry[]>('/translate/profiles'),
+  addChatProfile: (chatId: string, text: string) =>
+    request<ChatProfileEntry[]>('/translate/profiles', {
+      method: 'POST',
+      body: JSON.stringify({ chatId, text }),
+    }),
+  removeChatProfile: (chatId: string) =>
+    request<ChatProfileEntry[]>(`/translate/profiles?chatId=${encodeURIComponent(chatId)}`, {
+      method: 'DELETE',
     }),
 };
 
