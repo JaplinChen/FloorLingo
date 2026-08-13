@@ -487,6 +487,19 @@ describe('MessageService', () => {
 
   // ── getMessages pagination guard ──────────────────────────────────
 
+  describe('latestMessageSessionId', () => {
+    it('returns the sessionId of the newest stored message', async () => {
+      repository.find = jest.fn().mockResolvedValue([{ sessionId: 'sess-9' }]);
+      expect(await service.latestMessageSessionId()).toBe('sess-9');
+      expect(repository.find).toHaveBeenCalledWith({ order: { createdAt: 'DESC' }, take: 1 });
+    });
+
+    it('returns null when no messages were ever stored', async () => {
+      repository.find = jest.fn().mockResolvedValue([]);
+      expect(await service.latestMessageSessionId()).toBeNull();
+    });
+  });
+
   describe('getMessages pagination guard', () => {
     interface QbMock {
       where: jest.Mock;

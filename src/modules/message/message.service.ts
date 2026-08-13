@@ -126,6 +126,12 @@ export class MessageService {
     return senders.forward(this.sendCtx, sessionId, dto);
   }
 
+  /** sessionId of the most recently stored message — a DB read, valid even while no session is live. */
+  async latestMessageSessionId(): Promise<string | null> {
+    const row = await this.messageRepository.find({ order: { createdAt: 'DESC' }, take: 1 });
+    return row[0]?.sessionId ?? null;
+  }
+
   getMessages(sessionId: string, options: GetMessagesOptions = {}): Promise<{ messages: Message[]; total: number }> {
     return getMessages(
       { messageRepository: this.messageRepository, lidMappingStore: this.lidMappingStore },
