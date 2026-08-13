@@ -336,6 +336,43 @@ export class TranslateController {
     return this.translateService.profileStore.entries();
   }
 
+  @Get('profiles/pending')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'List LLM-drafted profile suggestions awaiting review' })
+  @ApiResponse({ status: 200, description: 'Pending profile suggestions' })
+  getPendingProfiles(): { chatId: string; draft: string; at: string }[] {
+    return this.translateService.profilePendingStore.entries();
+  }
+
+  @Post('profiles/scan')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Draft profile updates from recent group messages (LLM, per configured group)' })
+  @ApiResponse({ status: 201, description: '{ scanned, suggested }' })
+  scanProfileSuggestions(): Promise<{ scanned: number; suggested: number }> {
+    return this.translateService.scanProfileSuggestions();
+  }
+
+  @Post('profiles/pending/approve')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Approve a pending profile suggestion into the live profile' })
+  @ApiResponse({ status: 201, description: 'Updated chat profiles' })
+  approveProfileSuggestion(@Query('chatId') chatId: string): ChatProfile[] {
+    const trimmed = (chatId ?? '').trim();
+    if (!trimmed) throw new BadRequestException('chatId is required');
+    return this.translateService.approveProfileSuggestion(trimmed);
+  }
+
+  @Delete('profiles/pending')
+  @RequireRole(ApiKeyRole.ADMIN)
+  @ApiOperation({ summary: 'Reject (drop) a pending profile suggestion' })
+  @ApiResponse({ status: 200, description: 'Remaining pending profile suggestions' })
+  rejectProfileSuggestion(@Query('chatId') chatId: string): { chatId: string; draft: string; at: string }[] {
+    const trimmed = (chatId ?? '').trim();
+    if (!trimmed) throw new BadRequestException('chatId is required');
+    this.translateService.rejectProfileSuggestion(trimmed);
+    return this.translateService.profilePendingStore.entries();
+  }
+
   @Get('categories')
   @RequireRole(ApiKeyRole.ADMIN)
   @ApiOperation({ summary: 'List glossary categories' })

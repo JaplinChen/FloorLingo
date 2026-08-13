@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ScrollText, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { translateApi, type ChatProfileEntry } from '../services/api';
+import { Loader2, ScrollText, Plus, Pencil, Trash2, Check, X, Sparkles } from 'lucide-react';
+import { translateApi, type ChatProfileEntry, type ProfileSuggestion } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import { useToast } from '../components/Toast';
@@ -31,12 +31,25 @@ export function ChatProfiles() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<ProfileSuggestion[]>([]);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     let active = true;
-    translateApi
-      .getChatProfiles()
-      .then(list => active && setEntries(list))
+    const loads: Promise<void>[] = [
+      translateApi.getChatProfiles().then(list => {
+        if (active) setEntries(list);
+      }),
+    ];
+    // The pending endpoints are ADMIN-only — skip for viewers so the page doesn't toast a 403.
+    if (canWrite) {
+      loads.push(
+        translateApi.getProfileSuggestions().then(list => {
+          if (active) setSuggestions(list);
+        }),
+      );
+    }
+    Promise.all(loads)
       .catch(err => active && fail(err))
       .finally(() => active && setLoading(false));
     return () => {
@@ -74,6 +87,43 @@ export function ChatProfiles() {
     if (await upsert(chatId, text, t('common.saved'))) setEditing(null);
   };
 
+  const scan = async () => {
+    setScanning(true);
+    try {
+      const { suggested } = await translateApi.scanProfileSuggestions();
+      setSuggestions(await translateApi.getProfileSuggestions());
+      toast.success(t('profiles.scanDone', { count: suggested }));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const approveSuggestion = async (chatId: string) => {
+    setBusy(true);
+    try {
+      setEntries(await translateApi.approveProfileSuggestion(chatId));
+      setSuggestions(await translateApi.getProfileSuggestions());
+      toast.success(t('common.saved'));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rejectSuggestion = async (chatId: string) => {
+    setBusy(true);
+    try {
+      setSuggestions(await translateApi.rejectProfileSuggestion(chatId));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const remove = async (chatId: string) => {
     setBusy(true);
     try {
@@ -95,7 +145,69 @@ export function ChatProfiles() {
 
   return (
     <div className="chat-profiles-page etable-page">
-      <PageHeader title={t('profiles.title')} subtitle={t('profiles.subtitle')} />
+      <PageHeader
+        title={t('profiles.title')}
+        subtitle={t('profiles.subtitle')}
+        actions={
+          canWrite ? (
+            <button className="btn-primary" onClick={() => void scan()} disabled={scanning}>
+              {scanning ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+              {t('profiles.scan')}
+            </button>
+          ) : undefined
+        }
+      />
+
+      {canWrite && suggestions.length > 0 && (
+        <section className="etable-panel profiles-pending">
+          <div className="etable-head">
+            <h3 className="etable-panel-title">
+              {t('profiles.pendingTitle')}
+              <span className="etable-count">{suggestions.length}</span>
+            </h3>
+          </div>
+          <div className="etable-list">
+            {suggestions.map(sug => {
+              const current = entries.find(e => e.chatId === sug.chatId);
+              return (
+                <div key={sug.chatId} className="etable-item profiles-item profiles-suggestion">
+                  <span className="etable-src">{sug.chatId}</span>
+                  <div className="profiles-suggestion-body">
+                    <div className="profiles-suggestion-row">
+                      <span className="profiles-suggestion-label">{t('profiles.current')}</span>
+                      <span className="etable-tgt profiles-text">
+                        {current ? current.text : t('profiles.currentNew')}
+                      </span>
+                    </div>
+                    <div className="profiles-suggestion-row">
+                      <span className="profiles-suggestion-label">{t('profiles.draft')}</span>
+                      <span className="etable-tgt profiles-text profiles-draft">{sug.draft}</span>
+                    </div>
+                  </div>
+                  <div className="etable-row-actions">
+                    <button
+                      className="etable-del"
+                      onClick={() => void approveSuggestion(sug.chatId)}
+                      disabled={busy}
+                      title={t('profiles.approve')}
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      className="etable-del"
+                      onClick={() => void rejectSuggestion(sug.chatId)}
+                      disabled={busy}
+                      title={t('profiles.reject')}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="etable-panel">
         <div className="etable-head">

@@ -1028,7 +1028,15 @@
     "empty": "Chưa có bối cảnh nhóm nào.",
     "chatId": "JID nhóm",
     "text": "Nội dung bối cảnh",
-    "chars": "{{n}}/{{max}}"
+    "chars": "{{n}}/{{max}}",
+    "scan": "Quét gợi ý",
+    "scanDone": "Đã quét xong — {{count}} gợi ý",
+    "pendingTitle": "Gợi ý chờ duyệt",
+    "current": "Hiện tại",
+    "currentNew": "(mới)",
+    "draft": "Bản nháp gợi ý",
+    "approve": "Duyệt",
+    "reject": "Từ chối"
   },
   "translate": {
     "title": "Dịch thuật",

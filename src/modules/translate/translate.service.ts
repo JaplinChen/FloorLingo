@@ -8,6 +8,7 @@ import { Glossary } from './translate-glossary';
 import type { OverrideLayer } from './translate-glossary-overrides';
 import { SenderDirectory, jidDigits } from './translate-senders';
 import { ChatProfileStore } from './translate-profiles';
+import { ProfileSuggestionStore, buildProfileSuggestPrompt, sanitizeDraft } from './translate-profile-suggest';
 import {
   formatReviewDm,
   isDigestDue,
@@ -98,6 +99,9 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
   // Per-chat background notes injected into the prompt as context (never echoed in output).
   private profiles!: ChatProfileStore;
   private profilesPath = 'data/chat-profiles.json';
+  // LLM-drafted profile updates awaiting admin approval (never written to profiles directly).
+  private profilePending!: ProfileSuggestionStore;
+  private profilePendingPath = 'data/chat-profile-pending.json';
   // Vietnamese factory shorthand expanded in the source text before the prompt (vi->zh only).
   private shorthand!: ShorthandTable;
   private shorthandPath = 'data/shorthand.json';
@@ -213,6 +217,13 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     const profileCount = this.profiles.load();
     if (profileCount > 0) this.logger.log(`Chat profiles loaded: ${profileCount} from ${this.profilesPath}`);
 
+    this.profilePendingPath = process.env.TRANSLATE_PROFILE_PENDING_PATH || this.profilePendingPath;
+    this.profilePending = new ProfileSuggestionStore(this.profilePendingPath);
+    const pendingProfiles = this.profilePending.load();
+    if (pendingProfiles > 0) {
+      this.logger.log(`Pending profile suggestions loaded: ${pendingProfiles} from ${this.profilePendingPath}`);
+    }
+
     this.shorthandPath = process.env.TRANSLATE_SHORTHAND_PATH || this.shorthandPath;
     this.shorthand = new ShorthandTable(this.shorthandPath);
     this.logger.log(`Shorthand loaded: ${this.shorthand.load()} Vietnamese abbreviation(s)`);
@@ -305,6 +316,9 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
   }
   get profileStore(): ChatProfileStore {
     return this.profiles;
+  }
+  get profilePendingStore(): ProfileSuggestionStore {
+    return this.profilePending;
   }
   get categoryStore(): CategoryStore {
     return this.categories;
@@ -435,6 +449,56 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Draft a profile update per configured group from its recent messages. Suggestions land in the
+   * pending store for admin review — never written to the live profiles directly. Dashboard-triggered
+   * or daily via reviewDmTick; per-group failures are logged and skipped.
+   */
+  async scanProfileSuggestions(): Promise<{ scanned: number; suggested: number }> {
+    if (!this.lastSessionId) return { scanned: 0, suggested: 0 };
+    const params = this.resolveModel(this.cfg.llmModel);
+    if (!params) return { scanned: 0, suggested: 0 };
+    let scanned = 0;
+    let suggested = 0;
+    for (const chatId of this.cfg.groupIds) {
+      try {
+        const { messages } = await this.messageService.getMessages(this.lastSessionId, { chatId, limit: 80 });
+        const bodies = messages
+          .map(m => (m.body || '').trim())
+          .filter(b => b && !b.startsWith(BOT_MARKER))
+          .slice(0, 60)
+          .map(b => b.slice(0, 120));
+        if (bodies.length < 10) continue; // too little traffic to say anything useful about the group
+        scanned++;
+        const current = this.profiles.get(chatId);
+        const out = await llm.callLlm(params, buildProfileSuggestPrompt(current, bodies));
+        const draft = sanitizeDraft(out, current);
+        if (draft) {
+          this.profilePending.set(chatId, draft);
+          suggested++;
+        }
+      } catch (err) {
+        this.logger.warn(`[translate:profile-suggest] scan failed for ${chatId}: ${String(err)}`);
+      }
+    }
+    this.logger.log(`[translate:profile-suggest] scan: ${scanned} group(s), ${suggested} suggestion(s)`);
+    return { scanned, suggested };
+  }
+
+  /** Approve a pending profile draft into the live profile; returns the refreshed profiles. */
+  approveProfileSuggestion(chatId: string): ReturnType<ChatProfileStore['entries']> {
+    const pending = this.profilePending.get(chatId);
+    if (!pending) throw new BadRequestException(`no pending suggestion for ${chatId}`);
+    this.profiles.set(chatId, pending.draft);
+    this.profilePending.remove(chatId);
+    this.logger.log(`[translate:profile-suggest] approved for ${chatId}`);
+    return this.profiles.entries();
+  }
+
+  rejectProfileSuggestion(chatId: string): boolean {
+    return this.profilePending.remove(chatId);
+  }
+
   /** Promote a phrase candidate into the glossary. Glossary write first — see markApproved's note. */
   async approvePhraseCandidate(id: number): Promise<PhraseCandidate[]> {
     const row = await this.phrases.peek(id);
@@ -526,6 +590,10 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
         // No session seen since boot. Don't stamp the date: retry on the next tick once traffic starts.
         return this.logger.warn('[translate:phrase-review] digest due but no session seen yet — retrying next tick');
       }
+      // Daily profile-suggestion scan rides the digest schedule: it only auto-runs when TRANSLATE_REVIEW_DM_HOUR is set.
+      void this.scanProfileSuggestions().catch(err =>
+        this.logger.error(`[translate:profile-suggest] daily scan failed: ${String(err)}`),
+      );
       const rows = await this.phrases.list(5);
       const today = localParts(new Date(), this.reviewDmTz).date;
       if (!rows.length) {

@@ -1037,7 +1037,15 @@
     "empty": "尚無群組背景。",
     "chatId": "群組 JID",
     "text": "背景文字",
-    "chars": "{{n}}/{{max}}"
+    "chars": "{{n}}/{{max}}",
+    "scan": "掃描建議",
+    "scanDone": "掃描完成——{{count}} 筆建議",
+    "pendingTitle": "待審建議",
+    "current": "現行",
+    "currentNew": "（新）",
+    "draft": "建議草稿",
+    "approve": "核准",
+    "reject": "退回"
   },
   "translate": {
     "title": "翻譯",
