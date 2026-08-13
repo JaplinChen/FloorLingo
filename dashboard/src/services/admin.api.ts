@@ -255,6 +255,12 @@ export interface ChatProfileEntry {
   count?: number;
 }
 
+export interface ProfileSuggestion {
+  chatId: string; // 群組 JID
+  draft: string; // LLM 產出的背景草稿
+  at: string;
+}
+
 // =============================================================================
 // API Key API
 // =============================================================================
@@ -458,6 +464,18 @@ export const translateApi = {
     }),
   removeChatProfile: (chatId: string) =>
     request<ChatProfileEntry[]>(`/translate/profiles?chatId=${encodeURIComponent(chatId)}`, {
+      method: 'DELETE',
+    }),
+  getProfileSuggestions: () => request<ProfileSuggestion[]>('/translate/profiles/pending'),
+  scanProfileSuggestions: () =>
+    request<{ scanned: number; suggested: number }>('/translate/profiles/scan', { method: 'POST' }),
+  approveProfileSuggestion: (chatId: string) =>
+    request<ChatProfileEntry[]>(
+      `/translate/profiles/pending/approve?chatId=${encodeURIComponent(chatId)}`,
+      { method: 'POST' },
+    ),
+  rejectProfileSuggestion: (chatId: string) =>
+    request<ProfileSuggestion[]>(`/translate/profiles/pending?chatId=${encodeURIComponent(chatId)}`, {
       method: 'DELETE',
     }),
 };

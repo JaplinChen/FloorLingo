@@ -2982,6 +2982,82 @@
         ]
       }
     },
+    "/api/translate/profiles/pending": {
+      "get": {
+        "operationId": "TranslateController_getPendingProfiles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Pending profile suggestions"
+          }
+        },
+        "summary": "List LLM-drafted profile suggestions awaiting review",
+        "tags": [
+          "translate"
+        ]
+      },
+      "delete": {
+        "operationId": "TranslateController_rejectProfileSuggestion",
+        "parameters": [
+          {
+            "name": "chatId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remaining pending profile suggestions"
+          }
+        },
+        "summary": "Reject (drop) a pending profile suggestion",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/profiles/scan": {
+      "post": {
+        "operationId": "TranslateController_scanProfileSuggestions",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "{ scanned, suggested }"
+          }
+        },
+        "summary": "Draft profile updates from recent group messages (LLM, per configured group)",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
+    "/api/translate/profiles/pending/approve": {
+      "post": {
+        "operationId": "TranslateController_approveProfileSuggestion",
+        "parameters": [
+          {
+            "name": "chatId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Updated chat profiles"
+          }
+        },
+        "summary": "Approve a pending profile suggestion into the live profile",
+        "tags": [
+          "translate"
+        ]
+      }
+    },
     "/api/translate/categories": {
       "get": {
         "operationId": "TranslateController_getCategories",

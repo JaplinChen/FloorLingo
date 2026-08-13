@@ -1028,7 +1028,15 @@
     "empty": "No chat profiles yet.",
     "chatId": "Group JID",
     "text": "Background text",
-    "chars": "{{n}}/{{max}}"
+    "chars": "{{n}}/{{max}}",
+    "scan": "Scan suggestions",
+    "scanDone": "Scan finished — {{count}} suggestion(s)",
+    "pendingTitle": "Pending suggestions",
+    "current": "Current",
+    "currentNew": "(new)",
+    "draft": "Suggested",
+    "approve": "Approve",
+    "reject": "Reject"
   },
   "translate": {
     "title": "Translation",
