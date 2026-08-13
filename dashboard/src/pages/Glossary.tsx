@@ -42,6 +42,7 @@ export function Glossary() {
   const [bulkLoading, setBulkLoading] = useState(false);
   // Non-null = the confirm step is open, holding exactly the rows the approval would move.
   const [bulkPreview, setBulkPreview] = useState<PhraseCandidate[] | null>(null);
+  const [dismissBulkOpen, setDismissBulkOpen] = useState(false);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [catInput, setCatInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -172,6 +173,22 @@ export function Glossary() {
           ? t('glossary.bulkApproved', { count: approved })
           : t('glossary.bulkApprovedPartial', { approved, total }),
       );
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Sentence sources are near-unique, so count=1 rows silt up the queue; this clears them in one
+  // call. maxCount is fixed at 1 — anything seen twice is still worth a human look.
+  const confirmDismissBulk = async () => {
+    setDismissBulkOpen(false);
+    setBusy(true);
+    try {
+      const { dismissed } = await translateApi.dismissMemoryCandidatesBulk(1);
+      await loadCandidates(1);
+      toast.success(t('glossary.dismissBulkDone', { count: dismissed }));
     } catch (err) {
       fail(err);
     } finally {
@@ -422,6 +439,13 @@ export function Glossary() {
 
       {tab === 'candidates' && (
         <>
+          {canWrite && candidates.length > 0 && (
+            <div className="phrase-bulk">
+              <button className="btn-secondary" onClick={() => setDismissBulkOpen(true)} disabled={busy}>
+                {t('glossary.dismissBulk')}
+              </button>
+            </div>
+          )}
           <MemoryCandidates
             candidates={candidates}
             canWrite={canWrite}
@@ -453,6 +477,16 @@ export function Glossary() {
                 {t('common.next')}
               </button>
             </div>
+          )}
+          {dismissBulkOpen && (
+            <ConfirmModal
+              title={t('glossary.dismissBulkConfirmTitle')}
+              message={t('glossary.dismissBulkConfirmBody')}
+              warning={t('glossary.dismissBulkConfirmWarning')}
+              confirmLabel={t('glossary.dismissBulkConfirmAction')}
+              onConfirm={confirmDismissBulk}
+              onCancel={() => setDismissBulkOpen(false)}
+            />
           )}
         </>
       )}

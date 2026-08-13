@@ -389,6 +389,11 @@ export const translateApi = {
     request<TranslationCandidate[]>(`/translate/memory/${id}/approve`, { method: 'POST' }),
   dismissMemoryCandidate: (id: number) =>
     request<TranslationCandidate[]>(`/translate/memory/${id}`, { method: 'DELETE' }),
+  dismissMemoryCandidatesBulk: (maxCount: number) =>
+    request<{ dismissed: number; remaining: number }>('/translate/memory/dismiss-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ maxCount }),
+    }),
   getPhraseCandidates: () => request<PhraseCandidate[]>('/translate/memory/phrases'),
   getPhraseStats: () => request<PhraseStats>('/translate/memory/phrases/stats'),
   getGlossaryOverrides: () => request<GlossaryOverrides>('/translate/glossary/overrides'),
