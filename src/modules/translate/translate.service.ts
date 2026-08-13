@@ -455,14 +455,20 @@ export class TranslateService implements OnModuleInit, OnModuleDestroy {
    * or daily via reviewDmTick; per-group failures are logged and skipped.
    */
   async scanProfileSuggestions(): Promise<{ scanned: number; suggested: number }> {
-    if (!this.lastSessionId) return { scanned: 0, suggested: 0 };
+    // getMessages is a DB read, so any session that ever stored messages works — unlike sending a
+    // DM, this needn't wait for lastSessionId (empty after every restart until a message arrives).
+    const sessionId = this.lastSessionId || (await this.messageService.latestMessageSessionId()) || '';
+    if (!sessionId) {
+      this.logger.warn('[translate:profile-suggest] scan skipped — no session has any stored messages');
+      return { scanned: 0, suggested: 0 };
+    }
     const params = this.resolveModel(this.cfg.llmModel);
     if (!params) return { scanned: 0, suggested: 0 };
     let scanned = 0;
     let suggested = 0;
     for (const chatId of this.cfg.groupIds) {
       try {
-        const { messages } = await this.messageService.getMessages(this.lastSessionId, { chatId, limit: 80 });
+        const { messages } = await this.messageService.getMessages(sessionId, { chatId, limit: 80 });
         const bodies = messages
           .map(m => (m.body || '').trim())
           .filter(b => b && !b.startsWith(BOT_MARKER))
