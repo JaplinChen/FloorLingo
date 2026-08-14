@@ -27,6 +27,12 @@ describe('Glossary', () => {
     expect(g.section('vi:zh-tw', 'sếp ơi giúp em')).toContain('sếp ơi → 長官啊');
   });
 
+  it('section matches regardless of casing (chat types 5s, glossary says 5S)', () => {
+    const g = new Glossary(file);
+    g.add('去5S巡檢回來', 'đi 5S về');
+    expect(g.section('vi:zh-tw', 'Sếp đi 5s về sẽ thảo luận')).toContain('đi 5S về → 去5S巡檢回來');
+  });
+
   it('section bumps usage count for matched terms in either direction, persisted', () => {
     const g = new Glossary(file);
     g.add('電腦', 'máy tính');
