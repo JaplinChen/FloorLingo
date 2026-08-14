@@ -337,8 +337,11 @@ export class Glossary {
    * term list back as their "translation" — so filter to what this message really uses.
    */
   section(pairKey: string, text = '', groupId?: string): string {
+    // ponytail: case-insensitive because Vietnamese chat casing is inconsistent (5s/5S, Sếp/sếp),
+    // and a case-sensitive includes() silently skipped the term. Chinese is unaffected by casing.
+    const lowered = text.toLowerCase();
     const hit = (map: Record<string, string>): [string, string][] =>
-      Object.entries(map).filter(([source]) => text.includes(source));
+      Object.entries(map).filter(([source]) => lowered.includes(source.toLowerCase()));
 
     // Global first, then this group's overrides on top: a Map keyed by source means an override
     // silently replaces the global entry for the same term instead of injecting both, which would
