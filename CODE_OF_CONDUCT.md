@@ -2,7 +2,7 @@
 
 ## Our pledge
 
-We as members, contributors, and maintainers pledge to make participation in the OpenWA-Lab
+We as members, contributors, and maintainers pledge to make participation in the FloorLingo
 community a welcoming, respectful, and inclusive experience for everyone, regardless of
 background or identity.
 
@@ -27,8 +27,8 @@ including the detailed standards, enforcement guidelines, and scope — is publi
 ## Enforcement
 
 Concerns about a community member's conduct may be reported privately to the project
-maintainer at **yudhi@rmyndharis.com**. All reports will be reviewed and investigated
-promptly and fairly, and the reporter's privacy will be respected.
+maintainer [@JaplinChen](https://github.com/JaplinChen). All reports will be reviewed and
+investigated promptly and fairly, and the reporter's privacy will be respected.
 
 ## Attribution
 
