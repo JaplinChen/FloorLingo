@@ -91,7 +91,7 @@ type InboundMedia = NonNullable<IncomingMessage['media']>;
 /**
  * SECONDARY guard on inbound media from an untrusted sender. Within the limit, keep it (base64 via
  * `toBase64`). Over the limit, drop the blob and return a marker `{ mimetype, filename?, omitted,
- * sizeBytes }` so the `media` field stays present (n8n/dashboard contract) while the multi-MB base64
+ * sizeBytes }` so the `media` field stays present (webhook/dashboard contract) while the multi-MB base64
  * is never encoded, persisted, webhooked, or broadcast — the durable amplification.
  *
  * `toBase64` is a lazy callback so an over-cap payload is never base64-encoded (the +33% copy). NOTE:

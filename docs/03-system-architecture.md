@@ -9,7 +9,7 @@ flowchart TB
     subgraph Clients["Clients"]
         C1[External Apps]
         C2[Dashboard]
-        C3[n8n/Automation]
+        C3[Automation Tools]
     end
     
     subgraph FloorLingo["FloorLingo Platform"]

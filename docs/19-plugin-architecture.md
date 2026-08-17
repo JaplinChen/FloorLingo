@@ -85,7 +85,7 @@ flowchart LR
 | Webhook Transformer | Transform webhook payloads | Add metadata, Filter events |
 | Auth Provider | Custom authentication | OAuth, LDAP |
 | Storage Provider | Alternative storage backends | Google Drive, Dropbox |
-| Integration | External service integration | CRM, Analytics, n8n |
+| Integration | External service integration | CRM, Analytics, webhooks |
 
 ## 19.3 Plugin Structure
 

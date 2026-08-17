@@ -120,7 +120,7 @@ export async function mapMessage(
     // The outbound "sent" echo passes skipMediaDownload: the sender already holds the media, and for
     // parity with the wwjs message.sent (which carries no media buffer) we emit only the marker here.
     if (opts?.skipMediaDownload || !isMediaDownloadEnabled()) {
-      // Emit the omitted marker so the media field is present (webhook/n8n/dashboard contract).
+      // Emit the omitted marker so the media field is present (webhook/dashboard contract).
       // mimetype is available pre-download from the message content.
       const normalizedContent = b.normalizeMessageContent(content) ?? content;
       const subMessage =
