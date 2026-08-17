@@ -423,8 +423,7 @@ gantt
     Load testing            :p3-17, after p3-16, 2d
 
     section Community (Week 9-10)
-    n8n community node      :p3-18, after p3-17, 3d
-    Example projects        :p3-19, after p3-18, 2d
+    Example projects        :p3-19, after p3-17, 2d
     Video tutorials         :p3-20, after p3-19, 3d
 
     section Release (Week 11-12)
@@ -470,7 +469,6 @@ gantt
 
 | Feature         | Priority | Status             |
 | --------------- | -------- | ------------------ |
-| n8n integration | P1       | ✅ (separate repo) |
 | CI/CD pipeline  | P0       | ✅                 |
 
 ### Deliverables
@@ -483,7 +481,6 @@ v0.1.0 Release Package:
 ├── Complete API documentation (Swagger)
 ├── README with comprehensive guide
 ├── Integration examples
-│   ├── n8n community node
 │   └── Basic automation examples
 └── CI/CD workflows (GitHub Actions)
     ├── Build & test pipeline

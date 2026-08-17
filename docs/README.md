@@ -54,7 +54,6 @@
 | 19  | [Plugin Architecture](./19-plugin-architecture.md)               | Extensibility concepts                            |
 | 20  | [Community Guidelines](./20-community-guidelines.md)             | Contribution and governance                       |
 | 21  | [Glossary](./21-glossary.md)                                     | Terms and definitions                             |
-| 22  | [n8n Integration](./22-n8n-integration.md)                       | n8n community nodes for FloorLingo                    |
 | 23  | [Community Integrations](./23-community-integrations.md)         | Third-party adapters built on the FloorLingo API      |
 | 23-S| [Plugin Sandboxing](./23-plugin-sandboxing.md)                   | Worker isolation, capabilities, and plugin limits |
 | 24  | [MCP Integration](./24-mcp-integration.md)                       | Model Context Protocol tools and auth model       |
@@ -68,7 +67,6 @@
 | [Session Phone-Number Pairing](./examples/session-phone-number-pairing.md) | Link an existing WhatsApp account by phone number instead of scanning QR |
 | [Chat History Limits](./examples/chat-history-limits.md) | Understand local message history vs bounded live WhatsApp history |
 | [Webhook Signature Verification](./examples/webhook-signature-verification.md) | Verify signed FloorLingo webhook deliveries in Node.js and Python |
-| [n8n Appointment Booking Workflow](./examples/n8n-appointment-booking.md) | Build an appointment-booking flow with FloorLingo and n8n |
 
 ## Quick Start
 

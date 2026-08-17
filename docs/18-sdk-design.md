@@ -885,15 +885,6 @@ try {
 - **Testing without the network.** Inject a Guzzle client built on a `GuzzleHttp\Handler\MockHandler` via the `httpClient` config key — no global state, no live calls. The shipped test suite asserts on the exact path, method, and body.
 - **PSR-4 autoloading.** Everything lives under the `FloorLingo\` namespace mapped to `src/`; `composer require japlinchen/floorlingo` wires up the autoloader.
 
-## 18.5 n8n Community Node
-
-FloorLingo's n8n integration is **not** part of these SDK packages. It is a separate community node maintained in its own repository, which speaks the same REST + webhook contract documented in [API Specification](./06-api-specification.md):
-
-- An **action/HTTP** path that calls the REST endpoints (e.g. `POST /api/sessions/:id/messages/send-text`) with the `X-API-Key` header.
-- A **trigger** path that registers a webhook (the `webhooks` resource) and receives inbound events, verifying the `X-OpenWA-Signature` HMAC.
-
-For installation and node-by-node configuration, see the dedicated [n8n Integration guide](./22-n8n-integration.md). Because the node consumes the public API contract, the verified route/event reference in docs 06 and §6.6 (Webhook Events) is the authority for what it can call and receive.
-
 ## 18.6 SDK Versioning & Releases
 
 ### Versioning

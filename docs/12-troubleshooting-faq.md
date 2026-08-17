@@ -834,13 +834,6 @@ curl -X POST http://localhost:2785/api/sessions/{id}/messages/reply \
   }'
 ```
 
-**Q: How to use with n8n?**
-> See [n8n Integration Guide](./22-n8n-integration.md). Quick setup:
-> 1. Add HTTP Request node
-> 2. Set URL: `http://openwa-lab:2785/api/sessions/{id}/messages/send-text`
-> 3. Add header: `X-API-Key: your-key`
-> 4. Configure webhook trigger for incoming messages
-
 **Q: How to run behind reverse proxy (nginx)?**
 ```nginx
 # nginx.conf

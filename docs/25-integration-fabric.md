@@ -79,7 +79,7 @@ flowchart LR
     Ingress -. reuses .-> Tables
 ```
 
-The topology is intentionally two-tier (an n8n-style queue mode): an **ingress tier** (the public
+The topology is intentionally two-tier (a queue-mode split): an **ingress tier** (the public
 controller: authenticate → normalize → persist → enqueue → fast `202`) decoupled by a durable queue from
 a **dispatch tier** (the processor that runs the plugin). A provider spike, a slow adapter, or a wedged
 plugin never loses events; the tiers scale independently with backpressure.

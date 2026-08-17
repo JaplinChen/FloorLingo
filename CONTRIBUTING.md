@@ -1,12 +1,12 @@
-# Contributing to OpenWA-Lab
+# Contributing to FloorLingo
 
-Thanks for your interest in improving OpenWA-Lab! This guide covers how to get set up, the
+Thanks for your interest in improving FloorLingo! This guide covers how to get set up, the
 conventions we follow, and how to get a change merged. Contributions of all sizes are
 welcome — bug fixes, features, docs, and tests.
 
 ## Project layout
 
-OpenWA-Lab is a NestJS (backend) + React/Vite (dashboard) project:
+FloorLingo is a NestJS (backend) + React/Vite (dashboard) project:
 
 - `src/` — the NestJS API. Feature modules under `src/modules/` (session, message,
   webhook, queue, audit, settings, infra, …), the WhatsApp engine abstraction under
@@ -18,7 +18,7 @@ See `docs/03-system-architecture.md` for the bigger picture.
 
 ## Getting started
 
-OpenWA-Lab targets **Node.js 22+**.
+FloorLingo targets **Node.js 22+**.
 
 ```bash
 # backend

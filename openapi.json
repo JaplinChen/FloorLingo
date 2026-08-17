@@ -6211,7 +6211,7 @@
     "contact": {
       "name": "FloorLingo",
       "url": "https://github.com/JaplinChen/FloorLingo",
-      "email": "yudhi@rmyndharis.com"
+      "email": ""
     }
   },
   "tags": [
@@ -6958,7 +6958,7 @@
           "text": {
             "type": "string",
             "description": "Text message content",
-            "example": "Hello from OpenWA!",
+            "example": "Hello from FloorLingo!",
             "maxLength": 4096
           },
           "mentions": {
